@@ -19,6 +19,7 @@ const initialState = {
   tieCandidates: null,
   wantsRoutine: false,
   purchaseEmail: "",
+  verifiedEmail: "",
   accessStatus: "idle",
   accessMessage: "",
   premiumAccess: null,
@@ -53,13 +54,13 @@ export default function BuenasNochesApp() {
   }, [state]);
 
   useEffect(() => {
-    if (state.accessStatus !== "granted" || !state.purchaseEmail) return;
+    if (state.accessStatus !== "granted" || !state.verifiedEmail) return;
 
     let cancelled = false;
 
     async function loadMemberData() {
       try {
-        const response = await fetch(`/api/member-data?email=${encodeURIComponent(state.purchaseEmail)}`);
+        const response = await fetch(`/api/member-data?email=${encodeURIComponent(state.verifiedEmail)}`);
         const payload = await response.json();
         if (!response.ok || cancelled) return;
 
@@ -94,14 +95,14 @@ export default function BuenasNochesApp() {
     return () => {
       cancelled = true;
     };
-  }, [state.accessStatus, state.purchaseEmail]);
+  }, [state.accessStatus, state.verifiedEmail]);
 
   useEffect(() => {
     if (
       state.accessStatus !== "granted" ||
-      !state.purchaseEmail ||
+      !state.verifiedEmail ||
       !state.result ||
-      state.savedQuizForEmail === state.purchaseEmail
+      state.savedQuizForEmail === state.verifiedEmail
     ) {
       return;
     }
@@ -117,7 +118,7 @@ export default function BuenasNochesApp() {
           },
           body: JSON.stringify({
             type: "quiz_result",
-            email: state.purchaseEmail,
+            email: state.verifiedEmail,
             answers: state.answers,
             primaryProfile: state.result.primary,
             secondaryProfile: state.result.secondary,
@@ -128,7 +129,7 @@ export default function BuenasNochesApp() {
 
         setState((current) => ({
           ...current,
-          savedQuizForEmail: current.purchaseEmail,
+          savedQuizForEmail: current.verifiedEmail,
           persistenceMessage: "Ya guardé tu resultado y tu progreso en tu cuenta.",
         }));
       } catch {
@@ -140,7 +141,7 @@ export default function BuenasNochesApp() {
     return () => {
       cancelled = true;
     };
-  }, [state.accessStatus, state.purchaseEmail, state.result, state.answers, state.savedQuizForEmail]);
+  }, [state.accessStatus, state.verifiedEmail, state.result, state.answers, state.savedQuizForEmail]);
 
   const hasStarted = state.quizIndex >= 0 || state.result;
   const chartPoints = buildChartPoints(state.logs);
@@ -224,8 +225,11 @@ export default function BuenasNochesApp() {
       if (!payload.hasAccess) {
         setState((current) => ({
           ...current,
+          verifiedEmail: "",
           accessStatus: "not_found",
           premiumAccess: null,
+          currentPlan: null,
+          logs: [],
           accessMessage:
             "Todavía no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
         }));
@@ -234,6 +238,7 @@ export default function BuenasNochesApp() {
 
       setState((current) => ({
         ...current,
+        verifiedEmail: email,
         accessStatus: "granted",
         premiumAccess: payload,
         accessMessage: "Compra verificada ✨ Ya puedes desbloquear tu rutina personalizada.",
@@ -241,8 +246,11 @@ export default function BuenasNochesApp() {
     } catch (error) {
       setState((current) => ({
         ...current,
+        verifiedEmail: "",
         accessStatus: "error",
         premiumAccess: null,
+        currentPlan: null,
+        logs: [],
         accessMessage: error.message || "No pude verificar tu compra en este momento.",
       }));
     }
@@ -261,7 +269,7 @@ export default function BuenasNochesApp() {
     });
     setState((current) => ({ ...current, currentPlan: plan }));
 
-    if (state.accessStatus === "granted" && state.purchaseEmail) {
+    if (state.accessStatus === "granted" && state.verifiedEmail) {
       try {
         await fetch("/api/member-data", {
           method: "POST",
@@ -270,7 +278,7 @@ export default function BuenasNochesApp() {
           },
           body: JSON.stringify({
             type: "daily_plan",
-            email: state.purchaseEmail,
+            email: state.verifiedEmail,
             wakeTime: plan.wakeTime,
             napTaken: state.routineRequest.napTaken === "yes",
             napWakeTime: state.routineRequest.napWakeTime || null,
@@ -331,7 +339,7 @@ export default function BuenasNochesApp() {
       dislikedByFunction,
     });
 
-    if (state.accessStatus === "granted" && state.purchaseEmail) {
+    if (state.accessStatus === "granted" && state.verifiedEmail) {
       try {
         await fetch("/api/member-data", {
           method: "POST",
@@ -340,7 +348,7 @@ export default function BuenasNochesApp() {
           },
           body: JSON.stringify({
             type: "nightly_log",
-            email: state.purchaseEmail,
+            email: state.verifiedEmail,
             logDate: nextLog.date,
             inBedAt: nextLog.bedTime,
             fellAsleepAt: nextLog.sleepTime,
@@ -515,7 +523,22 @@ export default function BuenasNochesApp() {
                     type="email"
                     placeholder="tuemail@ejemplo.com"
                     value={state.purchaseEmail}
-                    onChange={(event) => setState({ ...state, purchaseEmail: event.target.value })}
+                    onChange={(event) =>
+                      setState((current) => {
+                        const nextEmail = event.target.value;
+                        const normalized = nextEmail.trim().toLowerCase();
+                        const isSameVerified = normalized && normalized === current.verifiedEmail;
+                        return {
+                          ...current,
+                          purchaseEmail: nextEmail,
+                          accessStatus: isSameVerified ? current.accessStatus : "idle",
+                          accessMessage: isSameVerified ? current.accessMessage : "",
+                          premiumAccess: isSameVerified ? current.premiumAccess : null,
+                          persistenceMessage: isSameVerified ? current.persistenceMessage : "",
+                          currentPlan: isSameVerified ? current.currentPlan : null,
+                        };
+                      })
+                    }
                     required
                   />
                 </label>
@@ -543,7 +566,7 @@ export default function BuenasNochesApp() {
                 <p>
                   <strong>Perfecto ✨</strong>
                 </p>
-                <p>Correo listo: {state.purchaseEmail}</p>
+                <p>Correo verificado: {state.verifiedEmail}</p>
                 <p className="muted">{state.accessMessage}</p>
                 {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
               </div>
