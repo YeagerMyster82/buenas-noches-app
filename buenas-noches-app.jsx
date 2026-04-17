@@ -22,6 +22,8 @@ const initialState = {
   accessStatus: "idle",
   accessMessage: "",
   premiumAccess: null,
+  savedQuizForEmail: "",
+  persistenceMessage: "",
   routineRequest: {
     age: "",
     wakeTime: "",
@@ -49,6 +51,96 @@ export default function BuenasNochesApp() {
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    if (state.accessStatus !== "granted" || !state.purchaseEmail) return;
+
+    let cancelled = false;
+
+    async function loadMemberData() {
+      try {
+        const response = await fetch(`/api/member-data?email=${encodeURIComponent(state.purchaseEmail)}`);
+        const payload = await response.json();
+        if (!response.ok || cancelled) return;
+
+        setState((current) => ({
+          ...current,
+          logs:
+            payload.nightlyLogs?.map((entry) => ({
+              date: entry.log_date,
+              bedTime: entry.in_bed_at,
+              sleepTime: entry.fell_asleep_at,
+              latency: entry.sleep_latency_minutes,
+              notes: entry.notes || "",
+              ratings: entry.ratings || [],
+            })) || current.logs,
+          currentPlan: payload.latestDailyPlan
+            ? {
+                ...(current.currentPlan || {}),
+                wakeTime: payload.latestDailyPlan.wake_time,
+                bedtime: payload.latestDailyPlan.bedtime,
+                dinnerTime: payload.latestDailyPlan.dinner_time,
+                routineStart: payload.latestDailyPlan.routine_start,
+                steps: payload.latestDailyPlan.steps || [],
+              }
+            : current.currentPlan,
+        }));
+      } catch {
+        return;
+      }
+    }
+
+    loadMemberData();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.accessStatus, state.purchaseEmail]);
+
+  useEffect(() => {
+    if (
+      state.accessStatus !== "granted" ||
+      !state.purchaseEmail ||
+      !state.result ||
+      state.savedQuizForEmail === state.purchaseEmail
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function persistQuizResult() {
+      try {
+        const response = await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "quiz_result",
+            email: state.purchaseEmail,
+            answers: state.answers,
+            primaryProfile: state.result.primary,
+            secondaryProfile: state.result.secondary,
+          }),
+        });
+
+        if (!response.ok || cancelled) return;
+
+        setState((current) => ({
+          ...current,
+          savedQuizForEmail: current.purchaseEmail,
+          persistenceMessage: "Ya guardé tu resultado y tu progreso en tu cuenta.",
+        }));
+      } catch {
+        return;
+      }
+    }
+
+    persistQuizResult();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.accessStatus, state.purchaseEmail, state.result, state.answers, state.savedQuizForEmail]);
 
   const hasStarted = state.quizIndex >= 0 || state.result;
   const chartPoints = buildChartPoints(state.logs);
@@ -156,7 +248,7 @@ export default function BuenasNochesApp() {
     }
   }
 
-  function generateRoutine(event) {
+  async function generateRoutine(event) {
     event.preventDefault();
     const plan = buildPlan({
       primaryProfile: state.result.primary,
@@ -167,10 +259,34 @@ export default function BuenasNochesApp() {
       napWakeTime: state.routineRequest.napWakeTime,
       dislikedByFunction: state.dislikedByFunction,
     });
-    setState({ ...state, currentPlan: plan });
+    setState((current) => ({ ...current, currentPlan: plan }));
+
+    if (state.accessStatus === "granted" && state.purchaseEmail) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "daily_plan",
+            email: state.purchaseEmail,
+            wakeTime: plan.wakeTime,
+            napTaken: state.routineRequest.napTaken === "yes",
+            napWakeTime: state.routineRequest.napWakeTime || null,
+            dinnerTime: plan.dinnerTime,
+            routineStart: plan.routineStart,
+            bedtime: plan.bedtime,
+            steps: plan.steps,
+          }),
+        });
+      } catch {
+        return;
+      }
+    }
   }
 
-  function submitNightLog(event) {
+  async function submitNightLog(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const bedTime = formData.get("bedTime");
@@ -214,6 +330,34 @@ export default function BuenasNochesApp() {
       logs,
       dislikedByFunction,
     });
+
+    if (state.accessStatus === "granted" && state.purchaseEmail) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nightly_log",
+            email: state.purchaseEmail,
+            logDate: nextLog.date,
+            inBedAt: nextLog.bedTime,
+            fellAsleepAt: nextLog.sleepTime,
+            sleepLatencyMinutes: nextLog.latency,
+            notes: nextLog.notes,
+            ratings: nextLog.ratings,
+          }),
+        });
+
+        setState((current) => ({
+          ...current,
+          persistenceMessage: "Guardé esta noche en Supabase para que puedas verla después en cualquier dispositivo.",
+        }));
+      } catch {
+        return;
+      }
+    }
   }
 
   const safetyTriggered = state.logs[0]?.notes
@@ -401,6 +545,7 @@ export default function BuenasNochesApp() {
                 </p>
                 <p>Correo listo: {state.purchaseEmail}</p>
                 <p className="muted">{state.accessMessage}</p>
+                {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
               </div>
             )}
           </article>
