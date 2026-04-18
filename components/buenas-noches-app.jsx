@@ -19,6 +19,7 @@ import {
 } from "../lib/routine";
 
 const storageKey = "buenas-noches-webapp-v3";
+const SALES_FUNNEL_URL = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
 
 const copy = {
   es: {
@@ -763,7 +764,22 @@ export default function BuenasNochesApp() {
             </label>
           </div>
 
-          <div className="gate-grid">
+          <nav className="section-tabs">
+            {sectionTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={state.activeSection === tab.id ? "section-tab is-active" : "section-tab"}
+                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {state.activeSection === "home" ? (
+            <>
+              <div className="gate-grid">
             <article className="card card--feature">
               <span className="section-label">Lo que vas a desbloquear</span>
               <h2>Un dashboard real para cada hijo</h2>
@@ -806,7 +822,156 @@ export default function BuenasNochesApp() {
                 </button>
               </form>
             </article>
-          </div>
+              </div>
+
+              <article className="card card--feature">
+            <div className="card-header">
+              <span className="section-label">{strings.newChild}</span>
+              <h2>{strings.createProfileFirst}</h2>
+            </div>
+
+            {state.quizIndex === -1 && !state.quizResult ? (
+              <form className="stack" onSubmit={beginQuiz}>
+                <p className="lead-copy">
+                  {state.language === "es"
+                    ? "Puedes usar esta parte gratis para descubrir el perfil de sueno de tu hijo. Despues, si quieres, desbloqueas el dashboard completo."
+                    : "You can use this part for free to discover your child's sleep profile. Then, if you want, you can unlock the full dashboard."}
+                </p>
+                <label className="stack compact">
+                  <span>{strings.childName}</span>
+                  <input
+                    type="text"
+                    value={state.childDraft.name}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        childDraft: { ...current.childDraft, name: event.target.value },
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label className="stack compact">
+                  <span>{strings.birthday}</span>
+                  <input
+                    type="date"
+                    value={state.childDraft.birthday}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        childDraft: { ...current.childDraft, birthday: event.target.value },
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <button className="button button-primary" type="submit">
+                  {strings.startQuiz}
+                </button>
+              </form>
+            ) : null}
+
+            {state.quizIndex >= 0 && state.quizIndex < questions.length ? (
+              <div className="stack">
+                <div className="progress-row">
+                  <strong>
+                    {strings.question} {state.quizIndex + 1} {strings.of} {questions.length}
+                  </strong>
+                  <div className="progress-track">
+                    <div
+                      className="progress-bar"
+                      style={{ width: `${((state.quizIndex + 1) / questions.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <h3>{questions[state.quizIndex].prompt}</h3>
+                <div className="stack">
+                  {questions[state.quizIndex].options.map((option) => (
+                    <button
+                      key={`${questions[state.quizIndex].id}-${option.key}`}
+                      className="answer"
+                      type="button"
+                      onClick={() => answerQuestion(option)}
+                    >
+                      <span className="answer__badge">{option.key}</span>
+                      <span className="answer__text">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {state.tieCandidates ? (
+              <div className="stack">
+                <p>
+                  {state.language === "es"
+                    ? "Estoy viendo una mezcla entre dos patrones."
+                    : "I am seeing a mix of two patterns."}
+                </p>
+                <p>
+                  <strong>
+                    {state.language === "es"
+                      ? "De estas dos opciones, cual sientes que describe mas a tu hijo en este momento?"
+                      : "Out of these two options, which one feels more true for your child right now?"}
+                  </strong>
+                </p>
+                {state.tieCandidates.map((code) => (
+                  <button key={code} className="button button-secondary" type="button" onClick={() => chooseTieWinner(code)}>
+                    {profileMap[code].name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {resultCopy ? (
+              <div className="stack">
+                <div className="result-banner">
+                  <p>Listo 💛</p>
+                  <p>
+                    {state.childDraft.name} {strings.childFitsProfile}
+                  </p>
+                  <h3>👉 {resultCopy.primaryName}</h3>
+                  <p>{resultCopy.reassurance}</p>
+                </div>
+                <div className="content-block">
+                  <p>{resultCopy.primaryDescription}</p>
+                  <p>{resultCopy.framework}</p>
+                </div>
+                {resultCopy.secondaryName ? (
+                  <p className="content-note">
+                    {state.language === "es"
+                      ? `Tambien veo rasgos de ${resultCopy.secondaryName}, asi que puede haber una mezcla de patrones.`
+                      : `I also see traits of ${resultCopy.secondaryName}, so there may be a mixed pattern.`}
+                  </p>
+                ) : null}
+                <div className="inline-actions">
+                  <button className="button button-primary" type="button" onClick={saveChildProfile}>
+                    {state.language === "es" ? "Guardar perfil gratis" : "Save free profile"}
+                  </button>
+                  <button className="button button-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                    {state.language === "es" ? "Desbloquear dashboard" : "Unlock dashboard"}
+                  </button>
+                </div>
+                </div>
+              ) : null}
+              </article>
+            </>
+          ) : (
+            <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
+          )}
+
+          <nav className="bottom-nav">
+            {sectionTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={state.activeSection === tab.id ? "bottom-nav__item is-active" : "bottom-nav__item"}
+                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </section>
       ) : (
         <>
@@ -1411,6 +1576,80 @@ function AvoidSection({ strings, language }) {
             </div>
           </details>
         ))}
+      </div>
+    </article>
+  );
+}
+
+function LockedPreviewCard({ activeSection, language }) {
+  const labels = {
+    home: language === "es" ? "Inicio" : "Home",
+    routine: language === "es" ? "Rutina de esta noche" : "Tonight's routine",
+    videos: language === "es" ? "Biblioteca de videos" : "Video library",
+    "sleep-area": language === "es" ? "Area de sueno" : "Sleep space",
+    avoid: language === "es" ? "Que evitar" : "What to avoid",
+  };
+
+  return (
+    <article className="card card--feature">
+      <div className="card-header">
+        <span className="section-label">{language === "es" ? "Vista previa" : "Preview"}</span>
+        <h2>{labels[activeSection] || labels.home}</h2>
+      </div>
+      <p className="lead-copy">
+        {language === "es"
+          ? "Asi se ve esta seccion dentro de la app completa. Puedes explorar el shell, pero esta parte se desbloquea con la compra."
+          : "This is how this section looks inside the full app. You can explore the shell, but this part unlocks with purchase."}
+      </p>
+      <div className="preview-grid">
+        <div className="preview-block">
+          <strong>{language === "es" ? "Lo que encontraras aqui" : "What you'll find here"}</strong>
+          <ul className="mini-list">
+            <li>
+              {activeSection === "routine"
+                ? language === "es"
+                  ? "Rutina personalizada por perfil y edad"
+                  : "Personalized routine by profile and age"
+                : null}
+              {activeSection === "videos"
+                ? language === "es"
+                  ? "Videos por actividad para seguir paso a paso"
+                  : "Videos by activity to follow step by step"
+                : null}
+              {activeSection === "sleep-area"
+                ? language === "es"
+                  ? "Checklist rapido del cuarto y su impacto"
+                  : "Quick room checklist and its impact"
+                : null}
+              {activeSection === "avoid"
+                ? language === "es"
+                  ? "Lista clara de lo que mas interfiere con el sueno"
+                  : "Clear list of what most interferes with sleep"
+                : null}
+            </li>
+            <li>
+              {language === "es"
+                ? "Guardado del progreso en tu cuenta"
+                : "Progress saved to your account"}
+            </li>
+            <li>
+              {language === "es"
+                ? "Experiencia completa por hijo"
+                : "Full experience for each child"}
+            </li>
+          </ul>
+        </div>
+        <div className="preview-lock">
+          <strong>{language === "es" ? "Funcion premium" : "Premium feature"}</strong>
+          <p>
+            {language === "es"
+              ? "Desbloquea esta seccion para usar el dashboard completo, la rutina de esta noche y el seguimiento."
+              : "Unlock this section to use the full dashboard, tonight's routine, and progress tracking."}
+          </p>
+          <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+            {language === "es" ? "Ir al curso y desbloquear" : "Go to the course and unlock"}
+          </a>
+        </div>
       </div>
     </article>
   );
