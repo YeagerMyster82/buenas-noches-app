@@ -38,6 +38,11 @@ const initialState = {
 
 export default function BuenasNochesApp() {
   const [state, setState] = useState(initialState);
+  const [installPromptEvent, setInstallPromptEvent] = useState(null);
+  const [installState, setInstallState] = useState({
+    visible: false,
+    mode: "browser",
+  });
 
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
@@ -52,6 +57,37 @@ export default function BuenasNochesApp() {
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+
+    const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+
+    function handleBeforeInstallPrompt(event) {
+      event.preventDefault();
+      setInstallPromptEvent(event);
+      setInstallState({
+        visible: !isStandalone,
+        mode: "android",
+      });
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    if (isIos && !isStandalone) {
+      setInstallState({
+        visible: true,
+        mode: "ios",
+      });
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     if (state.accessStatus !== "granted" || !state.verifiedEmail) return;
@@ -379,8 +415,42 @@ export default function BuenasNochesApp() {
       ? Math.round(state.logs.reduce((sum, entry) => sum + entry.latency, 0) / state.logs.length)
       : 0;
 
+  async function handleInstallApp() {
+    if (!installPromptEvent) return;
+    await installPromptEvent.prompt();
+    setInstallPromptEvent(null);
+    setInstallState((current) => ({ ...current, visible: false }));
+  }
+
   return (
     <main className="shell">
+      {installState.visible ? (
+        <section className="install-banner">
+          <div className="install-banner__copy">
+            <span className="section-label">Modo app</span>
+            <strong>Guárdala en tu pantalla de inicio</strong>
+            <p>
+              {installState.mode === "ios"
+                ? "En iPhone toca compartir y luego “Agregar a pantalla de inicio” para usar Buenas Noches como app."
+                : "Instálala en tu pantalla de inicio para abrir Buenas Noches como una app real, sin distracciones del navegador."}
+            </p>
+          </div>
+          <div className="install-banner__actions">
+            {installState.mode === "android" ? (
+              <button className="button button-secondary" onClick={handleInstallApp}>
+                Instalar app
+              </button>
+            ) : null}
+            <button
+              className="button button-ghost"
+              onClick={() => setInstallState((current) => ({ ...current, visible: false }))}
+            >
+              Ahora no
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section className="hero">
         <div className="hero-overlay" />
         <div className="hero-copy">
