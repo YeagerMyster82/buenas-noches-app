@@ -104,12 +104,13 @@ img {
   gap: 18px;
 }
 
-.gate-shell > .card--quiz {
-  order: 1;
-}
-
-.gate-shell > .gate-grid {
-  order: 2;
+.card--quiz {
+  position: fixed;
+  inset: 5vh max(18px, calc((100vw - 760px) / 2)) auto;
+  z-index: 40;
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 0 0 9999px rgba(31, 48, 68, 0.52), var(--shadow);
 }
 
 .gate-header,
@@ -590,8 +591,58 @@ textarea {
   gap: 10px;
 }
 
+.chart-panel svg {
+  width: 100%;
+  min-height: 220px;
+}
+
+.chart-axis {
+  stroke: rgba(31, 48, 68, 0.18);
+}
+
+.chart-bar {
+  fill: rgba(169, 216, 221, 0.42);
+}
+
+.chart-line {
+  stroke: var(--night-soft);
+}
+
+.chart-dot {
+  fill: var(--moon);
+  stroke: var(--night-deep);
+  stroke-width: 2;
+}
+
+.chart-label {
+  fill: rgba(31, 48, 68, 0.62);
+}
+
+.chart-panel--empty {
+  opacity: 0.82;
+}
+
 .chart-panel p {
   margin: 0;
+}
+
+.save-confirmation {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(169, 216, 221, 0.18);
+  color: #1c5360;
+}
+
+.save-confirmation p {
+  margin: 0;
+}
+
+.account-capture {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(31, 48, 68, 0.04);
 }
 
 .history-card {
