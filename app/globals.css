@@ -1,0 +1,362 @@
+:root {
+  --night: #1f3044;
+  --night-soft: #27384c;
+  --sky: #5c7b84;
+  --aqua: #a9d8dd;
+  --cream: #f4e7b2;
+  --mist: #f6f0e6;
+  --blush: #f3e4de;
+  --slate: #445874;
+  --ink: #152332;
+  --border: rgba(68, 88, 116, 0.16);
+  --shadow: 0 24px 50px rgba(14, 22, 36, 0.16);
+  --radius-xl: 30px;
+  --radius-lg: 22px;
+  --radius-md: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: linear-gradient(180deg, #182536 0%, #21344a 36%, #f6f0e6 100%);
+  color: #f9f7f3;
+  font-family: Arial, sans-serif;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+body {
+  background-image: radial-gradient(circle at top, rgba(169, 216, 221, 0.15), transparent 28%);
+}
+
+.shell {
+  min-height: 100vh;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 48px 16px 0;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(31, 48, 68, 0.75), rgba(31, 48, 68, 0.94)),
+    url("/brand/cielo-buenas-noches.png") top center / cover no-repeat;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
+
+.hero-copy,
+.hero-animals {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-copy {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 0 0 240px;
+}
+
+.brand-logo {
+  width: min(420px, 78vw);
+}
+
+.hero h1,
+.card h2,
+.card h3 {
+  color: inherit;
+  font-family: "Trebuchet MS", "Arial Rounded MT Bold", sans-serif;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.hero h1 {
+  max-width: 700px;
+  margin-top: 18px;
+  font-size: clamp(2.6rem, 5vw, 4.6rem);
+}
+
+.hero p {
+  max-width: 640px;
+  color: rgba(249, 247, 243, 0.84);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.hero-animals {
+  width: min(1220px, 110%);
+  margin: -180px auto 0;
+}
+
+.eyebrow,
+.section-label,
+.pill {
+  display: inline-flex;
+  width: fit-content;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+}
+
+.eyebrow {
+  margin-top: 16px;
+  background: rgba(244, 231, 178, 0.16);
+  color: var(--cream);
+}
+
+.grid {
+  width: min(1180px, calc(100% - 24px));
+  margin: -120px auto 64px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+}
+
+.card {
+  background: rgba(249, 247, 243, 0.96);
+  color: var(--ink);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.main-card {
+  grid-row: span 2;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.card-header {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.section-label {
+  background: rgba(92, 123, 132, 0.12);
+  color: var(--sky);
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.compact {
+  gap: 8px;
+}
+
+.sidebar {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(68, 88, 116, 0.14);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--aqua), var(--cream));
+}
+
+.answer,
+.button {
+  border: 0;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.answer:hover,
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.answer {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  text-align: left;
+  align-items: start;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.answer strong {
+  color: var(--sky);
+}
+
+.button {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-weight: 700;
+}
+
+.button-primary {
+  background: var(--cream);
+  color: var(--night);
+}
+
+.button-secondary {
+  background: var(--aqua);
+  color: var(--night);
+}
+
+.button-ghost {
+  background: rgba(92, 123, 132, 0.12);
+  color: var(--night);
+}
+
+.inline-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-banner,
+.chart-panel {
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  color: #f9f7f3;
+  background:
+    linear-gradient(rgba(31, 48, 68, 0.94), rgba(31, 48, 68, 0.97)),
+    url("/brand/fondo-buenas-noches.png") center / cover no-repeat;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.stat-card,
+.step-card,
+.rating-card,
+.history-card {
+  border-radius: var(--radius-lg);
+  background: rgba(68, 88, 116, 0.07);
+  padding: 16px;
+}
+
+.stat-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--sky);
+}
+
+.step-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  background: rgba(169, 216, 221, 0.22);
+  color: var(--slate);
+  font-weight: 700;
+}
+
+.muted {
+  color: rgba(21, 35, 50, 0.68);
+}
+
+.status-message {
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 0;
+}
+
+.status-success {
+  background: #dff3e7;
+  color: #1c5d38;
+}
+
+.status-warning {
+  background: #f9ebcf;
+  color: #76510f;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.safety-card {
+  margin-top: 16px;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: #f8dddd;
+  color: #6b2323;
+}
+
+svg {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-card {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-copy {
+    padding-bottom: 170px;
+  }
+
+  .hero-animals {
+    width: 170%;
+    max-width: none;
+    margin-left: -28%;
+    margin-top: -130px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+}
