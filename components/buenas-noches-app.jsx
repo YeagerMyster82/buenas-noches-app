@@ -30,8 +30,8 @@ const copy = {
       "sleep-area": "Area de sueno",
       avoid: "Que evitar",
     },
-    addChild: "Agregar nino",
-    slotsFull: "Slots completos",
+    addChild: "Agregar perfil",
+    slotsFull: "Perfiles completos",
     premiumDashboard: "Dashboard premium",
     gateTitle: "Tu espacio para dejar de adivinar",
     verifyPurchase: "Verifica tu compra",
@@ -42,6 +42,17 @@ const copy = {
     createProfileFirst: "Creamos su perfil primero",
     childName: "Nombre del nino",
     birthday: "Fecha de nacimiento",
+    gender: "Genero",
+    boy: "Nino",
+    girl: "Nina",
+    parentName: "Nombre",
+    parentEmail: "Email",
+    seeChildProfile: "Ver el perfil de mi hijo",
+    freeAccountTitle: "¡Ya identificamos el perfil de tu hijo!",
+    freeAccountCopy: "Crea tu cuenta gratis para ver el resultado y guardar su perfil de sueño para siempre.",
+    freeAccountMemory: "Así la app recuerda a tu hijo cada vez que la abres.",
+    freeAccountNoSpam: "Sin spam. Solo lo que necesitas para ayudar a tu hijo a dormir mejor.",
+    previousQuestion: "Pregunta anterior",
     startQuiz: "Empezar quiz",
     question: "Pregunta",
     of: "de",
@@ -93,17 +104,28 @@ const copy = {
       avoid: "Avoid",
     },
     addChild: "Add child",
-    slotsFull: "All slots used",
+    slotsFull: "All profiles used",
     premiumDashboard: "Premium dashboard",
     gateTitle: "Your place to stop guessing",
     verifyPurchase: "Verify your purchase",
     usedPurchaseEmail: "Email used at checkout",
-    enterApp: "Enter my app",
+    enterApp: "Purchase premium",
     verifying: "Verifying...",
     newChild: "New child",
     createProfileFirst: "Let's create their profile first",
     childName: "Child's name",
     birthday: "Birthday",
+    gender: "Gender",
+    boy: "Boy",
+    girl: "Girl",
+    parentName: "Name",
+    parentEmail: "Email",
+    seeChildProfile: "See my child's profile",
+    freeAccountTitle: "We identified your child's sleep profile!",
+    freeAccountCopy: "Create your free account to see the result and save their sleep profile forever.",
+    freeAccountMemory: "That way the app remembers your child every time you open it.",
+    freeAccountNoSpam: "No spam. Only what you need to help your child sleep better.",
+    previousQuestion: "Previous question",
     startQuiz: "Start quiz",
     question: "Question",
     of: "of",
@@ -225,12 +247,16 @@ const initialState = {
   accessMessage: "",
   premiumAccess: null,
   persistenceMessage: "",
+  parentName: "",
+  parentEmail: "",
+  parentProfileSaved: false,
   children: [],
   activeChildId: "",
   activeSection: "home",
   childDraft: {
     name: "",
     birthday: "",
+    gender: "boy",
   },
   onboardingMode: "new-child",
   quizIndex: -1,
@@ -246,10 +272,32 @@ const initialState = {
   },
   currentPlan: null,
   expandedSwapStep: "",
+  savedLogDate: "",
 };
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function genderize(value, gender) {
+  if (gender !== "girl" || !value) return value;
+  return value
+    .replaceAll("tu hijo", "tu hija")
+    .replaceAll("Tu hijo", "Tu hija")
+    .replaceAll("su hijo", "su hija")
+    .replaceAll("Su hijo", "Su hija")
+    .replaceAll("el niño", "la niña")
+    .replaceAll("El niño", "La niña")
+    .replaceAll("un niño", "una niña")
+    .replaceAll("Un niño", "Una niña")
+    .replaceAll("niño", "niña")
+    .replaceAll("Niño", "Niña")
+    .replaceAll("hijo", "hija")
+    .replaceAll("Hijo", "Hija");
+}
+
+function childNoun(gender) {
+  return gender === "girl" ? "hija" : "hijo";
 }
 
 function makeEmptyChild(childDraft) {
@@ -257,6 +305,7 @@ function makeEmptyChild(childDraft) {
     id: generateId(),
     name: childDraft.name.trim(),
     birthday: childDraft.birthday,
+    gender: childDraft.gender || "boy",
     primaryProfile: "",
     secondaryProfile: "",
     answers: [],
@@ -374,7 +423,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "new-child",
-      childDraft: { name: "", birthday: "" },
+      childDraft: { name: "", birthday: "", gender: "boy" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
@@ -386,7 +435,7 @@ export default function BuenasNochesApp() {
 
   function beginQuiz(event) {
     event.preventDefault();
-    if (!state.childDraft.name.trim() || !state.childDraft.birthday) return;
+    if (!state.childDraft.name.trim() || !state.childDraft.birthday || !state.childDraft.gender) return;
     setState((current) => ({
       ...current,
       quizIndex: 0,
@@ -422,6 +471,18 @@ export default function BuenasNochesApp() {
     setState((current) => ({ ...current, answers: nextAnswers, quizIndex: nextIndex }));
   }
 
+  function goBackQuestion() {
+    setState((current) => {
+      if (current.quizIndex <= 0) return current;
+      return {
+        ...current,
+        quizIndex: current.quizIndex - 1,
+        answers: current.answers.slice(0, -1),
+        tieCandidates: null,
+      };
+    });
+  }
+
   function chooseTieWinner(code) {
     const scored = scoreAnswers(state.answers);
     const secondary = state.tieCandidates.find((candidate) => candidate !== code) || null;
@@ -432,8 +493,13 @@ export default function BuenasNochesApp() {
     }));
   }
 
-  async function saveChildProfile() {
+  async function saveChildProfile(event) {
+    event?.preventDefault();
     if (!state.quizResult) return;
+    const needsParentInfo = !state.parentProfileSaved;
+    const parentName = state.parentName.trim();
+    const parentEmail = state.parentEmail.trim().toLowerCase();
+    if (needsParentInfo && (!parentName || !parentEmail)) return;
 
     const child = {
       ...makeEmptyChild(state.childDraft),
@@ -448,14 +514,42 @@ export default function BuenasNochesApp() {
       activeChildId: child.id,
       activeSection: "home",
       onboardingMode: "",
-      childDraft: { name: "", birthday: "" },
+      childDraft: { name: "", birthday: "", gender: "boy" },
+      parentName: parentName || current.parentName,
+      parentEmail: parentEmail || current.parentEmail,
+      parentProfileSaved: true,
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
       quizResult: null,
     }));
 
-    if (state.accessStatus === "granted" && state.verifiedEmail) {
+    const leadPayload = {
+      parentName: parentName || state.parentName,
+      email: parentEmail || state.parentEmail,
+      childName: child.name,
+      childBirthday: child.birthday,
+      childGender: child.gender,
+      childAge: formatAgeLabel(child.birthday, "es"),
+      sleepProfile: profileMap[child.primaryProfile]?.name || child.primaryProfile,
+      primaryProfile: child.primaryProfile,
+      secondaryProfile: child.secondaryProfile || null,
+    };
+
+    try {
+      await fetch("/api/free-profile-lead", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(leadPayload),
+      });
+    } catch {
+      // The profile is saved locally even if the external lead webhook is unavailable.
+    }
+
+    const profileSaveEmail = state.verifiedEmail || parentEmail || state.parentEmail;
+    if (profileSaveEmail) {
       try {
         await fetch("/api/member-data", {
           method: "POST",
@@ -464,9 +558,10 @@ export default function BuenasNochesApp() {
           },
           body: JSON.stringify({
             type: "quiz_result",
-            email: state.verifiedEmail,
+            email: profileSaveEmail,
             childName: child.name,
             childBirthday: child.birthday,
+            childGender: child.gender,
             answers: child.answers,
             primaryProfile: child.primaryProfile,
             secondaryProfile: child.secondaryProfile || null,
@@ -561,6 +656,7 @@ export default function BuenasNochesApp() {
       dinnerTime: state.routineForm.dinnerTime,
       napTaken: state.routineForm.napTaken === "yes",
       napWakeTime: state.routineForm.napWakeTime,
+      priorLogs: activeChild.logs,
       selectedActivities: activeChild.selectedActivities,
       dislikedCounts: activeChild.dislikedCounts,
     });
@@ -570,6 +666,7 @@ export default function BuenasNochesApp() {
       ...current,
       currentPlan: plan,
       expandedSwapStep: "",
+      savedLogDate: "",
     }));
 
     if (state.accessStatus === "granted" && state.verifiedEmail) {
@@ -623,6 +720,7 @@ export default function BuenasNochesApp() {
         dinnerTime: current.routineForm.dinnerTime,
         napTaken: current.routineForm.napTaken === "yes",
         napWakeTime: current.routineForm.napWakeTime,
+        priorLogs: child.logs,
         selectedActivities: nextSelectedActivities,
         dislikedCounts: child.dislikedCounts,
       });
@@ -701,10 +799,11 @@ export default function BuenasNochesApp() {
     event.currentTarget.reset();
     setState((current) => ({
       ...current,
+      savedLogDate: nextLog.date,
       persistenceMessage:
         current.language === "es"
-          ? "Resultados guardados. Ya puedes ver esta noche en el progreso."
-          : "Results saved. You can now see this night in progress.",
+          ? "Guardado. Esta noche quedo registrado exitosamente."
+          : "Saved. Tonight was registered successfully.",
     }));
 
     if (state.accessStatus === "granted" && state.verifiedEmail) {
@@ -730,7 +829,8 @@ export default function BuenasNochesApp() {
 
         setState((current) => ({
           ...current,
-          persistenceMessage: "Guardado. Esta noche ya quedo registrada en tu cuenta.",
+          savedLogDate: nextLog.date,
+          persistenceMessage: "Guardado. Esta noche quedo registrado exitosamente.",
         }));
       } catch {
         return;
@@ -828,6 +928,9 @@ export default function BuenasNochesApp() {
                 <li>{state.language === "es" ? "Area de sueno y lista de que evitar" : "Sleep space and what to avoid sections"}</li>
                 <li>{state.language === "es" ? "Opcion de agregar ninos extra con tu add-on de Captivation Hub" : "Ability to add extra children through your Captivation Hub add-on"}</li>
               </ul>
+              <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+                {state.language === "es" ? "Comprar premium" : "Purchase premium"}
+              </a>
             </article>
 
             <article className="card card--soft">
@@ -856,7 +959,7 @@ export default function BuenasNochesApp() {
                   </p>
                 ) : null}
                 <button className="button button-primary" type="submit" disabled={state.accessStatus === "loading"}>
-                  {state.accessStatus === "loading" ? strings.verifying : strings.enterApp}
+                  {state.accessStatus === "loading" ? strings.verifying : strings.verifyPurchase}
                 </button>
               </form>
             </article>
@@ -903,6 +1006,22 @@ export default function BuenasNochesApp() {
                     required
                   />
                 </label>
+                <label className="stack compact">
+                  <span>{strings.gender}</span>
+                  <select
+                    value={state.childDraft.gender}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        childDraft: { ...current.childDraft, gender: event.target.value },
+                      }))
+                    }
+                    required
+                  >
+                    <option value="boy">{strings.boy}</option>
+                    <option value="girl">{strings.girl}</option>
+                  </select>
+                </label>
                 <button className="button button-primary" type="submit">
                   {strings.startQuiz}
                 </button>
@@ -922,7 +1041,7 @@ export default function BuenasNochesApp() {
                     />
                   </div>
                 </div>
-                <h3>{questions[state.quizIndex].prompt}</h3>
+                <h3>{genderize(questions[state.quizIndex].prompt, state.childDraft.gender)}</h3>
                 <div className="stack">
                   {questions[state.quizIndex].options.map((option) => (
                     <button
@@ -932,10 +1051,15 @@ export default function BuenasNochesApp() {
                       onClick={() => answerQuestion(option)}
                     >
                       <span className="answer__badge">{option.key}</span>
-                      <span className="answer__text">{option.label}</span>
+                      <span className="answer__text">{genderize(option.label, state.childDraft.gender)}</span>
                     </button>
                   ))}
                 </div>
+                {state.quizIndex > 0 ? (
+                  <button className="button button-ghost" type="button" onClick={goBackQuestion}>
+                    {strings.previousQuestion}
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -963,33 +1087,65 @@ export default function BuenasNochesApp() {
 
             {resultCopy ? (
               <div className="stack">
-                <div className="result-banner">
-                  <p>Listo 💛</p>
-                  <p>
-                    {state.childDraft.name} {strings.childFitsProfile}
-                  </p>
-                  <h3>👉 {resultCopy.primaryName}</h3>
-                  <p>{resultCopy.reassurance}</p>
+                <div className="result-banner result-banner--light">
+                  <p>{genderize(strings.freeAccountTitle, state.childDraft.gender)}</p>
+                  {state.parentProfileSaved ? (
+                    <>
+                      <p>
+                        {state.childDraft.name} {strings.childFitsProfile}
+                      </p>
+                      <h3>👉 {resultCopy.primaryName}</h3>
+                      <p>{resultCopy.reassurance}</p>
+                    </>
+                  ) : null}
                 </div>
-                <div className="content-block">
-                  <p>{resultCopy.primaryDescription}</p>
-                  <p>{resultCopy.framework}</p>
-                </div>
-                {resultCopy.secondaryName ? (
-                  <p className="content-note">
-                    {state.language === "es"
-                      ? `Tambien veo rasgos de ${resultCopy.secondaryName}, asi que puede haber una mezcla de patrones.`
-                      : `I also see traits of ${resultCopy.secondaryName}, so there may be a mixed pattern.`}
-                  </p>
-                ) : null}
-                <div className="inline-actions">
-                  <button className="button button-primary" type="button" onClick={saveChildProfile}>
-                    {state.language === "es" ? "Guardar perfil gratis" : "Save free profile"}
-                  </button>
-                  <button className="button button-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-                    {state.language === "es" ? "Desbloquear dashboard" : "Unlock dashboard"}
-                  </button>
-                </div>
+                {state.parentProfileSaved ? (
+                  <>
+                    <div className="content-block content-block--light">
+                      <p>{genderize(resultCopy.primaryDescription, state.childDraft.gender)}</p>
+                      <p>{genderize(resultCopy.framework, state.childDraft.gender)}</p>
+                    </div>
+                    {resultCopy.secondaryName ? (
+                      <p className="content-note">
+                        {state.language === "es"
+                          ? `Tambien veo rasgos de ${resultCopy.secondaryName}, asi que puede haber una mezcla de patrones.`
+                          : `I also see traits of ${resultCopy.secondaryName}, so there may be a mixed pattern.`}
+                      </p>
+                    ) : null}
+                    <button className="button button-primary" type="button" onClick={saveChildProfile}>
+                      {state.language === "es" ? "Guardar este perfil" : "Save this profile"}
+                    </button>
+                  </>
+                ) : (
+                  <form className="stack account-capture" onSubmit={saveChildProfile}>
+                    <div className="content-block content-block--light">
+                      <p>{genderize(strings.freeAccountCopy, state.childDraft.gender)}</p>
+                      <p>{genderize(strings.freeAccountMemory, state.childDraft.gender)}</p>
+                    </div>
+                    <label className="stack compact">
+                      <span>{strings.parentName}</span>
+                      <input
+                        type="text"
+                        value={state.parentName}
+                        onChange={(event) => setState((current) => ({ ...current, parentName: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label className="stack compact">
+                      <span>{strings.parentEmail}</span>
+                      <input
+                        type="email"
+                        value={state.parentEmail}
+                        onChange={(event) => setState((current) => ({ ...current, parentEmail: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <button className="button button-primary" type="submit">
+                      {genderize(strings.seeChildProfile, state.childDraft.gender)} →
+                    </button>
+                    <p className="muted">{genderize(strings.freeAccountNoSpam, state.childDraft.gender)}</p>
+                  </form>
+                )}
                 </div>
               ) : null}
               </article>
@@ -1066,7 +1222,7 @@ export default function BuenasNochesApp() {
                         {state.accessStatus === "loading" ? strings.verifying : strings.enterApp}
                       </button>
                       <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
-                        {state.language === "es" ? "Ir al curso" : "Go to the course"}
+                        {state.language === "es" ? "Comprar premium" : "Purchase premium"}
                       </a>
                     </div>
                   </form>
@@ -1148,7 +1304,7 @@ export default function BuenasNochesApp() {
 
           {!state.children.length || state.onboardingMode === "new-child" ? (
             <section className="app-panel">
-              <article className="card card--feature">
+              <article className="card card--soft card--quiz">
                 <div className="card-header">
                   <span className="section-label">Nuevo nino</span>
                   <h2>{strings.createProfileFirst}</h2>
@@ -1188,6 +1344,22 @@ export default function BuenasNochesApp() {
                         required
                       />
                     </label>
+                    <label className="stack compact">
+                      <span>{strings.gender}</span>
+                      <select
+                        value={state.childDraft.gender}
+                        onChange={(event) =>
+                          setState((current) => ({
+                            ...current,
+                            childDraft: { ...current.childDraft, gender: event.target.value },
+                          }))
+                        }
+                        required
+                      >
+                        <option value="boy">{strings.boy}</option>
+                        <option value="girl">{strings.girl}</option>
+                      </select>
+                    </label>
                     <button className="button button-primary" type="submit">
                       {strings.startQuiz}
                     </button>
@@ -1207,7 +1379,7 @@ export default function BuenasNochesApp() {
                         />
                       </div>
                     </div>
-                    <h3>{questions[state.quizIndex].prompt}</h3>
+                    <h3>{genderize(questions[state.quizIndex].prompt, state.childDraft.gender)}</h3>
                     <div className="stack">
                       {questions[state.quizIndex].options.map((option) => (
                         <button
@@ -1217,10 +1389,15 @@ export default function BuenasNochesApp() {
                           onClick={() => answerQuestion(option)}
                         >
                           <span className="answer__badge">{option.key}</span>
-                          <span className="answer__text">{option.label}</span>
+                          <span className="answer__text">{genderize(option.label, state.childDraft.gender)}</span>
                         </button>
                       ))}
                     </div>
+                    {state.quizIndex > 0 ? (
+                      <button className="button button-ghost" type="button" onClick={goBackQuestion}>
+                        {strings.previousQuestion}
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -1282,11 +1459,11 @@ export default function BuenasNochesApp() {
                 {canAddChild ? (
                   <button type="button" className="child-card child-card--ghost" onClick={startAddChild}>
                     <strong>Agregar nino</strong>
-                    <span>Tienes {childSlots.total - state.children.length} espacio(s) disponible(s)</span>
+                    <span>Tienes {childSlots.total - state.children.length} perfil(es) disponible(s)</span>
                   </button>
                 ) : (
                   <div className="child-card child-card--locked">
-                    <strong>Slots completos</strong>
+                    <strong>Perfiles completos</strong>
                     <span>1 nino incluido + {childSlots.extraChildren} extra desbloqueado(s)</span>
                     <small>El add-on se llama nino adicional buenas noches</small>
                   </div>
@@ -1318,6 +1495,7 @@ export default function BuenasNochesApp() {
                   }
                   onSubmitNightLog={submitNightLog}
                   safetyTriggered={safetyTriggered}
+                  savedLogDate={state.savedLogDate}
                 />
               ) : null}
 
@@ -1391,43 +1569,46 @@ function HomeSection({ activeChild, progressSummary, chartPoints, strings, profi
           <span className="section-label">Progreso</span>
           <h2>Asi van sus noches</h2>
         </div>
-        {activeChild.logs.length ? (
-          <div className="chart-panel">
-            <p>Linea: minutos para dormir. Barras: despertares nocturnos.</p>
-            <svg viewBox="0 0 700 260" aria-hidden="true">
-              <line x1="40" y1="200" x2="660" y2="200" stroke="rgba(255,255,255,0.18)" />
-              <line x1="40" y1="30" x2="40" y2="200" stroke="rgba(255,255,255,0.18)" />
+        <div className={chartPoints?.empty ? "chart-panel chart-panel--empty" : "chart-panel"}>
+          <p>Linea: minutos para dormir. Barras: despertares nocturnos.</p>
+          <svg viewBox="0 0 700 260" aria-hidden="true">
+            <line x1="40" y1="200" x2="660" y2="200" className="chart-axis" />
+            <line x1="40" y1="30" x2="40" y2="200" className="chart-axis" />
               {chartPoints.wakingBars.map((bar, index) => (
-                <rect key={index} x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx="8" fill="rgba(169,216,221,0.28)" />
+              <rect key={index} x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx="8" className="chart-bar" />
               ))}
               <polyline
                 fill="none"
-                stroke="#f4e7b2"
+              className="chart-line"
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 points={chartPoints.points}
               />
               {chartPoints.circles.map((circle, index) => (
-                <circle key={index} cx={circle.x} cy={circle.y} r="5" fill="#f8f3ea" />
+              <circle key={index} cx={circle.x} cy={circle.y} r="5" className="chart-dot" />
               ))}
               {chartPoints.labels.map((label) => (
                 <text
                   key={label.text}
                   x={label.x}
                   y="232"
-                  fill="rgba(255,255,255,0.66)"
+                className="chart-label"
                   fontSize="12"
                   textAnchor="middle"
                 >
                   {label.text}
                 </text>
               ))}
-            </svg>
-          </div>
-        ) : (
-          <p className="muted">{strings.noLogsYet}</p>
-        )}
+          </svg>
+          {chartPoints?.empty ? (
+            <p className="muted">
+              {strings.age === "Age"
+                ? "Your saved nights will fill this graph after purchase."
+                : "Tus noches guardadas van a llenar este grafico despues de la compra."}
+            </p>
+          ) : null}
+        </div>
       </article>
     </div>
   );
@@ -1446,6 +1627,7 @@ function RoutineSection({
   onToggleSwapStep,
   onSubmitNightLog,
   safetyTriggered,
+  savedLogDate,
 }) {
   if (!activeChild) return null;
 
@@ -1509,7 +1691,9 @@ function RoutineSection({
               <div className="summary-grid">
                 <Stat label="Cena" value={currentPlan.dinnerTime} />
                 <Stat label="Empezar rutina" value={currentPlan.routineStart} />
-                <Stat label="Dormir" value={currentPlan.targetBedtime || currentPlan.bedtime} />
+                <Stat label="En cama" value={currentPlan.bedtime} />
+                <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
+                <Stat label="Tiempo esperado para dormir" value={`${currentPlan.expectedLatency} min`} />
                 <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
             </div>
             <div className="stack">
@@ -1567,6 +1751,16 @@ function RoutineSection({
               <span className="section-label">Registro nocturno</span>
               <h2>{strings.logTitle}</h2>
             </div>
+            {savedLogDate ? (
+              <div className="save-confirmation">
+                <strong>Guardado. Esta noche quedo registrado exitosamente.</strong>
+                <p>
+                  {strings.age === "Age"
+                    ? "Your progress graph has been updated."
+                    : "El grafico de progreso ya fue actualizado."}
+                </p>
+              </div>
+            ) : (
             <form className="stack" onSubmit={onSubmitNightLog}>
               <label className="stack compact">
                 <span>{strings.date}</span>
@@ -1622,6 +1816,7 @@ function RoutineSection({
                 {strings.saveResults}
               </button>
             </form>
+            )}
             {safetyTriggered ? (
               <div className="safety-card">
                 Lo que me estas contando va mas alla de lo que esta herramienta puede orientar. Merece una evaluacion
@@ -1795,7 +1990,7 @@ function LockedPreviewCard({ activeSection, language }) {
               : "Unlock this section to use the full dashboard, tonight's routine, and progress tracking."}
           </p>
           <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
-            {language === "es" ? "Ir al curso y desbloquear" : "Go to the course and unlock"}
+            {language === "es" ? "Comprar premium" : "Purchase premium"}
           </a>
         </div>
       </div>
