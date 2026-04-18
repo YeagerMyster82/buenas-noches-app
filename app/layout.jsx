@@ -11,8 +11,8 @@ export const metadata = {
     title: "Buenas Noches",
   },
   icons: {
-    icon: "/brand/logo-buenas-noches.png",
-    apple: "/brand/logo-buenas-noches.png",
+    icon: "/icons/buenas-noches-icon.svg",
+    apple: "/icons/buenas-noches-icon.svg",
   },
 };
 
