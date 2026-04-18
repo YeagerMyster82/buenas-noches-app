@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Buenas Noches App Icon</title>
+  <desc id="desc">Square app icon with Buenas Noches brand colors and moon illustration.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#23364d" />
+      <stop offset="100%" stop-color="#1b2b3f" />
+    </linearGradient>
+    <linearGradient id="halo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4e7b2" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#a9d8dd" stop-opacity="0.95" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)" />
+  <circle cx="396" cy="106" r="16" fill="#f4e7b2" opacity="0.85" />
+  <circle cx="104" cy="150" r="10" fill="#f4e7b2" opacity="0.65" />
+  <circle cx="160" cy="96" r="7" fill="#f4e7b2" opacity="0.75" />
+  <circle cx="352" cy="70" r="7" fill="#f4e7b2" opacity="0.65" />
+  <path
+    d="M180 118c62 0 112 50 112 112s-50 112-112 112c-38 0-72-19-93-48 18 13 40 20 64 20 62 0 112-50 112-112 0-24-7-46-20-64 29 21 48 55 48 92 0 62-50 112-112 112S68 292 68 230 118 118 180 118Z"
+    fill="#f4e7b2"
+  />
+  <circle cx="264" cy="264" r="104" fill="#1f3044" />
+  <circle cx="264" cy="264" r="78" fill="url(#halo)" opacity="0.18" />
+  <path
+    d="M275 150c24 0 44 20 44 44v12c0 8-6 14-14 14h-19v24c0 5 2 10 6 13l42 37c9 8 10 22 2 31-8 9-22 10-31 2l-37-32c-7-6-17-6-24 0l-37 32c-9 8-23 7-31-2-8-9-7-23 2-31l42-37c4-3 6-8 6-13v-24h-19c-8 0-14-6-14-14v-12c0-24 20-44 44-44h38Z"
+    fill="#a9d8dd"
+  />
+  <circle cx="264" cy="164" r="40" fill="#f4e7b2" />
+  <circle cx="264" cy="164" r="18" fill="#1f3044" />
+  <path
+    d="M140 402c22-28 56-44 92-44h64c36 0 70 16 92 44"
+    fill="none"
+    stroke="#f4e7b2"
+    stroke-linecap="round"
+    stroke-width="18"
+    opacity="0.85"
+  />
+</svg>
