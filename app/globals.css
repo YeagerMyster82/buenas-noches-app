@@ -665,6 +665,36 @@ textarea {
   gap: 14px;
 }
 
+.preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 16px;
+}
+
+.preview-block,
+.preview-lock {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.preview-lock {
+  align-content: start;
+}
+
+.preview-lock p {
+  margin: 0;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .video-card {
   min-height: 132px;
   align-content: end;
@@ -700,7 +730,8 @@ textarea {
 
 @media (max-width: 960px) {
   .gate-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .preview-grid {
     grid-template-columns: 1fr;
   }
 }
