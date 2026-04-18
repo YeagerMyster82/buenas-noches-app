@@ -10,14 +10,15 @@ export default function manifest() {
     orientation: "portrait",
     icons: [
       {
-        src: "/brand/logo-buenas-noches.png",
-        sizes: "192x192",
-        type: "image/png",
+        src: "/icons/buenas-noches-icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
       },
       {
-        src: "/brand/logo-buenas-noches.png",
-        sizes: "512x512",
-        type: "image/png",
+        src: "/icons/buenas-noches-icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any maskable",
       },
     ],
   };
