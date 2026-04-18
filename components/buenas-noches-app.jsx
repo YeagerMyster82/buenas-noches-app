@@ -1462,7 +1462,7 @@ function translateAvoidEntry(value) {
     "Comer inmediatamente antes de acostarse": "Eating right before lying down",
     Discusiones: "Arguments",
     "Temas que activan emociones fuertes": "Topics that trigger strong emotions",
-    Sobreestimulacion verbal: "Too much verbal stimulation",
+    "Sobreestimulacion verbal": "Too much verbal stimulation",
     "Resolver problemas complejos": "Solving complex problems",
     "Juegos que generan excitacion": "Games that create excitement",
     "Cambiar todo cada noche": "Changing everything every night",
