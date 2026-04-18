@@ -11,11 +11,12 @@ export const metadata = {
     title: "Buenas Noches",
   },
   icons: {
+    shortcut: "/icons/icon-192.png?v=20260418",
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png?v=20260418", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=20260418", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: "/apple-touch-icon.png?v=20260418",
   },
 };
 
