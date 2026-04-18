@@ -50,6 +50,9 @@ const copy = {
     tonightRoutine: "Rutina de esta noche",
     mapNight: "Mapear la noche de",
     wakeTime: "A que hora se desperto hoy?",
+    targetBedtime: "A que hora quieres que ya este dormido?",
+    dinnerTime: "A que hora cenan hoy? (opcional)",
+    dinnerShared: "Puedes usar la misma hora para todos tus hijos si cenan juntos.",
     napQuestion: "Durmio siesta?",
     napWakeTime: "A que hora se desperto de la siesta?",
     generateRoutine: "Generar rutina",
@@ -109,6 +112,9 @@ const copy = {
     tonightRoutine: "Tonight's routine",
     mapNight: "Map tonight for",
     wakeTime: "What time did they wake up today?",
+    targetBedtime: "What time do you want them asleep by?",
+    dinnerTime: "What time is dinner tonight? (optional)",
+    dinnerShared: "You can keep the same dinner time for all your children if they eat together.",
     napQuestion: "Did they nap?",
     napWakeTime: "What time did they wake from the nap?",
     generateRoutine: "Generate routine",
@@ -233,6 +239,8 @@ const initialState = {
   quizResult: null,
   routineForm: {
     wakeTime: "",
+    targetBedtime: "",
+    dinnerTime: "",
     napTaken: "no",
     napWakeTime: "",
   },
@@ -549,6 +557,8 @@ export default function BuenasNochesApp() {
       profile: activeChild.primaryProfile,
       birthday: activeChild.birthday,
       wakeTime: state.routineForm.wakeTime,
+      targetBedtime: state.routineForm.targetBedtime,
+      dinnerTime: state.routineForm.dinnerTime,
       napTaken: state.routineForm.napTaken === "yes",
       napWakeTime: state.routineForm.napWakeTime,
       selectedActivities: activeChild.selectedActivities,
@@ -574,6 +584,7 @@ export default function BuenasNochesApp() {
             email: state.verifiedEmail,
             childName: activeChild.name,
             wakeTime: plan.wakeTime,
+            targetBedtime: plan.targetBedtime,
             napTaken: state.routineForm.napTaken === "yes",
             napWakeTime: state.routineForm.napWakeTime || null,
             dinnerTime: plan.dinnerTime,
@@ -595,31 +606,46 @@ export default function BuenasNochesApp() {
   function changeActivity(stepId, activityId) {
     if (!activeChild || !state.currentPlan) return;
 
-    updateChild(activeChild.id, (child) => ({
-      selectedActivities: {
-        ...child.selectedActivities,
-        [stepId]: activityId,
-      },
-    }));
+    setState((current) => {
+      const child = current.children.find((entry) => entry.id === current.activeChildId);
+      if (!child) return current;
 
-    const rebuiltPlan = buildPlan({
-      profile: activeChild.primaryProfile,
-      birthday: activeChild.birthday,
-      wakeTime: state.routineForm.wakeTime,
-      napTaken: state.routineForm.napTaken === "yes",
-      napWakeTime: state.routineForm.napWakeTime,
-      selectedActivities: {
-        ...activeChild.selectedActivities,
+      const nextSelectedActivities = {
+        ...(child.selectedActivities || {}),
         [stepId]: activityId,
-      },
-      dislikedCounts: activeChild.dislikedCounts,
+      };
+
+      const rebuiltPlan = buildPlan({
+        profile: child.primaryProfile,
+        birthday: child.birthday,
+        wakeTime: current.routineForm.wakeTime,
+        targetBedtime: current.routineForm.targetBedtime,
+        dinnerTime: current.routineForm.dinnerTime,
+        napTaken: current.routineForm.napTaken === "yes",
+        napWakeTime: current.routineForm.napWakeTime,
+        selectedActivities: nextSelectedActivities,
+        dislikedCounts: child.dislikedCounts,
+      });
+
+      return {
+        ...current,
+        children: current.children.map((entry) =>
+          entry.id === child.id
+            ? {
+                ...entry,
+                selectedActivities: nextSelectedActivities,
+                lastPlan: rebuiltPlan,
+              }
+            : entry
+        ),
+        currentPlan: rebuiltPlan,
+        expandedSwapStep: "",
+        persistenceMessage:
+          current.language === "es"
+            ? "Actividad cambiada. Ya actualice la rutina de esta noche."
+            : "Activity updated. Tonight's routine has been refreshed.",
+      };
     });
-
-    setState((current) => ({
-      ...current,
-      currentPlan: rebuiltPlan,
-      expandedSwapStep: stepId,
-    }));
   }
 
   async function submitNightLog(event) {
@@ -663,11 +689,22 @@ export default function BuenasNochesApp() {
       ratings,
     };
 
-    updateChild(activeChild.id, (child) => ({
-      logs: [nextLog, ...child.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
-        left.date < right.date ? 1 : -1
-      ),
+    const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
+      left.date < right.date ? 1 : -1
+    );
+
+    updateChild(activeChild.id, () => ({
+      logs: updatedLogs,
       dislikedCounts,
+    }));
+
+    event.currentTarget.reset();
+    setState((current) => ({
+      ...current,
+      persistenceMessage:
+        current.language === "es"
+          ? "Resultados guardados. Ya puedes ver esta noche en el progreso."
+          : "Results saved. You can now see this night in progress.",
     }));
 
     if (state.accessStatus === "granted" && state.verifiedEmail) {
@@ -685,6 +722,7 @@ export default function BuenasNochesApp() {
             inBedAt: nextLog.bedTime,
             fellAsleepAt: nextLog.sleepTime,
             sleepLatencyMinutes: nextLog.latency,
+            nightWakings: nextLog.nightWakings,
             notes: nextLog.notes,
             ratings: nextLog.ratings,
           }),
@@ -749,7 +787,7 @@ export default function BuenasNochesApp() {
           <div className="gate-header">
             <img className="brand-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
             <div>
-              <span className="section-label">{strings.premiumDashboard}</span>
+              <span className="section-label">{state.children.length ? strings.sections.home : strings.premiumDashboard}</span>
               <h1>{strings.gateTitle}</h1>
             </div>
             <label className="language-switch">
@@ -777,7 +815,7 @@ export default function BuenasNochesApp() {
             ))}
           </nav>
 
-          {state.activeSection === "home" ? (
+          {!state.children.length || state.onboardingMode === "new-child" ? (
             <>
               <div className="gate-grid">
             <article className="card card--feature">
@@ -824,7 +862,7 @@ export default function BuenasNochesApp() {
             </article>
               </div>
 
-              <article className="card card--feature">
+              <article className="card card--soft card--quiz">
             <div className="card-header">
               <span className="section-label">{strings.newChild}</span>
               <h2>{strings.createProfileFirst}</h2>
@@ -956,8 +994,103 @@ export default function BuenasNochesApp() {
               ) : null}
               </article>
             </>
+          ) : state.activeSection === "home" ? (
+            <>
+              <div className="child-strip">
+                {state.children.map((child) => {
+                  const summary = buildProgressSummary(child.logs);
+                  return (
+                    <button
+                      key={child.id}
+                      type="button"
+                      className={state.activeChildId === child.id ? "child-card is-active" : "child-card"}
+                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "home" }))}
+                    >
+                      <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
+                      <strong>{child.name}</strong>
+                      <span>{formatAgeLabel(child.birthday, state.language)}</span>
+                      <small>
+                        {summary.averageLatency
+                          ? `${summary.averageLatency} min promedio`
+                          : state.language === "es"
+                            ? "Perfil gratis guardado"
+                            : "Free profile saved"}
+                      </small>
+                    </button>
+                  );
+                })}
+              </div>
+              {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+              <div className="dashboard-grid">
+                <HomeSection
+                  activeChild={activeChild}
+                  progressSummary={progressSummary}
+                  chartPoints={chartPoints}
+                  strings={strings}
+                  profileMap={profileMap}
+                />
+                <article className="card card--soft">
+                  <div className="card-header">
+                    <span className="section-label">{state.language === "es" ? "Premium" : "Premium"}</span>
+                    <h2>{strings.verifyPurchase}</h2>
+                  </div>
+                  <p className="lead-copy">
+                    {state.language === "es"
+                      ? "Ya puedes ver el perfil y el dashboard. Al desbloquear, se activan la rutina, videos, checklist guiado y el seguimiento real."
+                      : "You can already see the profile and dashboard. Unlocking turns on the routine, videos, guided checklist, and real tracking."}
+                  </p>
+                  <form className="stack" onSubmit={verifyPremiumAccess}>
+                    <label className="stack compact">
+                      <span>{strings.usedPurchaseEmail}</span>
+                      <input
+                        type="email"
+                        placeholder="tuemail@ejemplo.com"
+                        value={state.purchaseEmail}
+                        onChange={(event) => setState((current) => ({ ...current, purchaseEmail: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    {state.accessMessage ? (
+                      <p
+                        className={
+                          state.accessStatus === "granted"
+                            ? "status-message status-success"
+                            : "status-message status-warning"
+                        }
+                      >
+                        {state.accessMessage}
+                      </p>
+                    ) : null}
+                    <div className="inline-actions">
+                      <button className="button button-primary" type="submit" disabled={state.accessStatus === "loading"}>
+                        {state.accessStatus === "loading" ? strings.verifying : strings.enterApp}
+                      </button>
+                      <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
+                        {state.language === "es" ? "Ir al curso" : "Go to the course"}
+                      </a>
+                    </div>
+                  </form>
+                </article>
+              </div>
+            </>
           ) : (
-            <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
+            <>
+              <div className="child-strip">
+                {state.children.map((child) => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    className={state.activeChildId === child.id ? "child-card is-active" : "child-card"}
+                    onClick={() => setState((current) => ({ ...current, activeChildId: child.id }))}
+                  >
+                    <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
+                    <strong>{child.name}</strong>
+                    <span>{formatAgeLabel(child.birthday, state.language)}</span>
+                  </button>
+                ))}
+              </div>
+              <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
+            </>
           )}
 
           <nav className="bottom-nav">
@@ -1329,6 +1462,20 @@ function RoutineSection({
             <input type="time" value={routineForm.wakeTime} onChange={(event) => onRoutineFieldChange("wakeTime", event.target.value)} required />
           </label>
           <label className="stack compact">
+            <span>{strings.targetBedtime}</span>
+            <input
+              type="time"
+              value={routineForm.targetBedtime}
+              onChange={(event) => onRoutineFieldChange("targetBedtime", event.target.value)}
+              required
+            />
+          </label>
+          <label className="stack compact">
+            <span>{strings.dinnerTime}</span>
+            <input type="time" value={routineForm.dinnerTime} onChange={(event) => onRoutineFieldChange("dinnerTime", event.target.value)} />
+            <small className="field-help">{strings.dinnerShared}</small>
+          </label>
+          <label className="stack compact">
             <span>{strings.napQuestion}</span>
             <select value={routineForm.napTaken} onChange={(event) => onRoutineFieldChange("napTaken", event.target.value)}>
               <option value="no">{strings.no}</option>
@@ -1362,7 +1509,7 @@ function RoutineSection({
               <div className="summary-grid">
                 <Stat label="Cena" value={currentPlan.dinnerTime} />
                 <Stat label="Empezar rutina" value={currentPlan.routineStart} />
-                <Stat label="Dormir" value={currentPlan.bedtime} />
+                <Stat label="Dormir" value={currentPlan.targetBedtime || currentPlan.bedtime} />
                 <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
             </div>
             <div className="stack">
@@ -1534,6 +1681,7 @@ function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult,
       <div className="stack">
         {sleepAreaChecklist.map((item) => (
           <button key={item.id} type="button" className="check-row" onClick={() => onToggleCheck(item.id)}>
+            <span className="check-ring" aria-hidden="true" />
             <span className={activeChild.sleepAreaChecks?.[item.id] ? "check-dot is-active" : "check-dot"} />
             <div>
               <strong>{item.title}</strong>
