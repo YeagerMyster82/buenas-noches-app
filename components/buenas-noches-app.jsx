@@ -16,6 +16,7 @@ import {
   formatAgeLabel,
   getChildSlots,
   getSleepAreaResult,
+  normalizeNightWakings,
 } from "../lib/routine";
 
 const storageKey = "buenas-noches-webapp-v3";
@@ -94,6 +95,7 @@ const copy = {
     napQuestion: "Durmio siesta?",
     napWakeTime: "A que hora se desperto de la siesta?",
     generateRoutine: "Generar rutina",
+    createTonightRoutine: "Crear rutina para esta noche",
     changeActivity: "Cambiar esta actividad",
     samePhaseOptions: "Opciones dentro de la misma fase",
     logTitle: "Como les fue?",
@@ -187,6 +189,7 @@ const copy = {
     napQuestion: "Did they nap?",
     napWakeTime: "What time did they wake from the nap?",
     generateRoutine: "Generate routine",
+    createTonightRoutine: "Create tonight's routine",
     changeActivity: "Change this activity",
     samePhaseOptions: "Options within the same phase",
     logTitle: "How did tonight go?",
@@ -299,6 +302,7 @@ const initialState = {
   accountLookupMessage: "",
   children: [],
   activeChildId: "",
+  expandedChildId: "",
   activeSection: "home",
   childDraft: {
     name: "",
@@ -437,6 +441,16 @@ export default function BuenasNochesApp() {
       activeChildId: current.children[0]?.id || "",
     }));
   }, [state.children, state.activeChildId]);
+
+  useEffect(() => {
+    if (!state.expandedChildId) return;
+    if (state.children.some((child) => child.id === state.expandedChildId)) return;
+
+    setState((current) => ({
+      ...current,
+      expandedChildId: "",
+    }));
+  }, [state.children, state.expandedChildId]);
 
   useEffect(() => {
     if (!state.activeChildId) return;
@@ -681,10 +695,11 @@ export default function BuenasNochesApp() {
         accessStatus: premiumCheck?.hasAccess ? "granted" : current.accessStatus,
         premiumAccess: premiumCheck?.hasAccess ? premiumCheck.payload : current.premiumAccess,
         accessMessage: premiumCheck?.hasAccess ? "" : current.accessMessage,
-        parentProfileSaved: true,
-        children: restoredChildren,
-        activeChildId: restoredChildren[0]?.id || "",
-        activeSection: "home",
+      parentProfileSaved: true,
+      children: restoredChildren,
+      activeChildId: restoredChildren[0]?.id || "",
+      expandedChildId: restoredChildren[0]?.id || "",
+      activeSection: "home",
         onboardingMode: "",
         accountLookupOpen: false,
         accountLookupStatus: "success",
@@ -722,7 +737,8 @@ export default function BuenasNochesApp() {
       ...current,
       children: [...current.children, child],
       activeChildId: child.id,
-      activeSection: "child-dashboard",
+      expandedChildId: child.id,
+      activeSection: "home",
       onboardingMode: "",
       childDraft: { name: "", birthday: "", gender: "boy" },
       parentName: parentName || current.parentName,
@@ -1354,104 +1370,29 @@ export default function BuenasNochesApp() {
             </>
           ) : state.activeSection === "home" ? (
             <>
-              <div className="child-strip child-strip--home">
-                {state.children.map((child) => {
-                  const summary = buildProgressSummary(child.logs);
-                  return (
-                    <button
-                      key={child.id}
-                      type="button"
-                      className="child-card child-card--hero"
-                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "child-dashboard" }))}
-                    >
-                      <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
-                      <strong>{child.name}</strong>
-                      <span>{formatAgeLabel(child.birthday, state.language)}</span>
-                      <small>
-                        {summary.averageLatency
-                          ? `${summary.averageLatency} min promedio`
-                          : state.language === "es"
-                            ? "Perfil gratis guardado"
-                            : "Free profile saved"}
-                      </small>
-                    </button>
-                  );
-                })}
-              </div>
+              <ChildHomeGrid
+                children={state.children}
+                activeChildId={state.activeChildId}
+                expandedChildId={state.expandedChildId}
+                canAddChild={canAddChild}
+                strings={strings}
+                language={state.language}
+                profileMap={profileMap}
+                onToggleChild={(childId) =>
+                  setState((current) => ({
+                    ...current,
+                    activeChildId: childId,
+                    expandedChildId: current.expandedChildId === childId ? "" : childId,
+                  }))
+                }
+                onCreateRoutine={(childId) =>
+                  setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
+                }
+                onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
+                onAddChild={startAddChild}
+              />
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
-          ) : state.activeSection === "child-dashboard" ? (
-              <div className="dashboard-grid">
-                <div className="profile-actions">
-                  <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
-                    {strings.backToChildren}
-                  </button>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    aria-label={`${strings.editProfile} ${activeChild?.name || ""}`}
-                    onClick={() => setState((current) => ({ ...current, editingChildId: activeChild?.id || "" }))}
-                  >
-                    ✎
-                  </button>
-                </div>
-                <HomeSection
-                  activeChild={activeChild}
-                  progressSummary={progressSummary}
-                  chartPoints={chartPoints}
-                  strings={strings}
-                  profileMap={profileMap}
-                />
-                <AddChildPreview
-                  activeChild={activeChild}
-                  strings={strings}
-                  canAddChild={canAddChild}
-                  hasPremiumAccess={hasPremiumAccess}
-                  onAddChild={startAddChild}
-                />
-                <article className="card card--soft">
-                  <div className="card-header">
-                    <span className="section-label">{state.language === "es" ? "Premium" : "Premium"}</span>
-                    <h2>{strings.verifyPurchase}</h2>
-                  </div>
-                  <p className="lead-copy">
-                    {state.language === "es"
-                      ? "Ya puedes ver el perfil y el dashboard. Al desbloquear, se activan la rutina, videos, checklist guiado y el seguimiento real."
-                      : "You can already see the profile and dashboard. Unlocking turns on the routine, videos, guided checklist, and real tracking."}
-                  </p>
-                  <form className="stack" onSubmit={verifyPremiumAccess}>
-                    <label className="stack compact">
-                      <span>{strings.usedPurchaseEmail}</span>
-                      <input
-                        type="email"
-                        placeholder="tuemail@ejemplo.com"
-                        value={state.purchaseEmail}
-                        onChange={(event) => setState((current) => ({ ...current, purchaseEmail: event.target.value }))}
-                        required
-                      />
-                    </label>
-                    {state.accessMessage ? (
-                      <p
-                        className={
-                          state.accessStatus === "granted"
-                            ? "status-message status-success"
-                            : "status-message status-warning"
-                        }
-                      >
-                        {state.accessMessage}
-                      </p>
-                    ) : null}
-                    <div className="inline-actions">
-                      <button className="button button-primary" type="submit" disabled={state.accessStatus === "loading"}>
-                        {state.accessStatus === "loading" ? strings.verifying : strings.enterApp}
-                      </button>
-                      <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
-                        {state.language === "es" ? "Comprar premium" : "Purchase premium"}
-                      </a>
-                    </div>
-                  </form>
-                </article>
-              </div>
           ) : state.activeSection === "sleep-area" ? (
             <SleepAreaSection
               activeChild={activeChild}
@@ -1663,47 +1604,24 @@ export default function BuenasNochesApp() {
                 <ChildHomeGrid
                   children={state.children}
                   activeChildId={state.activeChildId}
+                  expandedChildId={state.expandedChildId}
                   canAddChild={canAddChild}
                   strings={strings}
                   language={state.language}
                   profileMap={profileMap}
-                  onOpenChild={(childId) =>
-                    setState((current) => ({ ...current, activeChildId: childId, activeSection: "child-dashboard" }))
+                  onToggleChild={(childId) =>
+                    setState((current) => ({
+                      ...current,
+                      activeChildId: childId,
+                      expandedChildId: current.expandedChildId === childId ? "" : childId,
+                    }))
                   }
+                  onCreateRoutine={(childId) =>
+                    setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
+                  }
+                  onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                   onAddChild={startAddChild}
                 />
-              ) : null}
-
-              {state.activeSection === "child-dashboard" ? (
-                <>
-                  <div className="profile-actions">
-                    <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
-                      {strings.backToChildren}
-                    </button>
-                    <button
-                      className="icon-button"
-                      type="button"
-                      aria-label={`${strings.editProfile} ${activeChild?.name || ""}`}
-                      onClick={() => setState((current) => ({ ...current, editingChildId: activeChild?.id || "" }))}
-                    >
-                      ✎
-                    </button>
-                    <button className="button button-primary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "routine" }))}>
-                      {strings.sections.routine}
-                    </button>
-                    <button className="button button-secondary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "videos" }))}>
-                      {strings.sections.videos}
-                    </button>
-                  </div>
-                  <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
-                  <AddChildPreview
-                    activeChild={activeChild}
-                    strings={strings}
-                    canAddChild={canAddChild}
-                    hasPremiumAccess={hasPremiumAccess}
-                    onAddChild={startAddChild}
-                  />
-                </>
               ) : null}
 
               {state.activeSection === "routine" ? (
@@ -1715,7 +1633,7 @@ export default function BuenasNochesApp() {
                   currentPlan={state.currentPlan}
                   onRoutineFieldChange={updateRoutineField}
                   onGenerateRoutine={generateRoutine}
-                  onClose={() => setState((current) => ({ ...current, activeSection: "child-dashboard" }))}
+                  onClose={() => setState((current) => ({ ...current, activeSection: "home", expandedChildId: activeChild?.id || current.expandedChildId }))}
                   onChangeActivity={changeActivity}
                   expandedSwapStep={state.expandedSwapStep}
                   onToggleSwapStep={(stepId) =>
@@ -1829,29 +1747,57 @@ function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEm
   );
 }
 
-function ChildHomeGrid({ children, canAddChild, strings, language, profileMap, onOpenChild, onAddChild }) {
+function ChildHomeGrid({
+  children,
+  activeChildId,
+  expandedChildId,
+  canAddChild,
+  strings,
+  language,
+  profileMap,
+  onToggleChild,
+  onCreateRoutine,
+  onEditProfile,
+  onAddChild,
+}) {
   return (
     <div className="child-strip child-strip--home">
       {children.map((child) => {
         const summary = buildProgressSummary(child.logs);
+        const isExpanded = expandedChildId === child.id;
         return (
-          <button
-            key={child.id}
-            type="button"
-            className="child-card child-card--hero"
-            onClick={() => onOpenChild(child.id)}
-          >
-            <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
-            <strong>{child.name}</strong>
-            <span>{formatAgeLabel(child.birthday, language)}</span>
-            <small>
-              {summary.averageLatency
-                ? `${summary.averageLatency} min promedio`
-                : language === "es"
-                  ? "Abrir perfil"
-                  : "Open profile"}
-            </small>
-          </button>
+          <div key={child.id} className={isExpanded ? "child-profile-shell is-expanded" : "child-profile-shell"}>
+            {isExpanded ? (
+              <HomeSection
+                activeChild={child}
+                progressSummary={summary}
+                strings={strings}
+                profileMap={profileMap}
+                onCreateRoutine={() => onCreateRoutine(child.id)}
+                onEditProfile={() => onEditProfile(child.id)}
+                onCollapse={() => onToggleChild(child.id)}
+                compact
+              />
+            ) : (
+              <button
+                type="button"
+                className={activeChildId === child.id ? "child-card child-card--hero is-active" : "child-card child-card--hero"}
+                onClick={() => onToggleChild(child.id)}
+              >
+                <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
+                <strong>{child.name}</strong>
+                <span>{formatAgeLabel(child.birthday, language)}</span>
+                <small>
+                  {summary.averageLatency
+                    ? `${summary.averageLatency} min promedio`
+                    : language === "es"
+                      ? "Abrir perfil"
+                      : "Open profile"}
+                </small>
+                <span className="expand-cue" aria-hidden="true">⌄</span>
+              </button>
+            )}
+          </div>
         );
       })}
 
@@ -1949,80 +1895,163 @@ function AddChildPreview({ activeChild, strings, canAddChild, hasPremiumAccess, 
   );
 }
 
-function HomeSection({ activeChild, progressSummary, chartPoints, strings, profileMap }) {
+function getDateKey(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDateDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function buildWeeklyProgressChart(logs, weekOffset = 0) {
+  const today = new Date();
+  const endDate = addDateDays(today, weekOffset * 7);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = addDateDays(endDate, index - 6);
+    const dateKey = getDateKey(date);
+    const log = logs.find((entry) => entry.date === dateKey);
+    return {
+      dateKey,
+      label: date.toLocaleDateString("es", { weekday: "short" }).replace(".", ""),
+      latency: log ? Number(log.latency || 0) : null,
+      wakings: log ? normalizeNightWakings(log.nightWakings) : 0,
+    };
+  });
+
+  const maxLatency = Math.max(45, ...days.map((day) => day.latency || 0));
+  const maxWakings = Math.max(3, ...days.map((day) => day.wakings || 0));
+  const graphTop = 36;
+  const graphBottom = 172;
+  const graphHeight = graphBottom - graphTop;
+  const xForIndex = (index) => 54 + index * 88;
+
+  const points = days
+    .map((day, index) => {
+      if (day.latency === null) return null;
+      const x = xForIndex(index);
+      const y = graphBottom - (day.latency / maxLatency) * graphHeight;
+      return { x, y, value: day.latency };
+    })
+    .filter(Boolean);
+
+  return {
+    days,
+    points,
+    pointsString: points.map((point) => `${point.x},${point.y}`).join(" "),
+    bars: days.map((day, index) => {
+      const height = day.wakings ? Math.max(8, (day.wakings / maxWakings) * 54) : 4;
+      return {
+        x: xForIndex(index) - 16,
+        y: graphBottom - height,
+        height,
+        value: day.wakings,
+      };
+    }),
+    empty: !logs.length,
+    canGoForward: weekOffset < 0,
+  };
+}
+
+function HomeSection({ activeChild, progressSummary, strings, profileMap, onCreateRoutine, onEditProfile, onCollapse }) {
+  const [weekOffset, setWeekOffset] = useState(0);
   if (!activeChild) return null;
+  const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset);
+  const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
 
   return (
-    <div className="dashboard-grid">
-      <article className="card card--feature dashboard-card">
-        <div className="card-header">
-          <div className="profile-heading">
-            <div className="avatar-placeholder">QK</div>
-            <div>
-              <span className="section-label">Dashboard de {activeChild.name}</span>
-              <h2>{profileMap[activeChild.primaryProfile]?.name}</h2>
-            </div>
+    <div className="dashboard-grid dashboard-grid--single">
+      <article className="card card--feature dashboard-card dashboard-profile-card">
+        {onCollapse ? (
+          <button className="icon-button dashboard-collapse-button" type="button" onClick={onCollapse} aria-label="Cerrar dashboard">
+            ⌃
+          </button>
+        ) : null}
+        <header className="dashboard-profile-header">
+          <div className="dashboard-name-row">
+            <h1>{activeChild.name}</h1>
+            <button className="icon-button dashboard-name-edit" type="button" onClick={onEditProfile} aria-label={`${strings.editProfile} ${activeChild.name}`}>
+              ✎
+            </button>
           </div>
-        </div>
-        <p className="lead-copy">
-          {strings.age === "Age"
-            ? `${activeChild.name} is ${formatAgeLabel(activeChild.birthday, "en")} and the main sleep pattern points to `
-            : `${activeChild.name} tiene ${formatAgeLabel(activeChild.birthday, "es")} y su patron principal de sueno apunta a `}
-          <strong>{profileMap[activeChild.primaryProfile]?.name}</strong>.
-        </p>
+          <p>Perfil: {profileName}</p>
+        </header>
         <div className="summary-grid">
           <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
           <Stat label={strings.averageToSleep} value={`${progressSummary.averageLatency || 0} min`} />
           <Stat label={strings.nightWakingsShort} value={`${progressSummary.averageNightWakings || 0}`} />
           <Stat label={strings.consistency} value={`${progressSummary.bedtimeConsistency || 0}%`} />
         </div>
-      </article>
 
-      <article className="card card--soft graph-card">
-        <div className="card-header">
-          <span className="section-label">Progreso</span>
-          <h2>Asi van sus noches</h2>
-        </div>
-        <div className={chartPoints?.empty ? "chart-panel chart-panel--empty" : "chart-panel"}>
-          <p>Linea: minutos para dormir. Barras: despertares nocturnos.</p>
-          <svg viewBox="0 0 700 260" aria-hidden="true">
-            <line x1="40" y1="200" x2="660" y2="200" className="chart-axis" />
-            <line x1="40" y1="30" x2="40" y2="200" className="chart-axis" />
-              {chartPoints.wakingBars.map((bar, index) => (
-              <rect key={index} x={bar.x} y={bar.y} width={bar.width} height={bar.height} rx="8" className="chart-bar" />
-              ))}
+        <section className={weeklyChart.empty ? "chart-panel dashboard-chart chart-panel--empty" : "chart-panel dashboard-chart"}>
+          <div className="chart-heading">
+            <div>
+              <span className="section-label">Progreso</span>
+              <h2>7 dias</h2>
+            </div>
+            <div className="chart-arrows">
+              <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)} aria-label="Ver semana anterior">
+                ‹
+              </button>
+              <button type="button" onClick={() => setWeekOffset((offset) => Math.min(0, offset + 1))} disabled={!weeklyChart.canGoForward} aria-label="Ver semana siguiente">
+                ›
+              </button>
+            </div>
+          </div>
+          <div className="chart-legend" aria-label="Leyenda del grafico">
+            <span><i className="legend-line" /> Tiempo para dormir</span>
+            <span><i className="legend-bar" /> Despertares nocturnos</span>
+          </div>
+          <svg viewBox="0 0 640 230" aria-hidden="true">
+            <line x1="42" y1="172" x2="594" y2="172" className="chart-axis chart-axis--light" />
+            <line x1="42" y1="36" x2="42" y2="172" className="chart-axis chart-axis--light" />
+            <text x="42" y="26" className="chart-label chart-label--light">min</text>
+            <text x="590" y="26" className="chart-label chart-label--light" textAnchor="end">despertares</text>
+            {weeklyChart.bars.map((bar, index) => (
+              <g key={`bar-${weeklyChart.days[index].dateKey}`}>
+                <rect x={bar.x} y={bar.y} width="32" height={bar.height} rx="8" className="chart-bar chart-bar--dashboard" />
+                <text x={bar.x + 16} y={bar.y - 6} className="chart-label chart-label--light" textAnchor="middle">
+                  {bar.value}
+                </text>
+              </g>
+            ))}
+            {weeklyChart.pointsString ? (
               <polyline
                 fill="none"
-              className="chart-line"
+                className="chart-line chart-line--dashboard"
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                points={chartPoints.points}
+                points={weeklyChart.pointsString}
               />
-              {chartPoints.circles.map((circle, index) => (
-              <circle key={index} cx={circle.x} cy={circle.y} r="5" className="chart-dot" />
-              ))}
-              {chartPoints.labels.map((label) => (
-                <text
-                  key={label.text}
-                  x={label.x}
-                  y="232"
-                className="chart-label"
-                  fontSize="12"
-                  textAnchor="middle"
-                >
-                  {label.text}
+            ) : null}
+            {weeklyChart.points.map((point, index) => (
+              <g key={`point-${index}`}>
+                <circle cx={point.x} cy={point.y} r="6" className="chart-dot chart-dot--dashboard" />
+                <text x={point.x} y={point.y - 12} className="chart-label chart-label--light" textAnchor="middle">
+                  {point.value}
                 </text>
-              ))}
+              </g>
+            ))}
+            {weeklyChart.days.map((day, index) => (
+              <text key={day.dateKey} x={54 + index * 88} y="210" className="chart-label chart-label--light" textAnchor="middle">
+                {day.label}
+              </text>
+            ))}
           </svg>
-          {chartPoints?.empty ? (
+          {weeklyChart.empty ? (
             <p className="muted">
               {strings.age === "Age"
-                ? "Your saved nights will fill this graph after purchase."
-                : "Tus noches guardadas van a llenar este grafico despues de la compra."}
+                ? "Your saved nights will fill this graph."
+                : "Tus noches guardadas van a llenar este grafico."}
             </p>
           ) : null}
-        </div>
+        </section>
+
+        <button className="button button-primary dashboard-routine-button" type="button" onClick={onCreateRoutine}>
+          {strings.createTonightRoutine}
+        </button>
       </article>
     </div>
   );
