@@ -52,6 +52,7 @@ const copy = {
     unlockPremium: "Comprar premium",
     unlockPremiumFor: "Desbloquear premium para",
     needHelp: "Necesitas ayuda?",
+    contactCopy: "En QuiroKids estamos siempre disponibles para ti. Contactanos por el medio que prefieras.",
     whatsapp: "WhatsApp",
     emailSupport: "Email",
     productsWeLove: "Productos que amamos",
@@ -113,10 +114,6 @@ const copy = {
     sleepArea: "Area de sueno",
     quickChecklist: "Checklist rapido",
     avoidBeforeBed: "Antes de dormir",
-    installMode: "Modo app",
-    saveHome: "Guarda Buenas Noches en tu pantalla de inicio",
-    installNow: "Instalar app",
-    notNow: "Ahora no",
     yes: "Si",
     no: "No",
     sometimes: "A veces",
@@ -148,6 +145,7 @@ const copy = {
     unlockPremium: "Unlock premium",
     unlockPremiumFor: "Unlock premium for",
     needHelp: "Need help?",
+    contactCopy: "At QuiroKids, we are always available for you. Contact us through whichever option you prefer.",
     whatsapp: "WhatsApp",
     emailSupport: "Email",
     productsWeLove: "Products we love",
@@ -209,10 +207,6 @@ const copy = {
     sleepArea: "Sleep space",
     quickChecklist: "Quick checklist",
     avoidBeforeBed: "Before bed",
-    installMode: "App mode",
-    saveHome: "Save Buenas Noches to your home screen",
-    installNow: "Install app",
-    notNow: "Not now",
     yes: "Yes",
     no: "No",
     sometimes: "Sometimes",
@@ -412,11 +406,6 @@ function makeLogsFromSavedData(logs = []) {
 
 export default function BuenasNochesApp() {
   const [state, setState] = useState(initialState);
-  const [installPromptEvent, setInstallPromptEvent] = useState(null);
-  const [installState, setInstallState] = useState({
-    visible: false,
-    mode: "browser",
-  });
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
 
   useEffect(() => {
@@ -437,31 +426,6 @@ export default function BuenasNochesApp() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     }
-
-    const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-
-    function handleBeforeInstallPrompt(event) {
-      event.preventDefault();
-      setInstallPromptEvent(event);
-      setInstallState({
-        visible: !isStandalone,
-        mode: "android",
-      });
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    if (isIos && !isStandalone) {
-      setInstallState({
-        visible: true,
-        mode: "ios",
-      });
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    };
   }, []);
 
   useEffect(() => {
@@ -499,6 +463,7 @@ export default function BuenasNochesApp() {
     { id: "sleep-area", label: strings.readyRoom },
     { id: "avoid", label: strings.sections.avoid },
     { id: "amazon", label: strings.productsWeLove },
+    { id: "wins", label: strings.sections.wins },
     { id: "contact", label: strings.contactUs },
   ];
   const profileMap = getProfileMap(state.language);
@@ -525,11 +490,6 @@ export default function BuenasNochesApp() {
   function handleMainMenu(value) {
     if (value === "amazon") {
       window.location.href = AMAZON_STORE_URL;
-      return;
-    }
-
-    if (value === "contact") {
-      setState((current) => ({ ...current, activeSection: "wins" }));
       return;
     }
 
@@ -1102,13 +1062,6 @@ export default function BuenasNochesApp() {
     }
   }
 
-  async function handleInstallApp() {
-    if (!installPromptEvent) return;
-    await installPromptEvent.prompt();
-    setInstallPromptEvent(null);
-    setInstallState((current) => ({ ...current, visible: false }));
-  }
-
   const safetyTriggered = activeChild?.logs?.[0]?.notes
     ? /ronquidos|respirar|convuls|dolor|regresi|insomnio|autoles/i.test(activeChild.logs[0].notes)
     : false;
@@ -1124,37 +1077,6 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
-      {installState.visible ? (
-        <section className="install-banner">
-          <div className="install-banner__copy">
-            <span className="section-label">{strings.installMode}</span>
-            <strong>{strings.saveHome}</strong>
-            <p>
-              {installState.mode === "ios"
-                ? state.language === "es"
-                  ? "En iPhone toca compartir y luego Agregar a pantalla de inicio."
-                  : "On iPhone, tap Share and then Add to Home Screen."
-                : state.language === "es"
-                  ? "Instalala para abrirla como app real, sin distracciones del navegador."
-                  : "Install it to open Buenas Noches like a real app, without browser distractions."}
-            </p>
-          </div>
-          <div className="install-banner__actions">
-            {installState.mode === "android" ? (
-              <button className="button button-secondary" onClick={handleInstallApp}>
-                {strings.installNow}
-              </button>
-            ) : null}
-            <button
-              className="button button-ghost"
-              onClick={() => setInstallState((current) => ({ ...current, visible: false }))}
-            >
-              {strings.notNow}
-            </button>
-          </div>
-        </section>
-      ) : null}
-
       {state.accessStatus !== "granted" ? (
         <section className="gate-shell">
           <div className="gate-header">
@@ -1162,7 +1084,7 @@ export default function BuenasNochesApp() {
             <label className="main-menu">
               <span>{strings.menuLabel}</span>
               <select
-                value={state.activeSection === "wins" ? "contact" : ["home", "sleep-area", "avoid"].includes(state.activeSection) ? state.activeSection : "home"}
+                value={["home", "sleep-area", "avoid", "wins", "contact"].includes(state.activeSection) ? state.activeSection : "home"}
                 onChange={(event) => handleMainMenu(event.target.value)}
               >
                 {mainMenuOptions.map((option) => (
@@ -1549,6 +1471,8 @@ export default function BuenasNochesApp() {
             <AvoidSection strings={strings} language={state.language} />
           ) : state.activeSection === "wins" ? (
             <WinsSection activeChild={activeChild} strings={strings} language={state.language} />
+          ) : state.activeSection === "contact" ? (
+            <ContactSection strings={strings} language={state.language} />
           ) : (
             <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
           )}
@@ -1563,7 +1487,7 @@ export default function BuenasNochesApp() {
             <label className="main-menu main-menu--dark">
               <span>{strings.menuLabel}</span>
               <select
-                value={state.activeSection === "wins" ? "contact" : ["home", "sleep-area", "avoid"].includes(state.activeSection) ? state.activeSection : "home"}
+                value={["home", "sleep-area", "avoid", "wins", "contact"].includes(state.activeSection) ? state.activeSection : "home"}
                 onChange={(event) => handleMainMenu(event.target.value)}
               >
                 {mainMenuOptions.map((option) => (
@@ -1828,6 +1752,8 @@ export default function BuenasNochesApp() {
               {state.activeSection === "avoid" ? <AvoidSection strings={strings} language={state.language} /> : null}
 
               {state.activeSection === "wins" ? <WinsSection activeChild={activeChild} strings={strings} language={state.language} /> : null}
+
+              {state.activeSection === "contact" ? <ContactSection strings={strings} language={state.language} /> : null}
             </section>
           )}
 
@@ -2566,6 +2492,34 @@ function WinsSection({ activeChild, strings, language }) {
   );
 }
 
+function ContactSection({ strings, language }) {
+  const contactText =
+    language === "es"
+      ? "Hola, necesito ayuda con Buenas Noches."
+      : "Hi, I need help with Buenas Noches.";
+
+  return (
+    <article className="card card--feature">
+      <div className="card-header">
+        <span className="section-label">{strings.contactUs}</span>
+        <h2>{strings.needHelp}</h2>
+      </div>
+      <p className="lead-copy">{strings.contactCopy}</p>
+      <div className="inline-actions">
+        <a className="button button-primary button-link" href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(contactText)}`}>
+          {strings.whatsapp}
+        </a>
+        <a
+          className="button button-secondary button-link"
+          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Buenas Noches - soporte")}&body=${encodeURIComponent(contactText)}`}
+        >
+          {strings.emailSupport}
+        </a>
+      </div>
+    </article>
+  );
+}
+
 function LockedPreviewCard({ activeSection, language }) {
   const labels = {
     home: language === "es" ? "Inicio" : "Home",
@@ -2574,6 +2528,7 @@ function LockedPreviewCard({ activeSection, language }) {
     "sleep-area": language === "es" ? "Area de sueno" : "Sleep space",
     avoid: language === "es" ? "Que evitar" : "What to avoid",
     wins: language === "es" ? "Logros" : "Wins",
+    contact: language === "es" ? "Contactanos" : "Contact us",
   };
 
   return (
@@ -2614,8 +2569,13 @@ function LockedPreviewCard({ activeSection, language }) {
                 : null}
               {activeSection === "wins"
                 ? language === "es"
-                  ? "Un lugar para celebrar logros y pedir apoyo"
-                  : "A place to celebrate wins and ask for support"
+                  ? "Un lugar para celebrar logros"
+                  : "A place to celebrate wins"
+                : null}
+              {activeSection === "contact"
+                ? language === "es"
+                  ? "Opciones directas para contactarnos"
+                  : "Direct ways to contact us"
                 : null}
             </li>
             <li>
