@@ -772,6 +772,31 @@ textarea {
   background: rgba(31, 48, 68, 0.04);
 }
 
+.account-lookup {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding-top: 4px;
+}
+
+.account-lookup__form {
+  width: 100%;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(31, 48, 68, 0.04);
+}
+
+.link-button {
+  min-height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--night-soft);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .history-card {
   padding: 16px 18px;
   border-radius: 18px;
