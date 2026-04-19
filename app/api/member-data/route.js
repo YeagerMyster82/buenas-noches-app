@@ -23,6 +23,9 @@ export async function POST(request) {
   if (payload.type === "quiz_result") {
     const result = await saveQuizResult({
       parentEmail: email,
+      childName: payload.childName || "",
+      childBirthday: payload.childBirthday || "",
+      childGender: payload.childGender || "boy",
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
