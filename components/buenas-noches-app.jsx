@@ -40,6 +40,11 @@ const copy = {
     editProfile: "Editar perfil",
     saveProfile: "Guardar cambios",
     backToChildren: "Volver a perfiles",
+    alreadyHaveAccount: "Ya tengo cuenta",
+    accountEmail: "Correo de tu cuenta",
+    restoreAccount: "Entrar a mi cuenta",
+    restoringAccount: "Buscando perfil...",
+    noSavedProfiles: "No encontre perfiles guardados con ese correo.",
     addChild: "Agregar perfil",
     addAnotherChild: "Agregar otro nino",
     unlockPremium: "Comprar premium",
@@ -127,6 +132,11 @@ const copy = {
     editProfile: "Edit profile",
     saveProfile: "Save changes",
     backToChildren: "Back to profiles",
+    alreadyHaveAccount: "I already have an account",
+    accountEmail: "Account email",
+    restoreAccount: "Open my account",
+    restoringAccount: "Finding profile...",
+    noSavedProfiles: "I could not find saved profiles with that email.",
     addChild: "Add child",
     addAnotherChild: "Add another child",
     unlockPremium: "Unlock premium",
@@ -281,6 +291,10 @@ const initialState = {
   parentName: "",
   parentEmail: "",
   parentProfileSaved: false,
+  accountLookupOpen: false,
+  accountLookupEmail: "",
+  accountLookupStatus: "idle",
+  accountLookupMessage: "",
   children: [],
   activeChildId: "",
   activeSection: "home",
@@ -346,6 +360,35 @@ function makeEmptyChild(childDraft) {
     dislikedCounts: {},
     sleepAreaChecks: {},
   };
+}
+
+function makeChildFromSavedQuiz(result) {
+  const metadata = Array.isArray(result.answers) ? {} : result.answers || {};
+  const responses = Array.isArray(result.answers) ? result.answers : metadata.responses || [];
+
+  return {
+    ...makeEmptyChild({
+      name: metadata.childName || "Mi hijo",
+      birthday: metadata.childBirthday || "",
+      gender: metadata.childGender || "boy",
+    }),
+    id: result.id || generateId(),
+    primaryProfile: result.primary_profile || "",
+    secondaryProfile: result.secondary_profile || "",
+    answers: responses,
+  };
+}
+
+function makeLogsFromSavedData(logs = []) {
+  return logs.map((log) => ({
+    date: log.log_date,
+    bedTime: log.in_bed_at,
+    sleepTime: log.fell_asleep_at,
+    latency: log.sleep_latency_minutes,
+    nightWakings: log.night_wakings || "0",
+    notes: log.notes || "",
+    ratings: log.ratings || [],
+  }));
 }
 
 export default function BuenasNochesApp() {
@@ -610,6 +653,73 @@ export default function BuenasNochesApp() {
         }));
       }
       return null;
+    }
+  }
+
+  async function restoreSavedAccount(event) {
+    event.preventDefault();
+    const email = state.accountLookupEmail.trim().toLowerCase();
+    if (!email) return;
+
+    setState((current) => ({
+      ...current,
+      accountLookupStatus: "loading",
+      accountLookupMessage: "",
+    }));
+
+    try {
+      const response = await fetch(`/api/member-data?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "No pude buscar tu cuenta en este momento.");
+      }
+
+      const savedLogs = makeLogsFromSavedData(data.nightlyLogs || []);
+      const savedChildren = (data.quizResults || [])
+        .map(makeChildFromSavedQuiz)
+        .filter((child) => child.primaryProfile);
+
+      if (!savedChildren.length) {
+        setState((current) => ({
+          ...current,
+          accountLookupStatus: "not_found",
+          accountLookupMessage: strings.noSavedProfiles,
+        }));
+        return;
+      }
+
+      const premiumCheck = await checkPremiumAccessForEmail(email, { silent: true });
+      const restoredChildren = savedChildren.map((child, index) =>
+        index === 0 ? { ...child, logs: savedLogs } : child
+      );
+
+      setState((current) => ({
+        ...current,
+        parentEmail: email,
+        purchaseEmail: email,
+        verifiedEmail: premiumCheck?.hasAccess ? email : current.verifiedEmail,
+        accessStatus: premiumCheck?.hasAccess ? "granted" : current.accessStatus,
+        premiumAccess: premiumCheck?.hasAccess ? premiumCheck.payload : current.premiumAccess,
+        accessMessage: premiumCheck?.hasAccess ? "" : current.accessMessage,
+        parentProfileSaved: true,
+        children: restoredChildren,
+        activeChildId: restoredChildren[0]?.id || "",
+        activeSection: "home",
+        onboardingMode: "",
+        accountLookupOpen: false,
+        accountLookupStatus: "success",
+        accountLookupMessage: "",
+        quizIndex: -1,
+        answers: [],
+        tieCandidates: null,
+        quizResult: null,
+      }));
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        accountLookupStatus: "error",
+        accountLookupMessage: error.message || "No pude buscar tu cuenta en este momento.",
+      }));
     }
   }
 
@@ -1112,6 +1222,22 @@ export default function BuenasNochesApp() {
                 <button className="button button-primary" type="submit">
                   {strings.startQuiz}
                 </button>
+                <AccountLookup
+                  strings={strings}
+                  isOpen={state.accountLookupOpen}
+                  email={state.accountLookupEmail}
+                  status={state.accountLookupStatus}
+                  message={state.accountLookupMessage}
+                  onToggle={() =>
+                    setState((current) => ({
+                      ...current,
+                      accountLookupOpen: !current.accountLookupOpen,
+                      accountLookupMessage: "",
+                    }))
+                  }
+                  onEmailChange={(value) => setState((current) => ({ ...current, accountLookupEmail: value }))}
+                  onSubmit={restoreSavedAccount}
+                />
               </form>
             ) : null}
 
@@ -1446,6 +1572,22 @@ export default function BuenasNochesApp() {
                     <button className="button button-primary" type="submit">
                       {strings.startQuiz}
                     </button>
+                    <AccountLookup
+                      strings={strings}
+                      isOpen={state.accountLookupOpen}
+                      email={state.accountLookupEmail}
+                      status={state.accountLookupStatus}
+                      message={state.accountLookupMessage}
+                      onToggle={() =>
+                        setState((current) => ({
+                          ...current,
+                          accountLookupOpen: !current.accountLookupOpen,
+                          accountLookupMessage: "",
+                        }))
+                      }
+                      onEmailChange={(value) => setState((current) => ({ ...current, accountLookupEmail: value }))}
+                      onSubmit={restoreSavedAccount}
+                    />
                   </form>
                 ) : null}
 
@@ -1647,6 +1789,38 @@ function TopActions({ strings, showPremium }) {
       <a className="button button-ghost button-link top-action" href={`mailto:${SUPPORT_EMAIL}`}>
         {strings.emailSupport}
       </a>
+    </div>
+  );
+}
+
+function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEmailChange, onSubmit }) {
+  return (
+    <div className="account-lookup">
+      <button className="link-button" type="button" onClick={onToggle}>
+        {strings.alreadyHaveAccount}
+      </button>
+      {isOpen ? (
+        <form className="stack compact account-lookup__form" onSubmit={onSubmit}>
+          <label className="stack compact">
+            <span>{strings.accountEmail}</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => onEmailChange(event.target.value)}
+              placeholder="tuemail@ejemplo.com"
+              required
+            />
+          </label>
+          {message ? (
+            <p className={status === "not_found" || status === "error" ? "status-message status-warning" : "status-message status-success"}>
+              {message}
+            </p>
+          ) : null}
+          <button className="button button-primary" type="submit" disabled={status === "loading"}>
+            {status === "loading" ? strings.restoringAccount : strings.restoreAccount}
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }
