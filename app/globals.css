@@ -126,12 +126,6 @@ img {
   box-shadow: var(--shadow);
 }
 
-.topbar {
-  position: sticky;
-  top: 10px;
-  z-index: 28;
-}
-
 .gate-header h1,
 .topbar strong {
   margin: 0;
@@ -151,10 +145,37 @@ img {
 }
 
 .topbar-logo {
-  width: 152px;
+  width: 174px;
   max-width: 42vw;
   height: auto;
   display: block;
+}
+
+.header-cta {
+  flex: 0 0 auto;
+}
+
+.main-menu {
+  display: grid;
+  gap: 6px;
+  min-width: min(260px, 100%);
+}
+
+.main-menu span {
+  color: rgba(248, 243, 234, 0.82);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.main-menu select {
+  min-height: 46px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--night-deep);
+  font-weight: 800;
 }
 
 .top-actions {
@@ -219,9 +240,6 @@ img {
 }
 
 .section-tabs {
-  position: sticky;
-  top: 104px;
-  z-index: 24;
   display: flex;
   gap: 8px;
   padding: 8px;
@@ -230,6 +248,30 @@ img {
   background: rgba(255, 255, 255, 0.55);
   box-shadow: inset 0 0 0 1px rgba(31, 48, 68, 0.08);
   backdrop-filter: blur(18px);
+}
+
+.child-strip--home {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
+}
+
+.child-card--hero {
+  min-height: 190px;
+  align-content: end;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(169, 216, 221, 0.28), transparent 28%),
+    linear-gradient(145deg, rgba(31, 48, 68, 0.98), rgba(66, 91, 119, 0.96));
+  color: #f8f3ea;
+}
+
+.child-card--hero span,
+.child-card--hero small {
+  color: rgba(248, 243, 234, 0.78);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .section-tab {
@@ -656,6 +698,11 @@ textarea {
 
 .selected-activity span {
   font-size: 0.92rem;
+}
+
+.watch-example {
+  width: fit-content;
+  margin-top: 4px;
 }
 
 .pill {
