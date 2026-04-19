@@ -37,6 +37,9 @@ const copy = {
     menuLabel: "Menu",
     readyRoom: "Alista su cuarto",
     contactUs: "Contactanos",
+    editProfile: "Editar perfil",
+    saveProfile: "Guardar cambios",
+    backToChildren: "Volver a perfiles",
     addChild: "Agregar perfil",
     addAnotherChild: "Agregar otro nino",
     unlockPremium: "Comprar premium",
@@ -121,6 +124,9 @@ const copy = {
     menuLabel: "Menu",
     readyRoom: "Prep their room",
     contactUs: "Contact us",
+    editProfile: "Edit profile",
+    saveProfile: "Save changes",
+    backToChildren: "Back to profiles",
     addChild: "Add child",
     addAnotherChild: "Add another child",
     unlockPremium: "Unlock premium",
@@ -626,7 +632,7 @@ export default function BuenasNochesApp() {
       ...current,
       children: [...current.children, child],
       activeChildId: child.id,
-      activeSection: "home",
+      activeSection: "child-dashboard",
       onboardingMode: "",
       childDraft: { name: "", birthday: "", gender: "boy" },
       parentName: parentName || current.parentName,
@@ -702,6 +708,26 @@ export default function BuenasNochesApp() {
     const email = state.purchaseEmail.trim().toLowerCase();
     if (!email) return;
     await checkPremiumAccessForEmail(email);
+  }
+
+  function saveChildBasics(event, childId) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("childName") || "").trim();
+    const birthday = String(formData.get("birthday") || "");
+    const gender = String(formData.get("gender") || "boy");
+    if (!name || !birthday) return;
+
+    updateChild(childId, () => ({
+      name,
+      birthday,
+      gender,
+    }));
+
+    setState((current) => ({
+      ...current,
+      persistenceMessage: "Perfil actualizado.",
+    }));
   }
 
   function updateRoutineField(field, value) {
@@ -1241,12 +1267,23 @@ export default function BuenasNochesApp() {
             </>
           ) : state.activeSection === "child-dashboard" ? (
               <div className="dashboard-grid">
+                <div className="profile-actions">
+                  <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
+                    {strings.backToChildren}
+                  </button>
+                </div>
                 <HomeSection
                   activeChild={activeChild}
                   progressSummary={progressSummary}
                   chartPoints={chartPoints}
                   strings={strings}
                   profileMap={profileMap}
+                />
+                <EditProfileCard
+                  key={activeChild?.id}
+                  activeChild={activeChild}
+                  strings={strings}
+                  onSave={(event) => saveChildBasics(event, activeChild.id)}
                 />
                 <AddChildPreview
                   activeChild={activeChild}
@@ -1484,37 +1521,30 @@ export default function BuenasNochesApp() {
             </section>
           ) : (
             <section className="app-panel">
-              <div className="child-strip child-strip--home">
-                {state.children.map((child) => {
-                  const summary = buildProgressSummary(child.logs);
-                  return (
-                    <button
-                      key={child.id}
-                      type="button"
-                      className="child-card child-card--hero"
-                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "child-dashboard" }))}
-                    >
-                      <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
-                      <strong>{child.name}</strong>
-                      <span>{formatAgeLabel(child.birthday, state.language)}</span>
-                      <small>{summary.averageLatency ? `${summary.averageLatency} min promedio` : "Aun sin noches guardadas"}</small>
-                    </button>
-                  );
-                })}
-
-                {canAddChild ? (
-                  <button type="button" className="child-card child-card--ghost" onClick={startAddChild}>
-                    <strong>{strings.addAnotherChild}</strong>
-                    <span>{state.language === "es" ? "Crear otro perfil de sueno" : "Create another sleep profile"}</span>
-                  </button>
-                ) : null}
-              </div>
 
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+
+              {state.activeSection === "home" ? (
+                <ChildHomeGrid
+                  children={state.children}
+                  activeChildId={state.activeChildId}
+                  canAddChild={canAddChild}
+                  strings={strings}
+                  language={state.language}
+                  profileMap={profileMap}
+                  onOpenChild={(childId) =>
+                    setState((current) => ({ ...current, activeChildId: childId, activeSection: "child-dashboard" }))
+                  }
+                  onAddChild={startAddChild}
+                />
+              ) : null}
 
               {state.activeSection === "child-dashboard" ? (
                 <>
                   <div className="profile-actions">
+                    <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
+                      {strings.backToChildren}
+                    </button>
                     <button className="button button-primary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "routine" }))}>
                       {strings.sections.routine}
                     </button>
@@ -1523,6 +1553,12 @@ export default function BuenasNochesApp() {
                     </button>
                   </div>
                   <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
+                  <EditProfileCard
+                    key={activeChild?.id}
+                    activeChild={activeChild}
+                    strings={strings}
+                    onSave={(event) => saveChildBasics(event, activeChild.id)}
+                  />
                   <AddChildPreview
                     activeChild={activeChild}
                     strings={strings}
@@ -1612,6 +1648,75 @@ function TopActions({ strings, showPremium }) {
         {strings.emailSupport}
       </a>
     </div>
+  );
+}
+
+function ChildHomeGrid({ children, canAddChild, strings, language, profileMap, onOpenChild, onAddChild }) {
+  return (
+    <div className="child-strip child-strip--home">
+      {children.map((child) => {
+        const summary = buildProgressSummary(child.logs);
+        return (
+          <button
+            key={child.id}
+            type="button"
+            className="child-card child-card--hero"
+            onClick={() => onOpenChild(child.id)}
+          >
+            <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
+            <strong>{child.name}</strong>
+            <span>{formatAgeLabel(child.birthday, language)}</span>
+            <small>
+              {summary.averageLatency
+                ? `${summary.averageLatency} min promedio`
+                : language === "es"
+                  ? "Abrir perfil"
+                  : "Open profile"}
+            </small>
+          </button>
+        );
+      })}
+
+      {canAddChild ? (
+        <button type="button" className="child-card child-card--ghost" onClick={onAddChild}>
+          <strong>{strings.addAnotherChild}</strong>
+          <span>{language === "es" ? "Crear otro perfil de sueno" : "Create another sleep profile"}</span>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function EditProfileCard({ activeChild, strings, onSave }) {
+  if (!activeChild) return null;
+
+  return (
+    <article className="card card--soft">
+      <div className="card-header">
+        <span className="section-label">{strings.editProfile}</span>
+        <h2>{activeChild.name}</h2>
+      </div>
+      <form className="stack" onSubmit={onSave}>
+        <label className="stack compact">
+          <span>{strings.childName}</span>
+          <input name="childName" type="text" defaultValue={activeChild.name} required />
+        </label>
+        <label className="stack compact">
+          <span>{strings.birthday}</span>
+          <input name="birthday" type="date" defaultValue={activeChild.birthday} required />
+        </label>
+        <label className="stack compact">
+          <span>{strings.gender}</span>
+          <select name="gender" defaultValue={activeChild.gender || "boy"}>
+            <option value="boy">{strings.boy}</option>
+            <option value="girl">{strings.girl}</option>
+          </select>
+        </label>
+        <button className="button button-primary" type="submit">
+          {strings.saveProfile}
+        </button>
+      </form>
+    </article>
   );
 }
 
@@ -1845,9 +1950,6 @@ function RoutineSection({
                         <strong>{step.selectedActivity.displayName}</strong>
                         <span>{step.selectedActivity.shortLabel}</span>
                         <p>{step.selectedActivity.instructions}</p>
-                        <button className="button button-secondary watch-example" type="button" disabled>
-                          Ver ejemplo
-                        </button>
                       </div>
                       <button className="button button-ghost" type="button" onClick={() => onToggleSwapStep(step.id)}>
                         {strings.changeActivity}
@@ -1898,11 +2000,6 @@ function RoutineSection({
                   <strong>{playerStep.selectedActivity?.displayName || playerStep.guidance?.title}</strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
                 </div>
-                {playerStep.selectedActivity ? (
-                  <button className="button button-secondary watch-example" type="button" disabled>
-                    Ver ejemplo
-                  </button>
-                ) : null}
                 <div className="routine-media">
                   <span>
                     {playerStep.selectedActivity
