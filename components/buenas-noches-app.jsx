@@ -657,7 +657,7 @@ export default function BuenasNochesApp() {
   }
 
   async function restoreSavedAccount(event) {
-    event.preventDefault();
+    event?.preventDefault();
     const email = state.accountLookupEmail.trim().toLowerCase();
     if (!email) return;
 
@@ -1800,13 +1800,19 @@ function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEm
         {strings.alreadyHaveAccount}
       </button>
       {isOpen ? (
-        <form className="stack compact account-lookup__form" onSubmit={onSubmit}>
+        <div className="stack compact account-lookup__form">
           <label className="stack compact">
             <span>{strings.accountEmail}</span>
             <input
               type="email"
               value={email}
               onChange={(event) => onEmailChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onSubmit(event);
+                }
+              }}
               placeholder="tuemail@ejemplo.com"
               required
             />
@@ -1816,10 +1822,10 @@ function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEm
               {message}
             </p>
           ) : null}
-          <button className="button button-primary" type="submit" disabled={status === "loading"}>
+          <button className="button button-primary" type="button" onClick={onSubmit} disabled={status === "loading"}>
             {status === "loading" ? strings.restoringAccount : strings.restoreAccount}
           </button>
-        </form>
+        </div>
       ) : null}
     </div>
   );
