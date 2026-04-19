@@ -1,4 +1,4 @@
-import { getMemberData, saveDailyPlan, saveNightlyLog, saveQuizResult } from "../../../lib/member-data";
+import { getMemberData, saveDailyPlan, saveNightlyLog, saveQuizResult, updateQuizProfile } from "../../../lib/member-data";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -29,6 +29,17 @@ export async function POST(request) {
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
+    });
+    return Response.json({ ok: true, result });
+  }
+
+  if (payload.type === "update_child_profile") {
+    const result = await updateQuizProfile({
+      parentEmail: email,
+      quizResultId: payload.childId,
+      childName: payload.childName || "",
+      childBirthday: payload.childBirthday || "",
+      childGender: payload.childGender || "boy",
     });
     return Response.json({ ok: true, result });
   }
