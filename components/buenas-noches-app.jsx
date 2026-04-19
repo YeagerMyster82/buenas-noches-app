@@ -34,6 +34,9 @@ const copy = {
       avoid: "Que evitar",
       wins: "Logros",
     },
+    menuLabel: "Menu",
+    readyRoom: "Alista su cuarto",
+    contactUs: "Contactanos",
     addChild: "Agregar perfil",
     addAnotherChild: "Agregar otro nino",
     unlockPremium: "Comprar premium",
@@ -115,6 +118,9 @@ const copy = {
       avoid: "Avoid",
       wins: "Wins",
     },
+    menuLabel: "Menu",
+    readyRoom: "Prep their room",
+    contactUs: "Contact us",
     addChild: "Add child",
     addAnotherChild: "Add another child",
     unlockPremium: "Unlock premium",
@@ -343,6 +349,7 @@ export default function BuenasNochesApp() {
     visible: false,
     mode: "browser",
   });
+  const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
@@ -410,15 +417,21 @@ export default function BuenasNochesApp() {
     }));
   }, [state.activeChildId, state.children]);
 
+  useEffect(() => {
+    const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (autoVerifyAttempted || !knownEmail || state.accessStatus === "granted" || state.accessStatus === "loading") return;
+    setAutoVerifyAttempted(true);
+    checkPremiumAccessForEmail(knownEmail, { silent: true });
+  }, [autoVerifyAttempted, state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus]);
+
   const childSlots = useMemo(() => getChildSlots(state.premiumAccess), [state.premiumAccess]);
   const strings = copy[state.language] || copy.es;
-  const sectionTabs = [
+  const mainMenuOptions = [
     { id: "home", label: strings.sections.home },
-    { id: "routine", label: strings.sections.routine },
-    { id: "videos", label: strings.sections.videos },
-    { id: "sleep-area", label: strings.sections["sleep-area"] },
+    { id: "sleep-area", label: strings.readyRoom },
     { id: "avoid", label: strings.sections.avoid },
-    { id: "wins", label: strings.sections.wins },
+    { id: "amazon", label: strings.productsWeLove },
+    { id: "contact", label: strings.contactUs },
   ];
   const profileMap = getProfileMap(state.language);
   const questions = getQuestions(state.language);
@@ -438,6 +451,20 @@ export default function BuenasNochesApp() {
         child.id === childId ? { ...child, ...updater(child) } : child
       ),
     }));
+  }
+
+  function handleMainMenu(value) {
+    if (value === "amazon") {
+      window.location.href = AMAZON_STORE_URL;
+      return;
+    }
+
+    if (value === "contact") {
+      setState((current) => ({ ...current, activeSection: "wins" }));
+      return;
+    }
+
+    setState((current) => ({ ...current, activeSection: value }));
   }
 
   function startAddChild() {
@@ -514,6 +541,72 @@ export default function BuenasNochesApp() {
     }));
   }
 
+  async function checkPremiumAccessForEmail(email, options = {}) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (!normalizedEmail) return null;
+
+    if (!options.silent) {
+      setState((current) => ({
+        ...current,
+        purchaseEmail: normalizedEmail,
+        accessStatus: "loading",
+        accessMessage: "",
+      }));
+    }
+
+    try {
+      const response = await fetch("/api/premium-access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude verificar tu compra en este momento.");
+      }
+
+      if (!payload.hasAccess) {
+        if (!options.silent) {
+          setState((current) => ({
+            ...current,
+            verifiedEmail: "",
+            accessStatus: "not_found",
+            premiumAccess: null,
+            accessMessage:
+              "Todavia no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
+          }));
+        }
+        return { hasAccess: false, payload };
+      }
+
+      setState((current) => ({
+        ...current,
+        purchaseEmail: normalizedEmail,
+        parentEmail: current.parentEmail || normalizedEmail,
+        verifiedEmail: normalizedEmail,
+        accessStatus: "granted",
+        premiumAccess: payload,
+        accessMessage: options.silent ? "" : "Compra verificada. Ya puedes usar el dashboard completo.",
+      }));
+
+      return { hasAccess: true, payload };
+    } catch (error) {
+      if (!options.silent) {
+        setState((current) => ({
+          ...current,
+          verifiedEmail: "",
+          accessStatus: "error",
+          premiumAccess: null,
+          accessMessage: error.message || "No pude verificar tu compra en este momento.",
+        }));
+      }
+      return null;
+    }
+  }
+
   async function saveChildProfile(event) {
     event?.preventDefault();
     if (!state.quizResult) return;
@@ -557,16 +650,21 @@ export default function BuenasNochesApp() {
       secondaryProfile: child.secondaryProfile || null,
     };
 
-    try {
-      await fetch("/api/free-profile-lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(leadPayload),
-      });
-    } catch {
-      // The profile is saved locally even if the external lead webhook is unavailable.
+    const premiumCheck = await checkPremiumAccessForEmail(parentEmail || state.parentEmail, { silent: true });
+    const isPremiumLead = premiumCheck?.hasAccess || state.accessStatus === "granted";
+
+    if (!isPremiumLead) {
+      try {
+        await fetch("/api/free-profile-lead", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(leadPayload),
+        });
+      } catch {
+        // The profile is saved locally even if the external lead webhook is unavailable.
+      }
     }
 
     const profileSaveEmail = state.verifiedEmail || parentEmail || state.parentEmail;
@@ -603,56 +701,7 @@ export default function BuenasNochesApp() {
     event.preventDefault();
     const email = state.purchaseEmail.trim().toLowerCase();
     if (!email) return;
-
-    setState((current) => ({
-      ...current,
-      purchaseEmail: email,
-      accessStatus: "loading",
-      accessMessage: "",
-    }));
-
-    try {
-      const response = await fetch("/api/premium-access", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "No pude verificar tu compra en este momento.");
-      }
-
-      if (!payload.hasAccess) {
-        setState((current) => ({
-          ...current,
-          verifiedEmail: "",
-          accessStatus: "not_found",
-          premiumAccess: null,
-          accessMessage:
-            "Todavia no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
-        }));
-        return;
-      }
-
-      setState((current) => ({
-        ...current,
-        verifiedEmail: email,
-        accessStatus: "granted",
-        premiumAccess: payload,
-        accessMessage: "Compra verificada. Ya puedes usar el dashboard completo.",
-      }));
-    } catch (error) {
-      setState((current) => ({
-        ...current,
-        verifiedEmail: "",
-        accessStatus: "error",
-        premiumAccess: null,
-        accessMessage: error.message || "No pude verificar tu compra en este momento.",
-      }));
-    }
+    await checkPremiumAccessForEmail(email);
   }
 
   function updateRoutineField(field, value) {
@@ -907,35 +956,25 @@ export default function BuenasNochesApp() {
         <section className="gate-shell">
           <div className="gate-header">
             <img className="brand-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-            <div>
-              <span className="section-label">{state.children.length ? strings.sections.home : strings.premiumDashboard}</span>
-              <h1>{strings.gateTitle}</h1>
-            </div>
-            <TopActions strings={strings} showPremium={!hasPremiumAccess} />
-            <label className="language-switch">
-              <span>{state.language === "es" ? "Idioma" : "Language"}</span>
+            <label className="main-menu">
+              <span>{strings.menuLabel}</span>
               <select
-                value={state.language}
-                onChange={(event) => setState((current) => ({ ...current, language: event.target.value }))}
+                value={state.activeSection === "wins" ? "contact" : ["home", "sleep-area", "avoid"].includes(state.activeSection) ? state.activeSection : "home"}
+                onChange={(event) => handleMainMenu(event.target.value)}
               >
-                <option value="es">Español</option>
-                <option value="en">English</option>
+                {mainMenuOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
+            {!hasPremiumAccess ? (
+              <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
+                {strings.unlockPremium}
+              </a>
+            ) : null}
           </div>
-
-          <nav className="section-tabs">
-            {sectionTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={state.activeSection === tab.id ? "section-tab is-active" : "section-tab"}
-                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
 
           {!state.children.length || state.onboardingMode === "new-child" ? (
             <>
@@ -1174,15 +1213,15 @@ export default function BuenasNochesApp() {
             </>
           ) : state.activeSection === "home" ? (
             <>
-              <div className="child-strip">
+              <div className="child-strip child-strip--home">
                 {state.children.map((child) => {
                   const summary = buildProgressSummary(child.logs);
                   return (
                     <button
                       key={child.id}
                       type="button"
-                      className={state.activeChildId === child.id ? "child-card is-active" : "child-card"}
-                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "home" }))}
+                      className="child-card child-card--hero"
+                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "child-dashboard" }))}
                     >
                       <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                       <strong>{child.name}</strong>
@@ -1199,6 +1238,8 @@ export default function BuenasNochesApp() {
                 })}
               </div>
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+            </>
+          ) : state.activeSection === "child-dashboard" ? (
               <div className="dashboard-grid">
                 <HomeSection
                   activeChild={activeChild}
@@ -1257,25 +1298,27 @@ export default function BuenasNochesApp() {
                   </form>
                 </article>
               </div>
-            </>
+          ) : state.activeSection === "sleep-area" ? (
+            <SleepAreaSection
+              activeChild={activeChild}
+              strings={strings}
+              checkedCount={checkedCount}
+              sleepAreaResult={sleepAreaResult}
+              onToggleCheck={(checkId) =>
+                updateChild(activeChild.id, (child) => ({
+                  sleepAreaChecks: {
+                    ...child.sleepAreaChecks,
+                    [checkId]: !child.sleepAreaChecks?.[checkId],
+                  },
+                }))
+              }
+            />
+          ) : state.activeSection === "avoid" ? (
+            <AvoidSection strings={strings} language={state.language} />
+          ) : state.activeSection === "wins" ? (
+            <WinsSection activeChild={activeChild} strings={strings} language={state.language} />
           ) : (
-            <>
-              <div className="child-strip">
-                {state.children.map((child) => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    className={state.activeChildId === child.id ? "child-card is-active" : "child-card"}
-                    onClick={() => setState((current) => ({ ...current, activeChildId: child.id }))}
-                  >
-                    <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
-                    <strong>{child.name}</strong>
-                    <span>{formatAgeLabel(child.birthday, state.language)}</span>
-                  </button>
-                ))}
-              </div>
-              <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
-            </>
+            <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
           )}
 
         </section>
@@ -1284,35 +1327,26 @@ export default function BuenasNochesApp() {
           <header className="topbar">
             <div className="topbar__brand">
               <img className="topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-              <div>
-                <span>{activeChild ? activeChild.name : "Tu dashboard de sueno"}</span>
-              </div>
             </div>
-            <TopActions strings={strings} showPremium={!hasPremiumAccess} />
-            <label className="language-switch language-switch--dark">
-                <span>{state.language === "es" ? "Idioma" : "Language"}</span>
+            <label className="main-menu main-menu--dark">
+              <span>{strings.menuLabel}</span>
               <select
-                value={state.language}
-                onChange={(event) => setState((current) => ({ ...current, language: event.target.value }))}
+                value={state.activeSection === "wins" ? "contact" : ["home", "sleep-area", "avoid"].includes(state.activeSection) ? state.activeSection : "home"}
+                onChange={(event) => handleMainMenu(event.target.value)}
               >
-                <option value="es">Español</option>
-                <option value="en">English</option>
+                {mainMenuOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
+            {!hasPremiumAccess ? (
+              <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
+                {strings.unlockPremium}
+              </a>
+            ) : null}
           </header>
-
-          <nav className="section-tabs">
-            {sectionTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={state.activeSection === tab.id ? "section-tab is-active" : "section-tab"}
-                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
 
           {!state.children.length || state.onboardingMode === "new-child" ? (
             <section className="app-panel">
@@ -1450,15 +1484,15 @@ export default function BuenasNochesApp() {
             </section>
           ) : (
             <section className="app-panel">
-              <div className="child-strip">
+              <div className="child-strip child-strip--home">
                 {state.children.map((child) => {
                   const summary = buildProgressSummary(child.logs);
                   return (
                     <button
                       key={child.id}
                       type="button"
-                      className={state.activeChildId === child.id ? "child-card is-active" : "child-card"}
-                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "home" }))}
+                      className="child-card child-card--hero"
+                      onClick={() => setState((current) => ({ ...current, activeChildId: child.id, activeSection: "child-dashboard" }))}
                     >
                       <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                       <strong>{child.name}</strong>
@@ -1478,8 +1512,16 @@ export default function BuenasNochesApp() {
 
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
 
-              {state.activeSection === "home" ? (
+              {state.activeSection === "child-dashboard" ? (
                 <>
+                  <div className="profile-actions">
+                    <button className="button button-primary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "routine" }))}>
+                      {strings.sections.routine}
+                    </button>
+                    <button className="button button-secondary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "videos" }))}>
+                      {strings.sections.videos}
+                    </button>
+                  </div>
                   <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
                   <AddChildPreview
                     activeChild={activeChild}
@@ -1803,6 +1845,9 @@ function RoutineSection({
                         <strong>{step.selectedActivity.displayName}</strong>
                         <span>{step.selectedActivity.shortLabel}</span>
                         <p>{step.selectedActivity.instructions}</p>
+                        <button className="button button-secondary watch-example" type="button" disabled>
+                          Ver ejemplo
+                        </button>
                       </div>
                       <button className="button button-ghost" type="button" onClick={() => onToggleSwapStep(step.id)}>
                         {strings.changeActivity}
@@ -1853,6 +1898,11 @@ function RoutineSection({
                   <strong>{playerStep.selectedActivity?.displayName || playerStep.guidance?.title}</strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
                 </div>
+                {playerStep.selectedActivity ? (
+                  <button className="button button-secondary watch-example" type="button" disabled>
+                    Ver ejemplo
+                  </button>
+                ) : null}
                 <div className="routine-media">
                   <span>
                     {playerStep.selectedActivity
