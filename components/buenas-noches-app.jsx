@@ -20,6 +20,9 @@ import {
 
 const storageKey = "buenas-noches-webapp-v3";
 const SALES_FUNNEL_URL = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
+const SUPPORT_WHATSAPP_URL = "https://wa.link/10n15d";
+const SUPPORT_EMAIL = "BuenasNochesApp@quirokids.com";
+const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
 
 const copy = {
   es: {
@@ -29,8 +32,16 @@ const copy = {
       videos: "Videos",
       "sleep-area": "Area de sueno",
       avoid: "Que evitar",
+      wins: "Logros",
     },
     addChild: "Agregar perfil",
+    addAnotherChild: "Agregar otro nino",
+    unlockPremium: "Comprar premium",
+    unlockPremiumFor: "Desbloquear premium para",
+    needHelp: "Necesitas ayuda?",
+    whatsapp: "WhatsApp",
+    emailSupport: "Email",
+    productsWeLove: "Productos que amamos",
     slotsFull: "Perfiles completos",
     premiumDashboard: "Dashboard premium",
     gateTitle: "Tu espacio para dejar de adivinar",
@@ -102,8 +113,16 @@ const copy = {
       videos: "Videos",
       "sleep-area": "Sleep space",
       avoid: "Avoid",
+      wins: "Wins",
     },
     addChild: "Add child",
+    addAnotherChild: "Add another child",
+    unlockPremium: "Unlock premium",
+    unlockPremiumFor: "Unlock premium for",
+    needHelp: "Need help?",
+    whatsapp: "WhatsApp",
+    emailSupport: "Email",
+    productsWeLove: "Products we love",
     slotsFull: "All profiles used",
     premiumDashboard: "Premium dashboard",
     gateTitle: "Your place to stop guessing",
@@ -399,12 +418,14 @@ export default function BuenasNochesApp() {
     { id: "videos", label: strings.sections.videos },
     { id: "sleep-area", label: strings.sections["sleep-area"] },
     { id: "avoid", label: strings.sections.avoid },
+    { id: "wins", label: strings.sections.wins },
   ];
   const profileMap = getProfileMap(state.language);
   const questions = getQuestions(state.language);
   const activeChild = state.children.find((child) => child.id === state.activeChildId) || null;
   const resultCopy = state.quizResult ? buildResultCopy(state.quizResult, state.language) : null;
   const canAddChild = state.children.length < childSlots.total;
+  const hasPremiumAccess = state.accessStatus === "granted";
   const progressSummary = activeChild ? buildProgressSummary(activeChild.logs) : null;
   const chartPoints = activeChild ? buildChartPoints(activeChild.logs) : null;
   const checkedCount = activeChild ? Object.values(activeChild.sleepAreaChecks || {}).filter(Boolean).length : 0;
@@ -890,6 +911,7 @@ export default function BuenasNochesApp() {
               <span className="section-label">{state.children.length ? strings.sections.home : strings.premiumDashboard}</span>
               <h1>{strings.gateTitle}</h1>
             </div>
+            <TopActions strings={strings} showPremium={!hasPremiumAccess} />
             <label className="language-switch">
               <span>{state.language === "es" ? "Idioma" : "Language"}</span>
               <select
@@ -1185,6 +1207,13 @@ export default function BuenasNochesApp() {
                   strings={strings}
                   profileMap={profileMap}
                 />
+                <AddChildPreview
+                  activeChild={activeChild}
+                  strings={strings}
+                  canAddChild={canAddChild}
+                  hasPremiumAccess={hasPremiumAccess}
+                  onAddChild={startAddChild}
+                />
                 <article className="card card--soft">
                   <div className="card-header">
                     <span className="section-label">{state.language === "es" ? "Premium" : "Premium"}</span>
@@ -1249,31 +1278,17 @@ export default function BuenasNochesApp() {
             </>
           )}
 
-          <nav className="bottom-nav">
-            {sectionTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={state.activeSection === tab.id ? "bottom-nav__item is-active" : "bottom-nav__item"}
-                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
         </section>
       ) : (
         <>
           <header className="topbar">
             <div className="topbar__brand">
-              <button className="menu-pill" type="button">
-                ☰
-              </button>
+              <img className="topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
               <div>
-                <strong>Buenas Noches</strong>
                 <span>{activeChild ? activeChild.name : "Tu dashboard de sueno"}</span>
               </div>
             </div>
+            <TopActions strings={strings} showPremium={!hasPremiumAccess} />
             <label className="language-switch language-switch--dark">
                 <span>{state.language === "es" ? "Idioma" : "Language"}</span>
               <select
@@ -1284,9 +1299,6 @@ export default function BuenasNochesApp() {
                 <option value="en">English</option>
               </select>
             </label>
-            <button className="icon-pill" type="button" onClick={startAddChild} disabled={!canAddChild}>
-              {canAddChild ? `+ ${strings.addChild}` : strings.slotsFull}
-            </button>
           </header>
 
           <nav className="section-tabs">
@@ -1458,22 +1470,25 @@ export default function BuenasNochesApp() {
 
                 {canAddChild ? (
                   <button type="button" className="child-card child-card--ghost" onClick={startAddChild}>
-                    <strong>Agregar nino</strong>
-                    <span>Tienes {childSlots.total - state.children.length} perfil(es) disponible(s)</span>
+                    <strong>{strings.addAnotherChild}</strong>
+                    <span>{state.language === "es" ? "Crear otro perfil de sueno" : "Create another sleep profile"}</span>
                   </button>
-                ) : (
-                  <div className="child-card child-card--locked">
-                    <strong>Perfiles completos</strong>
-                    <span>1 nino incluido + {childSlots.extraChildren} extra desbloqueado(s)</span>
-                    <small>El add-on se llama nino adicional buenas noches</small>
-                  </div>
-                )}
+                ) : null}
               </div>
 
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
 
               {state.activeSection === "home" ? (
-                <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
+                <>
+                  <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
+                  <AddChildPreview
+                    activeChild={activeChild}
+                    strings={strings}
+                    canAddChild={canAddChild}
+                    hasPremiumAccess={hasPremiumAccess}
+                    onAddChild={startAddChild}
+                  />
+                </>
               ) : null}
 
               {state.activeSection === "routine" ? (
@@ -1519,24 +1534,81 @@ export default function BuenasNochesApp() {
               ) : null}
 
               {state.activeSection === "avoid" ? <AvoidSection strings={strings} language={state.language} /> : null}
+
+              {state.activeSection === "wins" ? <WinsSection activeChild={activeChild} strings={strings} language={state.language} /> : null}
             </section>
           )}
 
-          <nav className="bottom-nav">
-            {sectionTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={state.activeSection === tab.id ? "bottom-nav__item is-active" : "bottom-nav__item"}
-                onClick={() => setState((current) => ({ ...current, activeSection: tab.id }))}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
         </>
       )}
     </main>
+  );
+}
+
+function TopActions({ strings, showPremium }) {
+  return (
+    <div className="top-actions">
+      <span className="support-label">{strings.needHelp}</span>
+      {showPremium ? (
+        <a className="button button-primary button-link top-action" href={SALES_FUNNEL_URL}>
+          {strings.unlockPremium}
+        </a>
+      ) : null}
+      {AMAZON_STORE_URL ? (
+        <a className="button button-secondary button-link top-action" href={AMAZON_STORE_URL}>
+          {strings.productsWeLove}
+        </a>
+      ) : (
+        <button className="button button-secondary top-action" type="button" disabled title="Add your Amazon storefront URL here">
+          {strings.productsWeLove}
+        </button>
+      )}
+      <a className="button button-ghost button-link top-action" href={SUPPORT_WHATSAPP_URL}>
+        {strings.whatsapp}
+      </a>
+      <a className="button button-ghost button-link top-action" href={`mailto:${SUPPORT_EMAIL}`}>
+        {strings.emailSupport}
+      </a>
+    </div>
+  );
+}
+
+function AddChildPreview({ activeChild, strings, canAddChild, hasPremiumAccess, onAddChild }) {
+  if (!activeChild) return null;
+
+  return (
+    <article className="card card--soft add-child-preview">
+      <div className="add-child-preview__background" aria-hidden="true">
+        <div className="avatar-placeholder">QK</div>
+        <span className="section-label">{strings.sections.home}</span>
+        <h2>{activeChild.name}</h2>
+        <div className="summary-grid">
+          <div className="stat-card">
+            <span>{strings.age}</span>
+            <strong>--</strong>
+          </div>
+          <div className="stat-card">
+            <span>{strings.averageToSleep}</span>
+            <strong>--</strong>
+          </div>
+        </div>
+      </div>
+      <div className="add-child-preview__overlay">
+        <button className="button button-primary" type="button" onClick={onAddChild}>
+          {strings.addAnotherChild}
+        </button>
+        {!canAddChild && hasPremiumAccess ? (
+          <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
+            {strings.unlockPremiumFor} {activeChild.name}
+          </a>
+        ) : null}
+        {!hasPremiumAccess ? (
+          <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
+            {strings.unlockPremium}
+          </a>
+        ) : null}
+      </div>
+    </article>
   );
 }
 
@@ -1547,8 +1619,13 @@ function HomeSection({ activeChild, progressSummary, chartPoints, strings, profi
     <div className="dashboard-grid">
       <article className="card card--feature dashboard-card">
         <div className="card-header">
-          <span className="section-label">Dashboard de {activeChild.name}</span>
-          <h2>{profileMap[activeChild.primaryProfile]?.name}</h2>
+          <div className="profile-heading">
+            <div className="avatar-placeholder">QK</div>
+            <div>
+              <span className="section-label">Dashboard de {activeChild.name}</span>
+              <h2>{profileMap[activeChild.primaryProfile]?.name}</h2>
+            </div>
+          </div>
         </div>
         <p className="lead-copy">
           {strings.age === "Age"
@@ -1629,6 +1706,9 @@ function RoutineSection({
   safetyTriggered,
   savedLogDate,
 }) {
+  const [routinePlayerOpen, setRoutinePlayerOpen] = useState(false);
+  const [routineStepIndex, setRoutineStepIndex] = useState(0);
+  const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
   if (!activeChild) return null;
 
   return (
@@ -1694,8 +1774,18 @@ function RoutineSection({
                 <Stat label="En cama" value={currentPlan.bedtime} />
                 <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
                 <Stat label="Tiempo esperado para dormir" value={`${currentPlan.expectedLatency} min`} />
-                <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
+              <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
             </div>
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={() => {
+                setRoutineStepIndex(0);
+                setRoutinePlayerOpen(true);
+              }}
+            >
+              Abrir rutina guiada
+            </button>
             <div className="stack">
               {currentPlan.steps.map((step) => (
                 <div className="step-card" key={step.id}>
@@ -1745,6 +1835,65 @@ function RoutineSection({
               ))}
             </div>
           </article>
+
+          {routinePlayerOpen && playerStep ? (
+            <div className="routine-modal" role="dialog" aria-modal="true" aria-label="Rutina guiada">
+              <div className="routine-modal__panel">
+                <button className="routine-modal__close" type="button" onClick={() => setRoutinePlayerOpen(false)}>
+                  ×
+                </button>
+                <span className="section-label">
+                  Paso {routineStepIndex + 1} de {currentPlan.steps.length}
+                </span>
+                <h2>{playerStep.label}</h2>
+                <p className="muted">
+                  {playerStep.start} - {playerStep.end}
+                </p>
+                <div className="routine-timer">
+                  <strong>{playerStep.selectedActivity?.displayName || playerStep.guidance?.title}</strong>
+                  <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
+                </div>
+                <div className="routine-media">
+                  <span>
+                    {playerStep.selectedActivity
+                      ? "Aqui podremos mostrar el video o foto de esta actividad."
+                      : "Esta parte puede quedar como lista simple sin video."}
+                  </span>
+                </div>
+                <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p>
+                {playerStep.guidance?.examples?.length ? (
+                  <ul className="mini-list">
+                    {playerStep.guidance.examples.map((example) => (
+                      <li key={example}>{example}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="inline-actions">
+                  <button
+                    className="button button-ghost"
+                    type="button"
+                    disabled={routineStepIndex === 0}
+                    onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    className="button button-primary"
+                    type="button"
+                    onClick={() => {
+                      if (routineStepIndex >= currentPlan.steps.length - 1) {
+                        setRoutinePlayerOpen(false);
+                        return;
+                      }
+                      setRoutineStepIndex((index) => index + 1);
+                    }}
+                  >
+                    {routineStepIndex >= currentPlan.steps.length - 1 ? "Terminar" : "Siguiente parte"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <article className="card card--soft">
             <div className="card-header">
@@ -1924,6 +2073,47 @@ function AvoidSection({ strings, language }) {
   );
 }
 
+function WinsSection({ activeChild, strings, language }) {
+  if (!activeChild) return null;
+  const whatsappText =
+    language === "es"
+      ? `Quiero compartir un logro de ${activeChild.name} en Buenas Noches:`
+      : `I want to share a win from ${activeChild.name} in Buenas Noches:`;
+
+  return (
+    <article className="card card--feature">
+      <div className="card-header">
+        <span className="section-label">{strings.sections.wins}</span>
+        <h2>{language === "es" ? "Celebra lo que esta funcionando" : "Celebrate what is working"}</h2>
+      </div>
+      <p className="lead-copy">
+        {language === "es"
+          ? "Los logros pequenos importan: menos negociacion, menos tiempo para dormir, menos despertares o una rutina mas tranquila."
+          : "Small wins matter: less negotiation, less time to fall asleep, fewer wakings, or a calmer routine."}
+      </p>
+      <div className="win-card">
+        <strong>{language === "es" ? "Comparte un logro o pide apoyo" : "Share a win or ask for support"}</strong>
+        <p>
+          {language === "es"
+            ? "Por ahora esto abre WhatsApp o email para que me llegue directo. Mas adelante podemos convertirlo en mensajeria dentro de la app."
+            : "For now this opens WhatsApp or email so it reaches me directly. Later we can turn this into in-app messaging."}
+        </p>
+        <div className="inline-actions">
+          <a className="button button-primary button-link" href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(whatsappText)}`}>
+            {strings.whatsapp}
+          </a>
+          <a
+            className="button button-secondary button-link"
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Buenas Noches - win/support")}&body=${encodeURIComponent(whatsappText)}`}
+          >
+            {strings.emailSupport}
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function LockedPreviewCard({ activeSection, language }) {
   const labels = {
     home: language === "es" ? "Inicio" : "Home",
@@ -1931,6 +2121,7 @@ function LockedPreviewCard({ activeSection, language }) {
     videos: language === "es" ? "Biblioteca de videos" : "Video library",
     "sleep-area": language === "es" ? "Area de sueno" : "Sleep space",
     avoid: language === "es" ? "Que evitar" : "What to avoid",
+    wins: language === "es" ? "Logros" : "Wins",
   };
 
   return (
@@ -1968,6 +2159,11 @@ function LockedPreviewCard({ activeSection, language }) {
                 ? language === "es"
                   ? "Lista clara de lo que mas interfiere con el sueno"
                   : "Clear list of what most interferes with sleep"
+                : null}
+              {activeSection === "wins"
+                ? language === "es"
+                  ? "Un lugar para celebrar logros y pedir apoyo"
+                  : "A place to celebrate wins and ask for support"
                 : null}
             </li>
             <li>
