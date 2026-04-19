@@ -10,7 +10,6 @@ import {
 } from "../lib/quiz";
 import {
   buildPlan,
-  buildChartPoints,
   buildProgressSummary,
   calculateLatency,
   formatAgeLabel,
@@ -48,10 +47,17 @@ const copy = {
     restoreAccount: "Entrar a mi cuenta",
     restoringAccount: "Buscando perfil...",
     noSavedProfiles: "No encontre perfiles guardados con ese correo.",
+    verifyEmailTitle: "Verificar email",
+    deleteProfile: "Eliminar perfil",
+    deleteProfileConfirm: "¿Seguro que quieres eliminar este perfil? Esta accion no se puede deshacer y perderas todos los datos.",
+    cancel: "Cancelar",
+    consistencyEncouragement: "¡Vas muy bien! La consistencia es lo que va a dar los mejores resultados.",
+    sleepImprovedCongrats: "¡Que alegria! Tu hijo esta empezando a dormir mejor. Sigue asi.",
+    rateAppPrompt: "Tu hijo lleva 3 noches quedandose dormido en 15 minutos o menos. ¿Nos ayudas calificando la app?",
+    rateApp: "Calificar la app",
     addChild: "Agregar perfil",
     addAnotherChild: "Agregar otro nino",
     unlockPremium: "Comprar premium",
-    unlockPremiumFor: "Desbloquear premium para",
     needHelp: "Necesitas ayuda?",
     contactCopy: "En QuiroKids estamos siempre disponibles para ti. Contactanos por el medio que prefieras.",
     whatsapp: "WhatsApp",
@@ -142,10 +148,17 @@ const copy = {
     restoreAccount: "Open my account",
     restoringAccount: "Finding profile...",
     noSavedProfiles: "I could not find saved profiles with that email.",
+    verifyEmailTitle: "Verify email",
+    deleteProfile: "Delete profile",
+    deleteProfileConfirm: "Are you sure you want to delete this profile? This action cannot be undone and you will lose all data.",
+    cancel: "Cancel",
+    consistencyEncouragement: "You're doing great! Consistency is what will get the best results.",
+    sleepImprovedCongrats: "Amazing. Your child is starting to sleep better. Keep going.",
+    rateAppPrompt: "Your child has fallen asleep in 15 minutes or less for 3 nights in a row. Would you rate the app?",
+    rateApp: "Rate the app",
     addChild: "Add child",
     addAnotherChild: "Add another child",
     unlockPremium: "Unlock premium",
-    unlockPremiumFor: "Unlock premium for",
     needHelp: "Need help?",
     contactCopy: "At QuiroKids, we are always available for you. Contact us through whichever option you prefer.",
     whatsapp: "WhatsApp",
@@ -382,7 +395,8 @@ function makeChildFromSavedQuiz(result) {
       birthday: childBirthday,
       gender: metadata.childGender || "boy",
     }),
-    id: result.id || generateId(),
+    id: result.child_id || result.id || generateId(),
+    quizResultId: result.id || "",
     primaryProfile: result.primary_profile || "",
     secondaryProfile: result.secondary_profile || "",
     answers: responses,
@@ -488,7 +502,6 @@ export default function BuenasNochesApp() {
   const canAddChild = state.children.length < childSlots.total;
   const hasPremiumAccess = state.accessStatus === "granted";
   const progressSummary = activeChild ? buildProgressSummary(activeChild.logs) : null;
-  const chartPoints = activeChild ? buildChartPoints(activeChild.logs) : null;
   const checkedCount = activeChild ? Object.values(activeChild.sleepAreaChecks || {}).filter(Boolean).length : 0;
   const sleepAreaResult = getSleepAreaResult(checkedCount);
 
@@ -668,7 +681,17 @@ export default function BuenasNochesApp() {
         throw new Error(data.error || "No pude buscar tu cuenta en este momento.");
       }
 
-      const savedLogs = makeLogsFromSavedData(data.nightlyLogs || []);
+      const rawNightlyLogs = data.nightlyLogs || [];
+      const hasChildScopedLogs = rawNightlyLogs.some((log) => log.child_id);
+      const logsByChildId = new Map();
+      rawNightlyLogs.forEach((log) => {
+        const key = log.child_id || "";
+        if (!logsByChildId.has(key)) {
+          logsByChildId.set(key, []);
+        }
+        logsByChildId.get(key).push(log);
+      });
+      const legacySavedLogs = makeLogsFromSavedData(hasChildScopedLogs ? logsByChildId.get("") || [] : rawNightlyLogs);
       const savedChildren = collapseLegacySavedChildren((data.quizResults || [])
         .map(makeChildFromSavedQuiz)
         .filter((child) => child.primaryProfile));
@@ -683,9 +706,10 @@ export default function BuenasNochesApp() {
       }
 
       const premiumCheck = await checkPremiumAccessForEmail(email, { silent: true });
-      const restoredChildren = savedChildren.map((child, index) =>
-        index === 0 ? { ...child, logs: savedLogs } : child
-      );
+      const restoredChildren = savedChildren.map((child, index) => ({
+        ...child,
+        logs: makeLogsFromSavedData(logsByChildId.get(child.id) || (index === 0 ? legacySavedLogs : [])),
+      }));
 
       setState((current) => ({
         ...current,
@@ -790,6 +814,7 @@ export default function BuenasNochesApp() {
           body: JSON.stringify({
             type: "quiz_result",
             email: profileSaveEmail,
+            childId: child.id,
             childName: child.name,
             childBirthday: child.birthday,
             childGender: child.gender,
@@ -802,7 +827,7 @@ export default function BuenasNochesApp() {
         if (!saveResponse.ok) {
           throw new Error(savePayload.error || "No pude guardar el perfil.");
         }
-        const savedChildId = savePayload?.result?.id;
+        const savedChildId = savePayload?.result?.child_id || savePayload?.result?.id;
 
         setState((current) => ({
           ...current,
@@ -868,6 +893,42 @@ export default function BuenasNochesApp() {
     }
   }
 
+  async function deleteChildProfile(childId) {
+    const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+
+    setState((current) => {
+      const remainingChildren = current.children.filter((child) => child.id !== childId);
+      const nextActiveChildId = current.activeChildId === childId ? remainingChildren[0]?.id || "" : current.activeChildId;
+      return {
+        ...current,
+        children: remainingChildren,
+        activeChildId: nextActiveChildId,
+        expandedChildId: current.expandedChildId === childId ? "" : current.expandedChildId,
+        editingChildId: "",
+        currentPlan: current.activeChildId === childId ? null : current.currentPlan,
+        persistenceMessage: "Perfil eliminado.",
+      };
+    });
+
+    if (email) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "delete_child_profile",
+            email,
+            childId,
+          }),
+        });
+      } catch {
+        return;
+      }
+    }
+  }
+
   function updateRoutineField(field, value) {
     setState((current) => ({
       ...current,
@@ -914,6 +975,7 @@ export default function BuenasNochesApp() {
           body: JSON.stringify({
             type: "daily_plan",
             email: state.verifiedEmail,
+            childId: activeChild.id,
             childName: activeChild.name,
             wakeTime: plan.wakeTime,
             targetBedtime: plan.targetBedtime,
@@ -1056,6 +1118,7 @@ export default function BuenasNochesApp() {
           body: JSON.stringify({
             type: "nightly_log",
             email: state.verifiedEmail,
+            childId: activeChild.id,
             childName: activeChild.name,
             logDate: nextLog.date,
             inBedAt: nextLog.bedTime,
@@ -1089,7 +1152,26 @@ export default function BuenasNochesApp() {
           activeChild={editingChild}
           strings={strings}
           onSave={(event) => saveChildBasics(event, editingChild.id)}
+          onDelete={() => deleteChildProfile(editingChild.id)}
           onClose={() => setState((current) => ({ ...current, editingChildId: "" }))}
+        />
+      ) : null}
+
+      {state.accountLookupOpen ? (
+        <AccountLookupModal
+          strings={strings}
+          email={state.accountLookupEmail}
+          status={state.accountLookupStatus}
+          message={state.accountLookupMessage}
+          onEmailChange={(value) => setState((current) => ({ ...current, accountLookupEmail: value }))}
+          onSubmit={restoreSavedAccount}
+          onClose={() =>
+            setState((current) => ({
+              ...current,
+              accountLookupOpen: false,
+              accountLookupMessage: "",
+            }))
+          }
         />
       ) : null}
 
@@ -1117,7 +1199,7 @@ export default function BuenasNochesApp() {
             ) : null}
           </div>
 
-          {!state.children.length || state.onboardingMode === "new-child" ? (
+          {(!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <>
               <div className="gate-grid">
             <article className="card card--feature">
@@ -1128,7 +1210,7 @@ export default function BuenasNochesApp() {
                 <li>{state.language === "es" ? "Rutina de esta noche con actividades intercambiables" : "Tonight's routine with swappable activities"}</li>
                 <li>{state.language === "es" ? "Grafico de progreso con minutos para dormir y despertares" : "Progress graph with minutes to fall asleep and night wakings"}</li>
                 <li>{state.language === "es" ? "Area de sueno y lista de que evitar" : "Sleep space and what to avoid sections"}</li>
-                <li>{state.language === "es" ? "Opcion de agregar ninos extra con tu add-on de Captivation Hub" : "Ability to add extra children through your Captivation Hub add-on"}</li>
+                <li>{state.language === "es" ? "Hasta 3 perfiles de ninos incluidos" : "Up to 3 child profiles included"}</li>
               </ul>
               <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
                 {state.language === "es" ? "Comprar premium" : "Purchase premium"}
@@ -1229,19 +1311,13 @@ export default function BuenasNochesApp() {
                 </button>
                 <AccountLookup
                   strings={strings}
-                  isOpen={state.accountLookupOpen}
-                  email={state.accountLookupEmail}
-                  status={state.accountLookupStatus}
-                  message={state.accountLookupMessage}
                   onToggle={() =>
                     setState((current) => ({
                       ...current,
-                      accountLookupOpen: !current.accountLookupOpen,
+                      accountLookupOpen: true,
                       accountLookupMessage: "",
                     }))
                   }
-                  onEmailChange={(value) => setState((current) => ({ ...current, accountLookupEmail: value }))}
-                  onSubmit={restoreSavedAccount}
                 />
               </form>
             ) : null}
@@ -1445,7 +1521,7 @@ export default function BuenasNochesApp() {
             ) : null}
           </header>
 
-          {!state.children.length || state.onboardingMode === "new-child" ? (
+          {(!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <section className="app-panel">
               <article className="card card--soft card--quiz">
                 <div className="card-header">
@@ -1508,19 +1584,13 @@ export default function BuenasNochesApp() {
                     </button>
                     <AccountLookup
                       strings={strings}
-                      isOpen={state.accountLookupOpen}
-                      email={state.accountLookupEmail}
-                      status={state.accountLookupStatus}
-                      message={state.accountLookupMessage}
                       onToggle={() =>
                         setState((current) => ({
                           ...current,
-                          accountLookupOpen: !current.accountLookupOpen,
+                          accountLookupOpen: true,
                           accountLookupMessage: "",
                         }))
                       }
-                      onEmailChange={(value) => setState((current) => ({ ...current, accountLookupEmail: value }))}
-                      onSubmit={restoreSavedAccount}
                     />
                   </form>
                 ) : null}
@@ -1709,13 +1779,27 @@ function TopActions({ strings, showPremium }) {
   );
 }
 
-function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEmailChange, onSubmit }) {
+function AccountLookup({ strings, onToggle }) {
   return (
     <div className="account-lookup">
       <button className="link-button" type="button" onClick={onToggle}>
         {strings.alreadyHaveAccount}
       </button>
-      {isOpen ? (
+    </div>
+  );
+}
+
+function AccountLookupModal({ strings, email, status, message, onEmailChange, onSubmit, onClose }) {
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label={strings.verifyEmailTitle}>
+      <article className="profile-modal__panel card card--soft">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label={strings.close}>
+          ×
+        </button>
+        <div className="card-header">
+          <span className="section-label">{strings.alreadyHaveAccount}</span>
+          <h2>{strings.verifyEmailTitle}</h2>
+        </div>
         <div className="stack compact account-lookup__form">
           <label className="stack compact">
             <span>{strings.accountEmail}</span>
@@ -1731,6 +1815,7 @@ function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEm
               }}
               placeholder="tuemail@ejemplo.com"
               required
+              autoFocus
             />
           </label>
           {message ? (
@@ -1742,7 +1827,7 @@ function AccountLookup({ strings, isOpen, email, status, message, onToggle, onEm
             {status === "loading" ? strings.restoringAccount : strings.restoreAccount}
           </button>
         </div>
-      ) : null}
+      </article>
     </div>
   );
 }
@@ -1811,7 +1896,8 @@ function ChildHomeGrid({
   );
 }
 
-function EditProfileModal({ activeChild, strings, onSave, onClose }) {
+function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   if (!activeChild) return null;
 
   return (
@@ -1851,47 +1937,27 @@ function EditProfileModal({ activeChild, strings, onSave, onClose }) {
             </button>
           </div>
         </form>
+        <div className="delete-profile-zone">
+          {!confirmDelete ? (
+            <button className="button button-danger" type="button" onClick={() => setConfirmDelete(true)}>
+              {strings.deleteProfile}
+            </button>
+          ) : (
+            <div className="stack compact">
+              <p className="status-message status-warning">{strings.deleteProfileConfirm}</p>
+              <div className="inline-actions">
+                <button className="button button-danger" type="button" onClick={onDelete}>
+                  {strings.deleteProfile}
+                </button>
+                <button className="button button-ghost" type="button" onClick={() => setConfirmDelete(false)}>
+                  {strings.cancel}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </article>
     </div>
-  );
-}
-
-function AddChildPreview({ activeChild, strings, canAddChild, hasPremiumAccess, onAddChild }) {
-  if (!activeChild) return null;
-
-  return (
-    <article className="card card--soft add-child-preview">
-      <div className="add-child-preview__background" aria-hidden="true">
-        <div className="avatar-placeholder">QK</div>
-        <span className="section-label">{strings.sections.home}</span>
-        <h2>{activeChild.name}</h2>
-        <div className="summary-grid">
-          <div className="stat-card">
-            <span>{strings.age}</span>
-            <strong>--</strong>
-          </div>
-          <div className="stat-card">
-            <span>{strings.averageToSleep}</span>
-            <strong>--</strong>
-          </div>
-        </div>
-      </div>
-      <div className="add-child-preview__overlay">
-        <button className="button button-primary" type="button" onClick={onAddChild}>
-          {strings.addAnotherChild}
-        </button>
-        {!canAddChild && hasPremiumAccess ? (
-          <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
-            {strings.unlockPremiumFor} {activeChild.name}
-          </a>
-        ) : null}
-        {!hasPremiumAccess ? (
-          <a className="button button-secondary button-link" href={SALES_FUNNEL_URL}>
-            {strings.unlockPremium}
-          </a>
-        ) : null}
-      </div>
-    </article>
   );
 }
 
@@ -1905,6 +1971,32 @@ function addDateDays(date, days) {
   return next;
 }
 
+function getSleepProgressMessage(logs, strings) {
+  const recent = [...(logs || [])]
+    .filter((log) => Number.isFinite(Number(log.latency)))
+    .sort((left, right) => (left.date < right.date ? 1 : -1));
+
+  if (recent.length >= 3 && recent.slice(0, 3).every((log) => Number(log.latency) <= 15)) {
+    return { type: "review", text: strings.rateAppPrompt };
+  }
+
+  if (recent.length >= 4) {
+    const latestTwo = recent.slice(0, 2);
+    const previousTwo = recent.slice(2, 4);
+    const latestAverage = latestTwo.reduce((sum, log) => sum + Number(log.latency), 0) / latestTwo.length;
+    const previousAverage = previousTwo.reduce((sum, log) => sum + Number(log.latency), 0) / previousTwo.length;
+    if (latestAverage <= previousAverage - 8) {
+      return { type: "improved", text: strings.sleepImprovedCongrats };
+    }
+  }
+
+  if (recent.length >= 3) {
+    return { type: "consistent", text: strings.consistencyEncouragement };
+  }
+
+  return null;
+}
+
 function buildWeeklyProgressChart(logs, weekOffset = 0) {
   const today = new Date();
   const endDate = addDateDays(today, weekOffset * 7);
@@ -1914,7 +2006,9 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
     const log = logs.find((entry) => entry.date === dateKey);
     return {
       dateKey,
-      label: date.toLocaleDateString("es", { weekday: "short" }).replace(".", ""),
+      label: date.toLocaleDateString("es", { month: "numeric", day: "numeric" }),
+      bedTime: log?.bedTime || "",
+      sleepTime: log?.sleepTime || "",
       latency: log ? Number(log.latency || 0) : null,
       wakings: log ? normalizeNightWakings(log.nightWakings) : 0,
     };
@@ -1922,33 +2016,11 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
 
   const maxLatency = Math.max(45, ...days.map((day) => day.latency || 0));
   const maxWakings = Math.max(3, ...days.map((day) => day.wakings || 0));
-  const graphTop = 36;
-  const graphBottom = 172;
-  const graphHeight = graphBottom - graphTop;
-  const xForIndex = (index) => 54 + index * 88;
-
-  const points = days
-    .map((day, index) => {
-      if (day.latency === null) return null;
-      const x = xForIndex(index);
-      const y = graphBottom - (day.latency / maxLatency) * graphHeight;
-      return { x, y, value: day.latency };
-    })
-    .filter(Boolean);
 
   return {
     days,
-    points,
-    pointsString: points.map((point) => `${point.x},${point.y}`).join(" "),
-    bars: days.map((day, index) => {
-      const height = day.wakings ? Math.max(8, (day.wakings / maxWakings) * 54) : 4;
-      return {
-        x: xForIndex(index) - 16,
-        y: graphBottom - height,
-        height,
-        value: day.wakings,
-      };
-    }),
+    maxLatency,
+    maxWakings,
     empty: !logs.length,
     canGoForward: weekOffset < 0,
   };
@@ -1956,8 +2028,11 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
 
 function HomeSection({ activeChild, progressSummary, strings, profileMap, onCreateRoutine, onEditProfile, onCollapse }) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
   if (!activeChild) return null;
   const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset);
+  const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
 
   return (
@@ -2000,46 +2075,42 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
             </div>
           </div>
           <div className="chart-legend" aria-label="Leyenda del grafico">
-            <span><i className="legend-line" /> Tiempo para dormir</span>
-            <span><i className="legend-bar" /> Despertares nocturnos</span>
+            <span><i className="legend-bar" /> Tiempo en cama hasta dormirse</span>
           </div>
-          <svg viewBox="0 0 640 230" aria-hidden="true">
-            <line x1="42" y1="172" x2="594" y2="172" className="chart-axis chart-axis--light" />
-            <line x1="42" y1="36" x2="42" y2="172" className="chart-axis chart-axis--light" />
-            <text x="42" y="26" className="chart-label chart-label--light">min</text>
-            <text x="590" y="26" className="chart-label chart-label--light" textAnchor="end">despertares</text>
-            {weeklyChart.bars.map((bar, index) => (
-              <g key={`bar-${weeklyChart.days[index].dateKey}`}>
-                <rect x={bar.x} y={bar.y} width="32" height={bar.height} rx="8" className="chart-bar chart-bar--dashboard" />
-                <text x={bar.x + 16} y={bar.y - 6} className="chart-label chart-label--light" textAnchor="middle">
-                  {bar.value}
-                </text>
-              </g>
+          <div className="sleep-latency-chart">
+            {weeklyChart.days.map((day) => (
+              <div className="sleep-latency-row" key={day.dateKey}>
+                <span className="sleep-date">{day.label}</span>
+                <span className="sleep-time">{day.bedTime || "--:--"}</span>
+                <div className="sleep-bar-track">
+                  {day.latency !== null ? (
+                    <div className="sleep-bar-fill" style={{ width: `${Math.max(8, (day.latency / weeklyChart.maxLatency) * 100)}%` }}>
+                      <span>{day.latency} min</span>
+                    </div>
+                  ) : (
+                    <span className="sleep-empty">Sin registro</span>
+                  )}
+                </div>
+                <span className="sleep-time">{day.sleepTime || "--:--"}</span>
+              </div>
             ))}
-            {weeklyChart.pointsString ? (
-              <polyline
-                fill="none"
-                className="chart-line chart-line--dashboard"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={weeklyChart.pointsString}
-              />
-            ) : null}
-            {weeklyChart.points.map((point, index) => (
-              <g key={`point-${index}`}>
-                <circle cx={point.x} cy={point.y} r="6" className="chart-dot chart-dot--dashboard" />
-                <text x={point.x} y={point.y - 12} className="chart-label chart-label--light" textAnchor="middle">
-                  {point.value}
-                </text>
-              </g>
-            ))}
-            {weeklyChart.days.map((day, index) => (
-              <text key={day.dateKey} x={54 + index * 88} y="210" className="chart-label chart-label--light" textAnchor="middle">
-                {day.label}
-              </text>
-            ))}
-          </svg>
+          </div>
+          <div className="wakeups-chart">
+            <div className="chart-legend" aria-label="Despertares nocturnos">
+              <span><i className="legend-wake" /> Despertares nocturnos</span>
+            </div>
+            <div className="wakeups-bars">
+              {weeklyChart.days.map((day) => (
+                <div className="wakeups-day" key={`wake-${day.dateKey}`}>
+                  <div className="wakeups-track">
+                    <div className="wakeups-fill" style={{ height: `${Math.max(6, (day.wakings / weeklyChart.maxWakings) * 100)}%` }} />
+                  </div>
+                  <strong>{day.wakings}</strong>
+                  <span>{day.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           {weeklyChart.empty ? (
             <p className="muted">
               {strings.age === "Age"
@@ -2048,6 +2119,36 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
             </p>
           ) : null}
         </section>
+
+        {progressMessage ? (
+          <div className={`progress-message progress-message--${progressMessage.type}`}>
+            <p>{progressMessage.text}</p>
+            {progressMessage.type === "review" ? (
+              <button className="button button-secondary" type="button" onClick={() => setReviewOpen((open) => !open)}>
+                {strings.rateApp}
+              </button>
+            ) : null}
+            {reviewOpen ? (
+              <div className="review-box">
+                <div className="star-rating" aria-label="Calificacion de la app">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className={reviewRating >= star ? "is-selected" : ""}
+                      onClick={() => setReviewRating(star)}
+                      aria-label={`${star} estrellas`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <textarea placeholder="Cuéntanos qué cambió para tu familia." />
+                <p className="muted">Más adelante enviaremos estas calificaciones al panel de admin.</p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <button className="button button-primary dashboard-routine-button" type="button" onClick={onCreateRoutine}>
           {strings.createTonightRoutine}
