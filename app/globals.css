@@ -69,34 +69,6 @@ img {
   gap: 18px;
 }
 
-.install-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(31, 48, 68, 0.96), rgba(65, 92, 117, 0.94));
-  color: #f9f6f0;
-  box-shadow: var(--shadow);
-}
-
-.install-banner__copy {
-  display: grid;
-  gap: 6px;
-}
-
-.install-banner__copy p {
-  margin: 0;
-  color: rgba(255, 248, 241, 0.82);
-}
-
-.install-banner__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .gate-shell,
 .app-panel,
 .dashboard-grid {
@@ -1060,7 +1032,6 @@ textarea {
     gap: 14px;
   }
 
-  .install-banner,
   .gate-header,
   .topbar,
   .card {
@@ -1068,7 +1039,6 @@ textarea {
     border-radius: 22px;
   }
 
-  .install-banner,
   .topbar,
   .gate-header {
     flex-direction: column;
