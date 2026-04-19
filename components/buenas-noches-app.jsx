@@ -38,7 +38,9 @@ const copy = {
     readyRoom: "Alista su cuarto",
     contactUs: "Contactanos",
     editProfile: "Editar perfil",
+    editChildProfile: "Editar perfil de",
     saveProfile: "Guardar cambios",
+    close: "Cerrar",
     backToChildren: "Volver a perfiles",
     alreadyHaveAccount: "Ya tengo cuenta",
     accountEmail: "Correo de tu cuenta",
@@ -86,6 +88,8 @@ const copy = {
     targetBedtime: "A que hora quieres que ya este dormido?",
     dinnerTime: "A que hora cenan hoy? (opcional)",
     dinnerShared: "Puedes usar la misma hora para todos tus hijos si cenan juntos.",
+    prepareDuration: "Cuanto dura preparar para dormir? (bano, pijama, luz baja)",
+    prepareDurationHelp: "Usaremos este tiempo para calcular a que hora deben empezar.",
     napQuestion: "Durmio siesta?",
     napWakeTime: "A que hora se desperto de la siesta?",
     generateRoutine: "Generar rutina",
@@ -130,7 +134,9 @@ const copy = {
     readyRoom: "Prep their room",
     contactUs: "Contact us",
     editProfile: "Edit profile",
+    editChildProfile: "Edit profile for",
     saveProfile: "Save changes",
+    close: "Close",
     backToChildren: "Back to profiles",
     alreadyHaveAccount: "I already have an account",
     accountEmail: "Account email",
@@ -178,6 +184,8 @@ const copy = {
     targetBedtime: "What time do you want them asleep by?",
     dinnerTime: "What time is dinner tonight? (optional)",
     dinnerShared: "You can keep the same dinner time for all your children if they eat together.",
+    prepareDuration: "How long does getting ready for bed take? (bath, pajamas, dim lights)",
+    prepareDurationHelp: "We will use this to calculate when they should start.",
     napQuestion: "Did they nap?",
     napWakeTime: "What time did they wake from the nap?",
     generateRoutine: "Generate routine",
@@ -312,11 +320,13 @@ const initialState = {
     wakeTime: "",
     targetBedtime: "",
     dinnerTime: "",
+    prepareDuration: "25",
     napTaken: "no",
     napWakeTime: "",
   },
   currentPlan: null,
   expandedSwapStep: "",
+  editingChildId: "",
   savedLogDate: "",
 };
 
@@ -365,18 +375,27 @@ function makeEmptyChild(childDraft) {
 function makeChildFromSavedQuiz(result) {
   const metadata = Array.isArray(result.answers) ? {} : result.answers || {};
   const responses = Array.isArray(result.answers) ? result.answers : metadata.responses || [];
+  const childName = metadata.childName || "";
+  const childBirthday = metadata.childBirthday || "";
 
   return {
     ...makeEmptyChild({
-      name: metadata.childName || "Mi hijo",
-      birthday: metadata.childBirthday || "",
+      name: childName || "Perfil guardado",
+      birthday: childBirthday,
       gender: metadata.childGender || "boy",
     }),
     id: result.id || generateId(),
     primaryProfile: result.primary_profile || "",
     secondaryProfile: result.secondary_profile || "",
     answers: responses,
+    isLegacyProfile: !childName || !childBirthday,
   };
+}
+
+function collapseLegacySavedChildren(children) {
+  const namedChildren = children.filter((child) => !child.isLegacyProfile);
+  const legacyChildren = children.filter((child) => child.isLegacyProfile);
+  return legacyChildren.length ? [...namedChildren, legacyChildren[0]] : namedChildren;
 }
 
 function makeLogsFromSavedData(logs = []) {
@@ -485,6 +504,7 @@ export default function BuenasNochesApp() {
   const profileMap = getProfileMap(state.language);
   const questions = getQuestions(state.language);
   const activeChild = state.children.find((child) => child.id === state.activeChildId) || null;
+  const editingChild = state.children.find((child) => child.id === state.editingChildId) || null;
   const resultCopy = state.quizResult ? buildResultCopy(state.quizResult, state.language) : null;
   const canAddChild = state.children.length < childSlots.total;
   const hasPremiumAccess = state.accessStatus === "granted";
@@ -675,9 +695,9 @@ export default function BuenasNochesApp() {
       }
 
       const savedLogs = makeLogsFromSavedData(data.nightlyLogs || []);
-      const savedChildren = (data.quizResults || [])
+      const savedChildren = collapseLegacySavedChildren((data.quizResults || [])
         .map(makeChildFromSavedQuiz)
-        .filter((child) => child.primaryProfile);
+        .filter((child) => child.primaryProfile));
 
       if (!savedChildren.length) {
         setState((current) => ({
@@ -786,7 +806,7 @@ export default function BuenasNochesApp() {
     const profileSaveEmail = state.verifiedEmail || parentEmail || state.parentEmail;
     if (profileSaveEmail) {
       try {
-        await fetch("/api/member-data", {
+        const saveResponse = await fetch("/api/member-data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -802,9 +822,18 @@ export default function BuenasNochesApp() {
             secondaryProfile: child.secondaryProfile || null,
           }),
         });
+        const savePayload = await saveResponse.json();
+        if (!saveResponse.ok) {
+          throw new Error(savePayload.error || "No pude guardar el perfil.");
+        }
+        const savedChildId = savePayload?.result?.id;
 
         setState((current) => ({
           ...current,
+          children: savedChildId
+            ? current.children.map((entry) => (entry.id === child.id ? { ...entry, id: savedChildId } : entry))
+            : current.children,
+          activeChildId: savedChildId || current.activeChildId,
           persistenceMessage: "Perfil guardado. Ya puedes entrar al dashboard de tu hijo.",
         }));
       } catch {
@@ -820,7 +849,7 @@ export default function BuenasNochesApp() {
     await checkPremiumAccessForEmail(email);
   }
 
-  function saveChildBasics(event, childId) {
+  async function saveChildBasics(event, childId) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const name = String(formData.get("childName") || "").trim();
@@ -836,8 +865,31 @@ export default function BuenasNochesApp() {
 
     setState((current) => ({
       ...current,
+      editingChildId: "",
       persistenceMessage: "Perfil actualizado.",
     }));
+
+    const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (email) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "update_child_profile",
+            email,
+            childId,
+            childName: name,
+            childBirthday: birthday,
+            childGender: gender,
+          }),
+        });
+      } catch {
+        return;
+      }
+    }
   }
 
   function updateRoutineField(field, value) {
@@ -860,6 +912,7 @@ export default function BuenasNochesApp() {
       wakeTime: state.routineForm.wakeTime,
       targetBedtime: state.routineForm.targetBedtime,
       dinnerTime: state.routineForm.dinnerTime,
+      prepareDuration: Number(state.routineForm.prepareDuration) || 25,
       napTaken: state.routineForm.napTaken === "yes",
       napWakeTime: state.routineForm.napWakeTime,
       priorLogs: activeChild.logs,
@@ -896,7 +949,11 @@ export default function BuenasNochesApp() {
             steps: plan.steps.map((step) => ({
               phaseKey: step.phaseKey,
               label: step.label,
-              activity: step.selectedActivity?.displayName || step.guidance?.title || "",
+              activity:
+                step.selectedActivity?.displayName ||
+                step.guidance?.title ||
+                step.preparationItems?.map((item) => item.displayName).join(", ") ||
+                "",
             })),
           }),
         });
@@ -924,6 +981,7 @@ export default function BuenasNochesApp() {
         wakeTime: current.routineForm.wakeTime,
         targetBedtime: current.routineForm.targetBedtime,
         dinnerTime: current.routineForm.dinnerTime,
+        prepareDuration: Number(current.routineForm.prepareDuration) || 25,
         napTaken: current.routineForm.napTaken === "yes",
         napWakeTime: current.routineForm.napWakeTime,
         priorLogs: child.logs,
@@ -1057,6 +1115,15 @@ export default function BuenasNochesApp() {
 
   return (
     <main className="shell app-shell">
+      {editingChild ? (
+        <EditProfileModal
+          activeChild={editingChild}
+          strings={strings}
+          onSave={(event) => saveChildBasics(event, editingChild.id)}
+          onClose={() => setState((current) => ({ ...current, editingChildId: "" }))}
+        />
+      ) : null}
+
       {installState.visible ? (
         <section className="install-banner">
           <div className="install-banner__copy">
@@ -1397,6 +1464,14 @@ export default function BuenasNochesApp() {
                   <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
                     {strings.backToChildren}
                   </button>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={`${strings.editProfile} ${activeChild?.name || ""}`}
+                    onClick={() => setState((current) => ({ ...current, editingChildId: activeChild?.id || "" }))}
+                  >
+                    ✎
+                  </button>
                 </div>
                 <HomeSection
                   activeChild={activeChild}
@@ -1404,12 +1479,6 @@ export default function BuenasNochesApp() {
                   chartPoints={chartPoints}
                   strings={strings}
                   profileMap={profileMap}
-                />
-                <EditProfileCard
-                  key={activeChild?.id}
-                  activeChild={activeChild}
-                  strings={strings}
-                  onSave={(event) => saveChildBasics(event, activeChild.id)}
                 />
                 <AddChildPreview
                   activeChild={activeChild}
@@ -1687,6 +1756,14 @@ export default function BuenasNochesApp() {
                     <button className="button button-ghost" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}>
                       {strings.backToChildren}
                     </button>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label={`${strings.editProfile} ${activeChild?.name || ""}`}
+                      onClick={() => setState((current) => ({ ...current, editingChildId: activeChild?.id || "" }))}
+                    >
+                      ✎
+                    </button>
                     <button className="button button-primary" type="button" onClick={() => setState((current) => ({ ...current, activeSection: "routine" }))}>
                       {strings.sections.routine}
                     </button>
@@ -1695,12 +1772,6 @@ export default function BuenasNochesApp() {
                     </button>
                   </div>
                   <HomeSection activeChild={activeChild} progressSummary={progressSummary} chartPoints={chartPoints} strings={strings} profileMap={profileMap} />
-                  <EditProfileCard
-                    key={activeChild?.id}
-                    activeChild={activeChild}
-                    strings={strings}
-                    onSave={(event) => saveChildBasics(event, activeChild.id)}
-                  />
                   <AddChildPreview
                     activeChild={activeChild}
                     strings={strings}
@@ -1720,6 +1791,7 @@ export default function BuenasNochesApp() {
                   currentPlan={state.currentPlan}
                   onRoutineFieldChange={updateRoutineField}
                   onGenerateRoutine={generateRoutine}
+                  onClose={() => setState((current) => ({ ...current, activeSection: "child-dashboard" }))}
                   onChangeActivity={changeActivity}
                   expandedSwapStep={state.expandedSwapStep}
                   onToggleSwapStep={(stepId) =>
@@ -1867,36 +1939,48 @@ function ChildHomeGrid({ children, canAddChild, strings, language, profileMap, o
   );
 }
 
-function EditProfileCard({ activeChild, strings, onSave }) {
+function EditProfileModal({ activeChild, strings, onSave, onClose }) {
   if (!activeChild) return null;
 
   return (
-    <article className="card card--soft">
-      <div className="card-header">
-        <span className="section-label">{strings.editProfile}</span>
-        <h2>{activeChild.name}</h2>
-      </div>
-      <form className="stack" onSubmit={onSave}>
-        <label className="stack compact">
-          <span>{strings.childName}</span>
-          <input name="childName" type="text" defaultValue={activeChild.name} required />
-        </label>
-        <label className="stack compact">
-          <span>{strings.birthday}</span>
-          <input name="birthday" type="date" defaultValue={activeChild.birthday} required />
-        </label>
-        <label className="stack compact">
-          <span>{strings.gender}</span>
-          <select name="gender" defaultValue={activeChild.gender || "boy"}>
-            <option value="boy">{strings.boy}</option>
-            <option value="girl">{strings.girl}</option>
-          </select>
-        </label>
-        <button className="button button-primary" type="submit">
-          {strings.saveProfile}
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label={`${strings.editProfile} ${activeChild.name}`}>
+      <article className="profile-modal__panel card card--soft">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label={strings.close}>
+          ×
         </button>
-      </form>
-    </article>
+        <div className="card-header">
+          <span className="section-label">{strings.editProfile}</span>
+          <h2>
+            {strings.editChildProfile} {activeChild.name}
+          </h2>
+        </div>
+        <form className="stack" onSubmit={onSave}>
+          <label className="stack compact">
+            <span>{strings.childName}</span>
+            <input name="childName" type="text" defaultValue={activeChild.name} required />
+          </label>
+          <label className="stack compact">
+            <span>{strings.birthday}</span>
+            <input name="birthday" type="date" defaultValue={activeChild.birthday} required />
+          </label>
+          <label className="stack compact">
+            <span>{strings.gender}</span>
+            <select name="gender" defaultValue={activeChild.gender || "boy"}>
+              <option value="boy">{strings.boy}</option>
+              <option value="girl">{strings.girl}</option>
+            </select>
+          </label>
+          <div className="inline-actions">
+            <button className="button button-primary" type="submit">
+              {strings.saveProfile}
+            </button>
+            <button className="button button-ghost" type="button" onClick={onClose}>
+              {strings.close}
+            </button>
+          </div>
+        </form>
+      </article>
+    </div>
   );
 }
 
@@ -2026,6 +2110,7 @@ function RoutineSection({
   currentPlan,
   onRoutineFieldChange,
   onGenerateRoutine,
+  onClose,
   onChangeActivity,
   expandedSwapStep,
   onToggleSwapStep,
@@ -2042,8 +2127,13 @@ function RoutineSection({
     <div className="dashboard-grid">
       <article className="card card--soft">
         <div className="card-header">
-          <span className="section-label">{strings.tonightRoutine}</span>
-          <h2>{strings.mapNight} {activeChild.name}</h2>
+          <div>
+            <span className="section-label">{strings.tonightRoutine}</span>
+            <h2>{strings.mapNight} {activeChild.name}</h2>
+          </div>
+          <button className="button button-ghost" type="button" onClick={onClose}>
+            {strings.backToChildren}
+          </button>
         </div>
         <form className="stack" onSubmit={onGenerateRoutine}>
           <label className="stack compact">
@@ -2063,6 +2153,19 @@ function RoutineSection({
             <span>{strings.dinnerTime}</span>
             <input type="time" value={routineForm.dinnerTime} onChange={(event) => onRoutineFieldChange("dinnerTime", event.target.value)} />
             <small className="field-help">{strings.dinnerShared}</small>
+          </label>
+          <label className="stack compact">
+            <span>{strings.prepareDuration}</span>
+            <input
+              type="number"
+              min="5"
+              max="90"
+              step="5"
+              value={routineForm.prepareDuration}
+              onChange={(event) => onRoutineFieldChange("prepareDuration", event.target.value)}
+              required
+            />
+            <small className="field-help">{strings.prepareDurationHelp}</small>
           </label>
           <label className="stack compact">
             <span>{strings.napQuestion}</span>
@@ -2124,7 +2227,18 @@ function RoutineSection({
                   </div>
                   <p className="step-copy">{step.purpose}</p>
 
-                  {step.selectedActivity ? (
+                  {step.preparationItems ? (
+                    <div className="special-guidance">
+                      <strong>Lista para preparar el cuerpo</strong>
+                      <ul className="mini-list">
+                        {step.preparationItems.map((item) => (
+                          <li key={item.id}>
+                            <strong>{item.displayName}:</strong> {item.instructions}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : step.selectedActivity ? (
                     <>
                       <div className="selected-activity">
                         <strong>{step.selectedActivity.displayName}</strong>
@@ -2177,7 +2291,9 @@ function RoutineSection({
                   {playerStep.start} - {playerStep.end}
                 </p>
                 <div className="routine-timer">
-                  <strong>{playerStep.selectedActivity?.displayName || playerStep.guidance?.title}</strong>
+                  <strong>
+                    {playerStep.selectedActivity?.displayName || playerStep.guidance?.title || "Preparar para dormir"}
+                  </strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
                 </div>
                 <div className="routine-media">
@@ -2188,6 +2304,15 @@ function RoutineSection({
                   </span>
                 </div>
                 <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p>
+                {playerStep.preparationItems?.length ? (
+                  <ul className="mini-list">
+                    {playerStep.preparationItems.map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.displayName}:</strong> {item.instructions}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 {playerStep.guidance?.examples?.length ? (
                   <ul className="mini-list">
                     {playerStep.guidance.examples.map((example) => (
