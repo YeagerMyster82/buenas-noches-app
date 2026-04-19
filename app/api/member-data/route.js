@@ -1,4 +1,4 @@
-import { getMemberData, saveDailyPlan, saveNightlyLog, saveQuizResult, updateQuizProfile } from "../../../lib/member-data";
+import { deleteQuizProfile, getMemberData, saveDailyPlan, saveNightlyLog, saveQuizResult, updateQuizProfile } from "../../../lib/member-data";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -23,6 +23,7 @@ export async function POST(request) {
   if (payload.type === "quiz_result") {
     const result = await saveQuizResult({
       parentEmail: email,
+      clientChildId: payload.childId || null,
       childName: payload.childName || "",
       childBirthday: payload.childBirthday || "",
       childGender: payload.childGender || "boy",
@@ -44,9 +45,18 @@ export async function POST(request) {
     return Response.json({ ok: true, result });
   }
 
+  if (payload.type === "delete_child_profile") {
+    const result = await deleteQuizProfile({
+      parentEmail: email,
+      quizResultId: payload.childId,
+    });
+    return Response.json({ ok: true, result });
+  }
+
   if (payload.type === "daily_plan") {
     const result = await saveDailyPlan({
       parentEmail: email,
+      childId: payload.childId || null,
       wakeTime: payload.wakeTime,
       napTaken: Boolean(payload.napTaken),
       napWakeTime: payload.napWakeTime || null,
@@ -61,10 +71,12 @@ export async function POST(request) {
   if (payload.type === "nightly_log") {
     const result = await saveNightlyLog({
       parentEmail: email,
+      childId: payload.childId || null,
       logDate: payload.logDate,
       inBedAt: payload.inBedAt,
       fellAsleepAt: payload.fellAsleepAt,
       sleepLatencyMinutes: payload.sleepLatencyMinutes,
+      nightWakings: payload.nightWakings || "0",
       notes: payload.notes || "",
       ratings: payload.ratings || [],
     });
