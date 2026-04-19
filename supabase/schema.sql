@@ -62,11 +62,15 @@ create table if not exists nightly_logs (
   in_bed_at time not null,
   fell_asleep_at time not null,
   sleep_latency_minutes integer not null,
+  night_wakings text not null default '0',
   notes text,
   ratings jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   unique (child_id, log_date)
 );
+
+alter table nightly_logs
+  add column if not exists night_wakings text not null default '0';
 
 insert into profiles (code, name, description) values
   ('A', 'Segunda energía', 'Niño que en la noche parece activarse más.'),
