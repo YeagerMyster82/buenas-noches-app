@@ -1286,14 +1286,16 @@ export default function BuenasNochesApp() {
     const ratings = state.currentPlan.steps
       .filter((step) => step.selectedActivity)
       .map((step) => {
-        const disliked = formData.get(`disliked-${step.id}`) === "yes";
+        const enjoyed = formData.get(`enjoyed-${step.id}`) !== "no";
+        const disliked = !enjoyed;
         return {
           stepId: step.id,
           phaseKey: step.phaseKey,
           activityId: step.selectedActivityId,
           activity: step.selectedActivity.displayName,
-          rating: Number(formData.get(`rating-${step.id}`) || 0),
+          rating: enjoyed ? 3 : 1,
           disliked,
+          dislikeReason: String(formData.get(`dislike-reason-${step.id}`) || ""),
         };
       });
 
@@ -1318,6 +1320,23 @@ export default function BuenasNochesApp() {
     const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
       left.date < right.date ? 1 : -1
     );
+    const recentLatencies = activeChild.logs
+      .filter((entry) => Number.isFinite(Number(entry.latency)))
+      .sort((left, right) => (left.date < right.date ? 1 : -1))
+      .slice(0, 3)
+      .map((entry) => Number(entry.latency));
+    const averageLatency =
+      recentLatencies.length > 0
+        ? Math.round(recentLatencies.reduce((sum, latency) => sum + latency, 0) / recentLatencies.length)
+        : null;
+    const sleepNote =
+      nextLog.latency <= 15
+        ? "¡Qué alegría! Se durmió dentro de 15 minutos de entrar a la cama."
+        : averageLatency !== null && nextLog.latency > averageLatency + 20
+            ? "Recordatorio suave: la consistencia del sueño es importante para cerebros en crecimiento."
+          : averageLatency !== null && nextLog.latency > averageLatency + 10
+            ? "Parece que hoy tardó más de lo usual en dormirse. Puedes dejar una nota sobre cambios en su día para entender el patrón."
+            : "";
 
     updateChild(activeChild.id, () => ({
       logs: updatedLogs,
@@ -1330,7 +1349,7 @@ export default function BuenasNochesApp() {
       savedLogDate: nextLog.date,
       persistenceMessage:
         current.language === "es"
-          ? "Guardado. Esta noche quedó registrada exitosamente."
+          ? sleepNote || "Rutina registrada exitosamente."
           : "Saved. Tonight was registered successfully.",
     }));
 
@@ -1801,6 +1820,7 @@ export default function BuenasNochesApp() {
             <SleepAreaSection
               activeChild={activeChild}
               strings={strings}
+              onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))}
               checkedCount={checkedCount}
               sleepAreaResult={sleepAreaResult}
               onToggleCheck={(checkId) =>
@@ -1813,9 +1833,9 @@ export default function BuenasNochesApp() {
               }
             />
           ) : state.activeSection === "avoid" ? (
-            <AvoidSection strings={strings} language={state.language} />
+            <AvoidSection strings={strings} language={state.language} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
           ) : state.activeSection === "foods" ? (
-            <FoodsSection strings={strings} />
+            <FoodsSection strings={strings} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
           ) : state.activeSection === "wins" ? (
             <WinsSection
               activeChild={activeChild}
@@ -2076,6 +2096,7 @@ export default function BuenasNochesApp() {
                 <SleepAreaSection
                   activeChild={activeChild}
                   strings={strings}
+                  onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))}
                   checkedCount={checkedCount}
                   sleepAreaResult={sleepAreaResult}
                   onToggleCheck={(checkId) =>
@@ -2089,9 +2110,13 @@ export default function BuenasNochesApp() {
                 />
               ) : null}
 
-              {state.activeSection === "avoid" ? <AvoidSection strings={strings} language={state.language} /> : null}
+              {state.activeSection === "avoid" ? (
+                <AvoidSection strings={strings} language={state.language} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
+              ) : null}
 
-              {state.activeSection === "foods" ? <FoodsSection strings={strings} /> : null}
+              {state.activeSection === "foods" ? (
+                <FoodsSection strings={strings} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
+              ) : null}
 
               {state.activeSection === "wins" ? (
                 <WinsSection
@@ -3088,6 +3113,29 @@ function RoutineSection({
                     ))}
                   </ul>
                 ) : null}
+                {playerStep.phaseKey === "calmar_el_cuerpo" ? (
+                  <div className="sleep-readiness-card">
+                    <strong>¿Ya ves señales de sueño?</strong>
+                    <p>Ojos pesados, cuerpo relajado, menos movimiento, deja de hablar o respiración más lenta.</p>
+                    <div className="inline-actions">
+                      <button
+                        className="button button-primary"
+                        type="button"
+                        onClick={() => {
+                          const dormirIndex = currentPlan.steps.findIndex((step) => step.phaseKey === "dormir");
+                          playTransitionTone(routineSession.soundMode);
+                          setRoutineStepIndex(dormirIndex >= 0 ? dormirIndex : currentPlan.steps.length - 1);
+                        }}
+                      >
+                        Sí, ya está listo
+                      </button>
+                      <button className="button button-ghost" type="button" onClick={() => playTransitionTone(routineSession.soundMode)}>
+                        No todavía
+                      </button>
+                    </div>
+                    <p className="muted">Si ya está listo… no hagas más.</p>
+                  </div>
+                ) : null}
                 <div className="inline-actions">
                   <button className="button button-ghost" type="button" onClick={() => setIsPaused((paused) => !paused)}>
                     {isPaused ? strings.resumeRoutine : strings.pauseRoutine}
@@ -3117,10 +3165,17 @@ function RoutineSection({
                     type="button"
                     onClick={() => {
                       if (routineStepIndex >= currentPlan.steps.length - 1) {
+                        onRoutineSessionChange({
+                          inBedAt: routineSession.inBedAt || getCurrentTimeValue(),
+                          fellAsleepAt: routineSession.fellAsleepAt || getCurrentTimeValue(),
+                        });
                         finishGuidedRoutine();
                         return;
                       }
                       playTransitionTone(routineSession.soundMode);
+                      if (playerStep.phaseKey === "cepillarse_los_dientes") {
+                        onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
+                      }
                       setRoutineStepIndex((index) => index + 1);
                     }}
                   >
@@ -3133,8 +3188,8 @@ function RoutineSection({
 
           <article className="card card--soft">
             <div className="card-header">
-              <span className="section-label">Registro nocturno</span>
-              <h2>{strings.logTitle}</h2>
+              <span className="section-label">Resumen de rutina</span>
+              <h2>{savedLogDate ? "Rutina registrada exitosamente" : "Revisa y registra esta rutina"}</h2>
             </div>
             {savedLogDate ? (
               <div className="save-confirmation">
@@ -3150,47 +3205,52 @@ function RoutineSection({
               </div>
             ) : (
             <form className="stack" onSubmit={onSubmitNightLog}>
-              <label className="stack compact">
-                <span>{strings.routineStartTime}</span>
-                <input
-                  name="routineStartTime"
-                  type="time"
-                  value={routineSession.startedAt}
-                  onChange={(event) => onRoutineSessionChange({ startedAt: event.target.value })}
-                />
-                <small className="field-help">{strings.editTimesHelp}</small>
-              </label>
+              <div className="content-block content-block--light">
+                <p>
+                  {routineSession.inBedAt
+                    ? `La app registró que entró a la cama a las ${routineSession.inBedAt}.`
+                    : "Cuando termines la rutina guiada, la app registrará automáticamente la hora de cama."}
+                </p>
+                <p className="muted">{strings.editTimesHelp}</p>
+              </div>
+              <details className="avoid-card">
+                <summary>Editar horas registradas</summary>
+                <div className="avoid-card__body">
+                  <label className="stack compact">
+                    <span>{strings.routineStartTime}</span>
+                    <input
+                      name="routineStartTime"
+                      type="time"
+                      value={routineSession.startedAt}
+                      onChange={(event) => onRoutineSessionChange({ startedAt: event.target.value })}
+                    />
+                  </label>
+                  <label className="stack compact">
+                    <span>{strings.bedTime}</span>
+                    <input
+                      name="bedTime"
+                      type="time"
+                      value={routineSession.inBedAt}
+                      onChange={(event) => onRoutineSessionChange({ inBedAt: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="stack compact">
+                    <span>{strings.sleepTime}</span>
+                    <input
+                      name="sleepTime"
+                      type="time"
+                      value={routineSession.fellAsleepAt}
+                      onChange={(event) => onRoutineSessionChange({ fellAsleepAt: event.target.value })}
+                      required
+                    />
+                  </label>
+                </div>
+              </details>
               <label className="stack compact">
                 <span>{strings.date}</span>
                 <input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required />
               </label>
-              <label className="stack compact">
-                <span>{strings.bedTime}</span>
-                <input
-                  name="bedTime"
-                  type="time"
-                  value={routineSession.inBedAt}
-                  onChange={(event) => onRoutineSessionChange({ inBedAt: event.target.value })}
-                  required
-                />
-                <button className="button button-ghost" type="button" onClick={() => onRoutineSessionChange({ inBedAt: getCurrentTimeValue() })}>
-                  {strings.markInBed}
-                </button>
-              </label>
-              <label className="stack compact">
-                <span>{strings.sleepTime}</span>
-                <input
-                  name="sleepTime"
-                  type="time"
-                  value={routineSession.fellAsleepAt}
-                  onChange={(event) => onRoutineSessionChange({ fellAsleepAt: event.target.value })}
-                  required
-                />
-                <button className="button button-ghost" type="button" onClick={() => onRoutineSessionChange({ fellAsleepAt: getCurrentTimeValue() })}>
-                  {strings.fellAsleepNow}
-                </button>
-              </label>
-
               {currentPlan.steps
                 .filter((step) => step.selectedActivity)
                 .map((step) => (
@@ -3198,20 +3258,16 @@ function RoutineSection({
                     <strong>{step.selectedActivity.displayName}</strong>
                     <span className="muted">{step.label}</span>
                     <label className="stack compact">
-                      <span>¿Cómo se sintió esta actividad?</span>
-                      <select name={`rating-${step.id}`} defaultValue="3">
-                        <option value="3">Le ayudó mucho</option>
-                        <option value="2">Más o menos</option>
-                        <option value="1">No ayudó mucho</option>
-                      </select>
-                    </label>
-                    <label className="stack compact">
-                      <span>¿No le gustó esta actividad?</span>
-                      <select name={`disliked-${step.id}`} defaultValue="no">
-                        <option value="no">No</option>
+                      <span>¿Tu hijo disfrutó esta actividad?</span>
+                      <select name={`enjoyed-${step.id}`} defaultValue="yes">
                         <option value="yes">Sí</option>
+                        <option value="no">No</option>
                       </select>
                     </label>
+                    <details>
+                      <summary>Si no le gustó, ¿qué parte no le gustó?</summary>
+                      <textarea name={`dislike-reason-${step.id}`} placeholder="Ejemplo: no le gustó la presión, el cuento, la canción o la posición." />
+                    </details>
                   </div>
                 ))}
 
@@ -3252,7 +3308,7 @@ function VideoSection({ activeChild, strings }) {
       <div className="video-grid">
         {[strings.education, strings.activities].map((video) => (
           <div key={video} className="video-card tip-card">
-            <span className="tip-card__moon" aria-hidden="true">☾</span>
+            <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
             <strong>{video}</strong>
             <span>Espacio listo para embed</span>
           </div>
@@ -3272,11 +3328,7 @@ function TipsSection({ strings, onOpen }) {
 
   return (
     <article className="card card--feature tips-hub">
-      <div className="brand-sky" aria-hidden="true">
-        <span>✦</span>
-        <span>☁</span>
-        <span>☾</span>
-      </div>
+      <img className="brand-animals-corner" src="/brand/animales-buenas-noches.png" alt="" />
       <div className="card-header">
         <span className="section-label">Tips</span>
         <h2>{strings.tipsTitle}</h2>
@@ -3284,7 +3336,7 @@ function TipsSection({ strings, onOpen }) {
       <div className="tip-card-grid">
         {cards.map((card) => (
           <button key={card.id} type="button" className="tip-card" onClick={() => onOpen(card.id)}>
-            <span className="tip-card__moon" aria-hidden="true">☾</span>
+            <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
             <strong>{card.title}</strong>
             <p>{card.copy}</p>
           </button>
@@ -3294,12 +3346,17 @@ function TipsSection({ strings, onOpen }) {
   );
 }
 
-function FoodsSection({ strings }) {
+function FoodsSection({ strings, onBack }) {
   return (
     <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.foods}</span>
         <h2>{strings.foods}</h2>
+        {onBack ? (
+          <button className="button button-ghost" type="button" onClick={onBack}>
+            Volver a tips
+          </button>
+        ) : null}
       </div>
       <div className="tip-detail-grid">
         <FoodList title={strings.foodsToAvoid} items={foodAvoidItems} />
@@ -3323,7 +3380,7 @@ function FoodList({ title, items }) {
   );
 }
 
-function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult, onToggleCheck }) {
+function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult, onToggleCheck, onBack }) {
   if (!activeChild) return null;
 
   return (
@@ -3331,6 +3388,11 @@ function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult,
       <div className="card-header">
         <span className="section-label">{strings.sleepArea}</span>
         <h2>{strings.facilitateSleep}</h2>
+        {onBack ? (
+          <button className="button button-ghost" type="button" onClick={onBack}>
+            Volver a tips
+          </button>
+        ) : null}
       </div>
       <div className="tip-detail-grid">
         {facilitateSleepItems.map((item) => (
@@ -3363,12 +3425,17 @@ function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult,
   );
 }
 
-function AvoidSection({ strings, language }) {
+function AvoidSection({ strings, language, onBack }) {
   return (
-    <article className="card card--soft">
+    <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.sections.avoid}</span>
         <h2>{strings.avoidBeforeBed}</h2>
+        {onBack ? (
+          <button className="button button-ghost" type="button" onClick={onBack}>
+            Volver a tips
+          </button>
+        ) : null}
       </div>
       <div className="stack">
         {avoidItems.map((item) => (
@@ -3529,7 +3596,6 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
               <p>{review.comment}</p>
               <span>
                 {formatPublicParentName(review.parent_name) || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
-                {review.child_name ? ` · ${review.child_name}` : ""}
               </span>
             </div>
           ))
