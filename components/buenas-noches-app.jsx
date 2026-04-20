@@ -25,6 +25,14 @@ const SUPPORT_WHATSAPP_URL = "https://wa.link/10n15d";
 const SUPPORT_EMAIL = "BuenasNochesApp@quirokids.com";
 const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
 
+function isVerifiedPremiumState(state) {
+  return (
+    state.accessStatus === "granted" &&
+    Boolean(state.verifiedEmail) &&
+    Boolean(state.premiumAccess?.hasAccess)
+  );
+}
+
 const copy = {
   es: {
     sections: {
@@ -528,6 +536,23 @@ function getYesterdayKey() {
 function genderize(value, gender) {
   if (gender !== "girl" || !value) return value;
   return value
+    .replaceAll(" con él", " con ella")
+    .replaceAll(" para él", " para ella")
+    .replaceAll(" de él", " de ella")
+    .replaceAll(" él ", " ella ")
+    .replaceAll(" Él ", " Ella ")
+    .replaceAll("dormido", "dormida")
+    .replaceAll("Dormido", "Dormida")
+    .replaceAll("acostado", "acostada")
+    .replaceAll("Acostado", "Acostada")
+    .replaceAll("cansado", "cansada")
+    .replaceAll("Cansado", "Cansada")
+    .replaceAll("quieto", "quieta")
+    .replaceAll("Quieto", "Quieta")
+    .replaceAll("inquieto", "inquieta")
+    .replaceAll("Inquieto", "Inquieta")
+    .replaceAll("listo", "lista")
+    .replaceAll("Listo", "Lista")
     .replaceAll("tu hijo", "tu hija")
     .replaceAll("Tu hijo", "Tu hija")
     .replaceAll("su hijo", "su hija")
@@ -685,7 +710,7 @@ export default function BuenasNochesApp() {
 
   useEffect(() => {
     const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
-    if (autoVerifyAttempted || !knownEmail || state.accessStatus === "granted" || state.accessStatus === "loading") return;
+    if (autoVerifyAttempted || !knownEmail || state.accessStatus === "loading") return;
     setAutoVerifyAttempted(true);
     checkPremiumAccessForEmail(knownEmail, { silent: true });
   }, [autoVerifyAttempted, state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus]);
@@ -706,7 +731,7 @@ export default function BuenasNochesApp() {
   const editingChild = state.children.find((child) => child.id === state.editingChildId) || null;
   const resultCopy = state.quizResult ? buildResultCopy(state.quizResult, state.language) : null;
   const canAddChild = state.children.length < childSlots.total;
-  const hasPremiumAccess = state.accessStatus === "granted";
+  const hasPremiumAccess = isVerifiedPremiumState(state);
   const progressSummary = activeChild ? buildProgressSummary(activeChild.logs) : null;
   const checkedCount = activeChild ? Object.values(activeChild.sleepAreaChecks || {}).filter(Boolean).length : 0;
   const sleepAreaResult = getSleepAreaResult(checkedCount);
@@ -831,16 +856,15 @@ export default function BuenasNochesApp() {
       }
 
       if (!payload.hasAccess) {
-        if (!options.silent) {
-          setState((current) => ({
-            ...current,
-            verifiedEmail: "",
-            accessStatus: "not_found",
-            premiumAccess: null,
-            accessMessage:
-              "Todavía no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
-          }));
-        }
+        setState((current) => ({
+          ...current,
+          verifiedEmail: "",
+          accessStatus: "not_found",
+          premiumAccess: null,
+          accessMessage: options.silent
+            ? current.accessMessage
+            : "Todavía no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
+        }));
         return { hasAccess: false, payload };
       }
 
@@ -856,15 +880,13 @@ export default function BuenasNochesApp() {
 
       return { hasAccess: true, payload };
     } catch (error) {
-      if (!options.silent) {
-        setState((current) => ({
-          ...current,
-          verifiedEmail: "",
-          accessStatus: "error",
-          premiumAccess: null,
-          accessMessage: error.message || "No pude verificar tu compra en este momento.",
-        }));
-      }
+      setState((current) => ({
+        ...current,
+        verifiedEmail: options.silent ? current.verifiedEmail : "",
+        accessStatus: options.silent ? current.accessStatus : "error",
+        premiumAccess: options.silent ? current.premiumAccess : null,
+        accessMessage: options.silent ? current.accessMessage : error.message || "No pude verificar tu compra en este momento.",
+      }));
       return null;
     }
   }
@@ -922,14 +944,14 @@ export default function BuenasNochesApp() {
         parentEmail: email,
         purchaseEmail: email,
         verifiedEmail: premiumCheck?.hasAccess ? email : current.verifiedEmail,
-        accessStatus: premiumCheck?.hasAccess ? "granted" : current.accessStatus,
-        premiumAccess: premiumCheck?.hasAccess ? premiumCheck.payload : current.premiumAccess,
+        accessStatus: premiumCheck?.hasAccess ? "granted" : "not_found",
+        premiumAccess: premiumCheck?.hasAccess ? premiumCheck.payload : null,
         accessMessage: premiumCheck?.hasAccess ? "" : current.accessMessage,
-      parentProfileSaved: true,
-      children: restoredChildren,
-      activeChildId: restoredChildren[0]?.id || "",
-      expandedChildId: restoredChildren[0]?.id || "",
-      activeSection: "home",
+        parentProfileSaved: true,
+        children: restoredChildren,
+        activeChildId: restoredChildren[0]?.id || "",
+        expandedChildId: restoredChildren[0]?.id || "",
+        activeSection: "home",
         onboardingMode: "",
         accountLookupOpen: false,
         accountLookupStatus: "success",
@@ -993,7 +1015,7 @@ export default function BuenasNochesApp() {
     };
 
     const premiumCheck = await checkPremiumAccessForEmail(parentEmail || state.parentEmail, { silent: true });
-    const isPremiumLead = premiumCheck?.hasAccess || state.accessStatus === "granted";
+    const isPremiumLead = premiumCheck?.hasAccess === true || (premiumCheck === null && hasPremiumAccess);
 
     if (!isPremiumLead) {
       try {
@@ -1188,7 +1210,7 @@ export default function BuenasNochesApp() {
       savedLogDate: "",
     }));
 
-    if (state.accessStatus === "granted" && state.verifiedEmail) {
+    if (hasPremiumAccess && state.verifiedEmail) {
       try {
         const response = await fetch("/api/member-data", {
           method: "POST",
@@ -1353,9 +1375,9 @@ export default function BuenasNochesApp() {
           : "Saved. Tonight was registered successfully.",
     }));
 
-    if (state.accessStatus === "granted" && state.verifiedEmail) {
+    if (hasPremiumAccess && state.verifiedEmail) {
       try {
-        await fetch("/api/member-data", {
+        const response = await fetch("/api/member-data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1465,7 +1487,7 @@ export default function BuenasNochesApp() {
       persistenceMessage: current.language === "es" ? "Despertares guardados." : "Night wakings saved.",
     }));
 
-    if (state.accessStatus === "granted" && state.verifiedEmail) {
+    if (hasPremiumAccess && state.verifiedEmail) {
       try {
         await fetch("/api/member-data", {
           method: "POST",
@@ -1529,7 +1551,7 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
-      {state.accessStatus !== "granted" ? (
+      {!hasPremiumAccess ? (
         <section className="gate-shell">
           <div className="gate-header">
             <img className="brand-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
@@ -1576,7 +1598,7 @@ export default function BuenasNochesApp() {
                 {state.accessMessage ? (
                   <p
                     className={
-                      state.accessStatus === "granted"
+                      hasPremiumAccess
                         ? "status-message status-success"
                         : "status-message status-warning"
                     }
@@ -1815,27 +1837,15 @@ export default function BuenasNochesApp() {
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
           ) : state.activeSection === "tips" ? (
-            <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} />
+            <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
+          ) : state.activeSection === "videos" ? (
+            <VideoSection activeChild={activeChild} strings={strings} locked />
           ) : state.activeSection === "sleep-area" ? (
-            <SleepAreaSection
-              activeChild={activeChild}
-              strings={strings}
-              onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))}
-              checkedCount={checkedCount}
-              sleepAreaResult={sleepAreaResult}
-              onToggleCheck={(checkId) =>
-                updateChild(activeChild.id, (child) => ({
-                  sleepAreaChecks: {
-                    ...child.sleepAreaChecks,
-                    [checkId]: !child.sleepAreaChecks?.[checkId],
-                  },
-                }))
-              }
-            />
+            <LockedPreviewCard activeSection="sleep-area" language={state.language} />
           ) : state.activeSection === "avoid" ? (
-            <AvoidSection strings={strings} language={state.language} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
+            <LockedPreviewCard activeSection="avoid" language={state.language} />
           ) : state.activeSection === "foods" ? (
-            <FoodsSection strings={strings} onBack={() => setState((current) => ({ ...current, activeSection: "tips" }))} />
+            <LockedPreviewCard activeSection="foods" language={state.language} />
           ) : state.activeSection === "wins" ? (
             <WinsSection
               activeChild={activeChild}
@@ -1843,6 +1853,7 @@ export default function BuenasNochesApp() {
               language={state.language}
               parentName={state.parentName}
               parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+              allowReview={false}
             />
           ) : state.activeSection === "contact" ? (
             <ContactSection
@@ -2082,13 +2093,14 @@ export default function BuenasNochesApp() {
                 />
               ) : null}
 
-              {state.activeSection === "videos" ? <VideoSection activeChild={activeChild} strings={strings} /> : null}
+              {state.activeSection === "videos" ? <VideoSection activeChild={activeChild} strings={strings} locked={!hasPremiumAccess} /> : null}
 
               {state.activeSection === "tips" ? (
                 <TipsSection
                   strings={strings}
                   language={state.language}
                   onOpen={handleMainMenu}
+                  locked={!hasPremiumAccess}
                 />
               ) : null}
 
@@ -2125,6 +2137,7 @@ export default function BuenasNochesApp() {
                   language={state.language}
                   parentName={state.parentName}
                   parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                  allowReview={hasPremiumAccess}
                 />
               ) : null}
 
@@ -2746,17 +2759,26 @@ function playTransitionTone(soundMode) {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContext();
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = soundMode === "nature" ? "triangle" : "sine";
-    oscillator.frequency.value = soundMode === "calm" ? 432 : 660;
-    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.75);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.8);
+    const startTone = () => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = soundMode === "nature" ? "triangle" : "sine";
+      oscillator.frequency.value = soundMode === "calm" ? 432 : 660;
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.75);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.8);
+    };
+
+    if (audioContext.state === "suspended") {
+      audioContext.resume().then(startTone).catch(() => undefined);
+      return;
+    }
+
+    startTone();
   } catch {
     // Browsers may block audio until interaction; the routine still works silently.
   }
@@ -2774,6 +2796,9 @@ function startAmbientSound(soundMode) {
     gain.gain.setValueAtTime(0.018, audioContext.currentTime);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
+    if (audioContext.state === "suspended") {
+      audioContext.resume().catch(() => undefined);
+    }
     oscillator.start();
     return {
       stop() {
@@ -2854,6 +2879,23 @@ function RoutineSection({
   }, [routinePlayerOpen, isPaused, routineSession.soundMode]);
 
   if (!activeChild) return null;
+  if (savedLogDate) {
+    return (
+      <article className="card card--feature routine-saved-card">
+        <div className="card-header">
+          <span className="section-label">Rutina</span>
+          <h2>Rutina registrada exitosamente</h2>
+        </div>
+        <div className="save-confirmation">
+          <strong>Guardado. Esta noche quedó registrada exitosamente.</strong>
+          <p>El resumen quedó guardado y el gráfico de progreso se actualizará con esta noche.</p>
+          <button className="button button-primary" type="button" onClick={onClose}>
+            {strings.backToChildren}
+          </button>
+        </div>
+      </article>
+    );
+  }
 
   function beginGuidedRoutine() {
     const startedAt = routineSession.startedAt || getCurrentTimeValue();
@@ -3293,7 +3335,7 @@ function RoutineSection({
   );
 }
 
-function VideoSection({ activeChild, strings }) {
+function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
 
   return (
@@ -3303,22 +3345,29 @@ function VideoSection({ activeChild, strings }) {
         <h2>{strings.readyForBunny}</h2>
       </div>
       <p className="lead-copy">
-        Aquí vamos a mostrar los videos embebidos cuando subas los links.
+        {locked
+          ? "La biblioteca completa se desbloquea con premium. Puedes ver las categorías que estarán disponibles."
+          : "Aquí vamos a mostrar los videos embebidos cuando subas los links."}
       </p>
       <div className="video-grid">
         {[strings.education, strings.activities].map((video) => (
-          <div key={video} className="video-card tip-card">
+          <div key={video} className={locked ? "video-card tip-card tip-card--locked" : "video-card tip-card"}>
             <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
             <strong>{video}</strong>
-            <span>Espacio listo para embed</span>
+            <span>{locked ? "Premium 🔒" : "Espacio listo para embed"}</span>
           </div>
         ))}
       </div>
+      {locked ? (
+        <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+          {strings.unlockPremium}
+        </a>
+      ) : null}
     </article>
   );
 }
 
-function TipsSection({ strings, onOpen }) {
+function TipsSection({ strings, onOpen, locked = false }) {
   const cards = [
     { id: "sleep-area", title: strings.facilitateSleep, copy: "Luz, ambiente, rutina y señales que ayudan al sistema nervioso a bajar." },
     { id: "avoid", title: strings.whatToAvoid, copy: "Lo que más activa el cerebro y el cuerpo antes de dormir." },
@@ -3335,13 +3384,29 @@ function TipsSection({ strings, onOpen }) {
       </div>
       <div className="tip-card-grid">
         {cards.map((card) => (
-          <button key={card.id} type="button" className="tip-card" onClick={() => onOpen(card.id)}>
+          <button
+            key={card.id}
+            type="button"
+            className={locked && card.id !== "amazon" ? "tip-card tip-card--locked" : "tip-card"}
+            onClick={() => (locked && card.id !== "amazon" ? undefined : onOpen(card.id))}
+          >
             <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
-            <strong>{card.title}</strong>
+            <strong>
+              {card.title} {locked && card.id !== "amazon" ? "🔒" : ""}
+            </strong>
             <p>{card.copy}</p>
           </button>
         ))}
       </div>
+      {locked ? (
+        <div className="preview-lock preview-lock--inline">
+          <strong>Contenido premium</strong>
+          <p>Puedes ver las áreas disponibles. El contenido completo se abre cuando compras premium.</p>
+          <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+            {strings.unlockPremium}
+          </a>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -3460,7 +3525,7 @@ function AvoidSection({ strings, language, onBack }) {
   );
 }
 
-function WinsSection({ activeChild, strings, language, parentName, parentEmail }) {
+function WinsSection({ activeChild, strings, language, parentName, parentEmail, allowReview = true }) {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -3531,55 +3596,69 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
           : "Your opinion matters to us! Please let us know how we are doing."}
       </p>
 
-      <form className="win-card review-submit-card" onSubmit={submitReview}>
-        <div className="star-rating star-rating--large" aria-label="Calificación de la app">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              className={rating >= star ? "is-selected" : ""}
-              onClick={() => setRating(star)}
-              aria-label={`${star} estrellas`}
-            >
-              ★
-            </button>
-          ))}
+      {allowReview ? (
+        <form className="win-card review-submit-card" onSubmit={submitReview}>
+          <div className="star-rating star-rating--large" aria-label="Calificación de la app">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                className={rating >= star ? "is-selected" : ""}
+                onClick={() => setRating(star)}
+                aria-label={`${star} estrellas`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          {rating === 5 ? (
+            <label className="stack compact">
+              <span>
+                {language === "es"
+                  ? "¡Qué alegría! Cuéntanos qué te gusta más y qué impacto ha tenido en su rutina."
+                  : "Amazing! Tell us what you like best and what impact it has made in your night-time routine."}
+              </span>
+              <textarea value={comment} onChange={(event) => setComment(event.target.value)} required />
+            </label>
+          ) : null}
+          {rating === 4 ? (
+            <label className="stack compact">
+              <span>
+                {language === "es"
+                  ? "Nos alegra que estés disfrutando la app. ¿Qué haría que esta experiencia sea de 5 estrellas para ti?"
+                  : "We are happy you are enjoying the app. What would make this a 5-star experience for you?"}
+              </span>
+              <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
+            </label>
+          ) : null}
+          {rating > 0 && rating <= 3 ? (
+            <label className="stack compact">
+              <span>
+                {language === "es"
+                  ? "Sentimos que la app no esté cumpliendo tus expectativas. ¿Cómo podemos hacer que esta sea una experiencia de 5 estrellas?"
+                  : "We are sorry the app is not meeting your expectations. How can we make this a 5-star experience for you?"}
+              </span>
+              <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
+            </label>
+          ) : null}
+          {status ? <p className="status-message status-success">{status}</p> : null}
+          <button className="button button-primary" type="submit" disabled={!rating}>
+            {language === "es" ? "Enviar" : "Submit"}
+          </button>
+        </form>
+      ) : (
+        <div className="preview-lock preview-lock--inline">
+          <strong>{language === "es" ? "Reseñas premium" : "Premium reviews"}</strong>
+          <p>
+            {language === "es"
+              ? "Puedes leer el muro de logros. Para dejar una reseña, desbloquea premium."
+              : "You can read the wins wall. To leave a review, unlock premium."}
+          </p>
+          <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+            {strings.unlockPremium}
+          </a>
         </div>
-        {rating === 5 ? (
-          <label className="stack compact">
-            <span>
-              {language === "es"
-                ? "¡Qué alegría! Cuéntanos qué te gusta más y qué impacto ha tenido en su rutina."
-                : "Amazing! Tell us what you like best and what impact it has made in your night-time routine."}
-            </span>
-            <textarea value={comment} onChange={(event) => setComment(event.target.value)} required />
-          </label>
-        ) : null}
-        {rating === 4 ? (
-          <label className="stack compact">
-            <span>
-              {language === "es"
-                ? "Nos alegra que estés disfrutando la app. ¿Qué haría que esta experiencia sea de 5 estrellas para ti?"
-                : "We are happy you are enjoying the app. What would make this a 5-star experience for you?"}
-            </span>
-            <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
-          </label>
-        ) : null}
-        {rating > 0 && rating <= 3 ? (
-          <label className="stack compact">
-            <span>
-              {language === "es"
-                ? "Sentimos que la app no esté cumpliendo tus expectativas. ¿Cómo podemos hacer que esta sea una experiencia de 5 estrellas?"
-                : "We are sorry the app is not meeting your expectations. How can we make this a 5-star experience for you?"}
-            </span>
-            <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
-          </label>
-        ) : null}
-        {status ? <p className="status-message status-success">{status}</p> : null}
-        <button className="button button-primary" type="submit" disabled={!rating}>
-          Submit
-        </button>
-      </form>
+      )}
 
       <div className="card-header">
         <span className="section-label">{strings.publicWinsWall}</span>
@@ -3624,11 +3703,13 @@ function formatPublicParentName(name) {
 function ContactSection({ strings, language, activeChild, parentName, parentEmail }) {
   const [topic, setTopic] = useState("support");
   const [message, setMessage] = useState("");
+  const [contactEmail, setContactEmail] = useState(parentEmail || "");
   const [status, setStatus] = useState("");
 
   async function sendPrivateMessage(event) {
     event.preventDefault();
-    if (!message.trim()) return;
+    const emailToSend = parentEmail || contactEmail;
+    if (!message.trim() || !emailToSend.trim()) return;
 
     setStatus("");
     try {
@@ -3639,7 +3720,7 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
         },
         body: JSON.stringify({
           parentName,
-          email: parentEmail,
+          email: emailToSend.trim().toLowerCase(),
           childName: activeChild?.name || "",
           topic,
           message,
@@ -3664,6 +3745,18 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
       </div>
       <p className="lead-copy">{strings.contactCopy}</p>
       <form className="win-card" onSubmit={sendPrivateMessage}>
+        {!parentEmail ? (
+          <label className="stack compact">
+            <span>{strings.parentEmail}</span>
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(event) => setContactEmail(event.target.value)}
+              placeholder="tuemail@ejemplo.com"
+              required
+            />
+          </label>
+        ) : null}
         <label className="stack compact">
           <span>{strings.messageTopic}</span>
           <select value={topic} onChange={(event) => setTopic(event.target.value)}>
@@ -4029,6 +4122,7 @@ function LockedPreviewCard({ activeSection, language }) {
     videos: language === "es" ? "Biblioteca de videos" : "Video library",
     "sleep-area": language === "es" ? "Área de sueño" : "Sleep space",
     avoid: language === "es" ? "Qué evitar" : "What to avoid",
+    foods: language === "es" ? "Alimentos" : "Foods",
     wins: language === "es" ? "Logros" : "Wins",
     contact: language === "es" ? "Contáctanos" : "Contact us",
   };
@@ -4069,6 +4163,11 @@ function LockedPreviewCard({ activeSection, language }) {
                   ? "Lista clara de lo que más interfiere con el sueño"
                   : "Clear list of what most interferes with sleep"
                 : null}
+              {activeSection === "foods"
+                ? language === "es"
+                  ? "Alimentos que ayudan al sueño y alimentos que conviene evitar"
+                  : "Foods that support sleep and foods to avoid"
+                : null}
               {activeSection === "wins"
                 ? language === "es"
                   ? "Un lugar para celebrar logros"
@@ -4093,7 +4192,7 @@ function LockedPreviewCard({ activeSection, language }) {
           </ul>
         </div>
         <div className="preview-lock">
-          <strong>{language === "es" ? "Funcion premium" : "Premium feature"}</strong>
+          <strong>{language === "es" ? "Función premium" : "Premium feature"}</strong>
           <p>
             {language === "es"
               ? "Desbloquea esta sección para usar el dashboard completo, la rutina de esta noche y el seguimiento."
