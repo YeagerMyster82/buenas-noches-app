@@ -56,7 +56,7 @@ export async function POST(request) {
   if (payload.type === "delete_child_profile") {
     const result = await deleteQuizProfile({
       parentEmail: email,
-      quizResultId: payload.childId,
+      quizResultId: payload.quizResultId || payload.childId,
     });
     return Response.json({ ok: true, result });
   }
