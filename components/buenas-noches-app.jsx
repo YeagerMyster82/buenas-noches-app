@@ -29,10 +29,12 @@ const copy = {
     sections: {
       home: "Inicio",
       routine: "Rutina",
-      videos: "Videos",
+      tips: "Tips",
+      videos: "Video",
+      reviews: "Reseñas",
       "sleep-area": "Área de sueño",
       avoid: "Qué evitar",
-      wins: "Logros",
+      wins: "Reseñas",
       admin: "Admin",
     },
     menuLabel: "Menú",
@@ -168,15 +170,29 @@ const copy = {
     adminHint: "Entra con tu código para ver perfiles, noches guardadas, mensajes y reseñas.",
     supportMessages: "Mensajes privados",
     privateReviews: "Comentarios para mejorar",
+    users: "Usuarios",
+    messages: "Mensajes",
+    reviews: "Reseñas",
+    tipsTitle: "Tips para dormir mejor",
+    facilitateSleep: "Facilitar el sueño",
+    whatToAvoid: "Qué evitar",
+    foods: "Alimentos",
+    products: "Productos",
+    foodsToAvoid: "Alimentos a evitar",
+    foodsForSleep: "Alimentos para dormir",
+    education: "Educación",
+    activities: "Actividades",
   },
   en: {
     sections: {
       home: "Home",
       routine: "Routine",
-      videos: "Videos",
+      tips: "Tips",
+      videos: "Video",
+      reviews: "Reviews",
       "sleep-area": "Sleep space",
       avoid: "Avoid",
-      wins: "Wins",
+      wins: "Reviews",
       admin: "Admin",
     },
     menuLabel: "Menu",
@@ -313,6 +329,18 @@ const copy = {
     adminHint: "Enter your code to see profiles, saved nights, messages, and reviews.",
     supportMessages: "Private messages",
     privateReviews: "Improvement comments",
+    users: "Users",
+    messages: "Messages",
+    reviews: "Reviews",
+    tipsTitle: "Tips for better sleep",
+    facilitateSleep: "Support sleep",
+    whatToAvoid: "What to avoid",
+    foods: "Foods",
+    products: "Products",
+    foodsToAvoid: "Foods to avoid",
+    foodsForSleep: "Foods for sleep",
+    education: "Education",
+    activities: "Activities",
   },
 };
 
@@ -383,6 +411,52 @@ const avoidItems = [
     why: "El cerebro no logra anticipar el sueño.",
     source: "National Sleep Foundation: la consistencia mejora la latencia del sueño.",
   },
+];
+
+const facilitateSleepItems = [
+  {
+    title: "Tener una rutina predecible",
+    copy: "El cerebro ama la repetición. Cuando haces lo mismo todas las noches, el cuerpo entiende: “Ah, viene la hora de dormir”.",
+  },
+  {
+    title: "Usar luz suave y cálida",
+    copy: "Lámparas tenues, luz amarilla y cero focos fuertes ayudan a activar la melatonina y bajar la energía.",
+  },
+  {
+    title: "Crear un ambiente tranquilo",
+    copy: "Menos ruido, menos corridas y menos estímulos. Puede incluir música suave o sonidos calmantes.",
+  },
+  {
+    title: "Una ducha caliente o tibia",
+    copy: "Ayuda a relajar el cuerpo antes de dormir y marca una transición clara hacia la noche.",
+  },
+  {
+    title: "NeuroHacks del programa",
+    copy: "Implementar la rutina según el perfil neurológico de tu hijo ayuda a que su sistema nervioso se sienta seguro y listo para dormir.",
+  },
+];
+
+const foodAvoidItems = [
+  ["Azúcar y postres", "Galletas, chocolate, helado y pan dulce pueden disparar energía y hacer que el cuerpo despierte fácilmente."],
+  ["Comidas muy pesadas o grasosas", "Pizza, hamburguesas y frituras mantienen al cuerpo digiriendo cuando debería entrar en modo descanso."],
+  ["Alimentos muy picantes", "Pueden causar acidez, calor corporal y activar el sistema nervioso."],
+  ["Cafeína", "Café, té negro, té verde, chocolate oscuro y refrescos con cafeína interfieren con el sueño."],
+  ["Bebidas con gas", "La distensión abdominal puede dificultar que algunos niños se relajen."],
+  ["Alimentos muy salados", "Chips, snacks y embutidos aumentan la sed y pueden provocar despertares."],
+  ["Mucha fruta o jugos", "Aunque sean naturales, aportan azúcar rápida y pueden dar un mini subidón antes de dormir."],
+];
+
+const foodSleepItems = [
+  ["Plátano", "Rico en magnesio, potasio y triptófano. Mejor no después de la cena por sus azúcares naturales."],
+  ["Avena tibia", "Suave, cálida y útil para estabilizar el azúcar en sangre."],
+  ["Yogur natural o kéfir", "El triptófano y el calcio ayudan a producir melatonina."],
+  ["Mantequilla de almendra o nueces", "Grasas buenas que estabilizan energía y nutren el cerebro."],
+  ["Manzanilla o té de hierbas sin cafeína", "Calma el sistema nervioso y relaja el abdomen."],
+  ["Huevos", "Fuente natural de triptófano y proteína suave."],
+  ["Pavo o pollo", "Ricos en triptófano, apoyan la producción de serotonina."],
+  ["Cereza natural", "Tiene melatonina natural. Mejor no después de la cena por sus azúcares naturales."],
+  ["Kiwi", "Puede ayudar a dormir más rápido. Mejor no después de la cena por sus azúcares naturales."],
+  ["Leche tibia", "Aporta triptófano y una sensación emocionalmente reconfortante."],
 ];
 
 const initialState = {
@@ -619,10 +693,9 @@ export default function BuenasNochesApp() {
   const strings = copy[state.language] || copy.es;
   const mainMenuOptions = [
     { id: "home", label: strings.sections.home },
-    { id: "sleep-area", label: strings.readyRoom },
-    { id: "avoid", label: strings.sections.avoid },
-    { id: "amazon", label: strings.productsWeLove },
-    { id: "wins", label: strings.sections.wins },
+    { id: "tips", label: strings.sections.tips },
+    { id: "videos", label: strings.sections.videos },
+    { id: "wins", label: strings.sections.reviews },
     { id: "contact", label: strings.contactUs },
     ...(adminVisible ? [{ id: "admin", label: strings.sections.admin }] : []),
   ];
@@ -1027,6 +1100,34 @@ export default function BuenasNochesApp() {
 
   async function deleteChildProfile(childId) {
     const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    const childToDelete = state.children.find((child) => child.id === childId);
+
+    if (email) {
+      try {
+        const response = await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "delete_child_profile",
+            email,
+            childId,
+            quizResultId: childToDelete?.quizResultId || childId,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "No pude eliminar el perfil.");
+        }
+      } catch (error) {
+        setState((current) => ({
+          ...current,
+          persistenceMessage: error.message || "No pude eliminar el perfil en el sistema.",
+        }));
+        return;
+      }
+    }
 
     setState((current) => {
       const remainingChildren = current.children.filter((child) => child.id !== childId);
@@ -1041,24 +1142,6 @@ export default function BuenasNochesApp() {
         persistenceMessage: "Perfil eliminado.",
       };
     });
-
-    if (email) {
-      try {
-        await fetch("/api/member-data", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "delete_child_profile",
-            email,
-            childId,
-          }),
-        });
-      } catch {
-        return;
-      }
-    }
   }
 
   function updateRoutineField(field, value) {
@@ -1106,7 +1189,7 @@ export default function BuenasNochesApp() {
 
     if (state.accessStatus === "granted" && state.verifiedEmail) {
       try {
-        await fetch("/api/member-data", {
+        const response = await fetch("/api/member-data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1272,6 +1355,10 @@ export default function BuenasNochesApp() {
             ratings: nextLog.ratings,
           }),
         });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "No pude guardar la noche en el sistema.");
+        }
 
         setState((current) => ({
           ...current,
@@ -1280,6 +1367,62 @@ export default function BuenasNochesApp() {
         }));
       } catch {
         return;
+      }
+    }
+  }
+
+  async function updateSavedNightLog(event, childId, originalDate) {
+    event.preventDefault();
+    const child = state.children.find((entry) => entry.id === childId);
+    if (!child) return;
+
+    const formData = new FormData(event.currentTarget);
+    const updatedLog = {
+      date: String(formData.get("date") || originalDate),
+      routineStartTime: String(formData.get("routineStartTime") || ""),
+      bedTime: String(formData.get("bedTime") || ""),
+      sleepTime: String(formData.get("sleepTime") || ""),
+      latency: calculateLatency(String(formData.get("bedTime") || ""), String(formData.get("sleepTime") || "")),
+      nightWakings: String(formData.get("nightWakings") || "0"),
+      notes: String(formData.get("notes") || ""),
+      ratings: child.logs.find((log) => log.date === originalDate)?.ratings || [],
+    };
+
+    updateChild(childId, (currentChild) => ({
+      logs: [updatedLog, ...(currentChild.logs || []).filter((log) => log.date !== originalDate)].sort((left, right) =>
+        left.date < right.date ? 1 : -1
+      ),
+    }));
+
+    const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (email) {
+      try {
+        const response = await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nightly_log",
+            email,
+            childId,
+            logDate: updatedLog.date,
+            routineStartTime: updatedLog.routineStartTime,
+            inBedAt: updatedLog.bedTime,
+            fellAsleepAt: updatedLog.sleepTime,
+            sleepLatencyMinutes: updatedLog.latency,
+            nightWakings: updatedLog.nightWakings,
+            notes: updatedLog.notes,
+            ratings: updatedLog.ratings,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "No pude actualizar la noche.");
+        }
+        setState((current) => ({ ...current, persistenceMessage: "Noche actualizada." }));
+      } catch (error) {
+        setState((current) => ({ ...current, persistenceMessage: error.message || "No pude actualizar la noche." }));
       }
     }
   }
@@ -1370,20 +1513,8 @@ export default function BuenasNochesApp() {
         <section className="gate-shell">
           <div className="gate-header">
             <img className="brand-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-            <label className="main-menu">
-              <span>{strings.menuLabel}</span>
-              <select
-                value={["home", "sleep-area", "avoid", "wins", "contact", "admin"].includes(state.activeSection) ? state.activeSection : "home"}
-                onChange={(event) => handleMainMenu(event.target.value)}
-              >
-                {mainMenuOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {!hasPremiumAccess ? (
+            <SectionNav options={mainMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
+            {!hasPremiumAccess && state.activeSection !== "admin" ? (
               <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
                 {strings.unlockPremium}
               </a>
@@ -1658,10 +1789,13 @@ export default function BuenasNochesApp() {
                   setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
                 }
                 onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
+                onUpdateLog={updateSavedNightLog}
                 onAddChild={startAddChild}
               />
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
+          ) : state.activeSection === "tips" ? (
+            <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} />
           ) : state.activeSection === "sleep-area" ? (
             <SleepAreaSection
               activeChild={activeChild}
@@ -1679,6 +1813,8 @@ export default function BuenasNochesApp() {
             />
           ) : state.activeSection === "avoid" ? (
             <AvoidSection strings={strings} language={state.language} />
+          ) : state.activeSection === "foods" ? (
+            <FoodsSection strings={strings} />
           ) : state.activeSection === "wins" ? (
             <WinsSection
               activeChild={activeChild}
@@ -1708,20 +1844,8 @@ export default function BuenasNochesApp() {
             <div className="topbar__brand">
               <img className="topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
             </div>
-            <label className="main-menu main-menu--dark">
-              <span>{strings.menuLabel}</span>
-              <select
-                value={["home", "sleep-area", "avoid", "wins", "contact", "admin"].includes(state.activeSection) ? state.activeSection : "home"}
-                onChange={(event) => handleMainMenu(event.target.value)}
-              >
-                {mainMenuOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {!hasPremiumAccess ? (
+            <SectionNav options={mainMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
+            {!hasPremiumAccess && state.activeSection !== "admin" ? (
               <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
                 {strings.unlockPremium}
               </a>
@@ -1899,6 +2023,7 @@ export default function BuenasNochesApp() {
                     setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
                   }
                   onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
+                  onUpdateLog={updateSavedNightLog}
                   onAddChild={startAddChild}
                 />
               ) : null}
@@ -1938,6 +2063,14 @@ export default function BuenasNochesApp() {
 
               {state.activeSection === "videos" ? <VideoSection activeChild={activeChild} strings={strings} /> : null}
 
+              {state.activeSection === "tips" ? (
+                <TipsSection
+                  strings={strings}
+                  language={state.language}
+                  onOpen={handleMainMenu}
+                />
+              ) : null}
+
               {state.activeSection === "sleep-area" ? (
                 <SleepAreaSection
                   activeChild={activeChild}
@@ -1956,6 +2089,8 @@ export default function BuenasNochesApp() {
               ) : null}
 
               {state.activeSection === "avoid" ? <AvoidSection strings={strings} language={state.language} /> : null}
+
+              {state.activeSection === "foods" ? <FoodsSection strings={strings} /> : null}
 
               {state.activeSection === "wins" ? (
                 <WinsSection
@@ -2012,6 +2147,23 @@ function TopActions({ strings, showPremium }) {
         {strings.emailSupport}
       </a>
     </div>
+  );
+}
+
+function SectionNav({ options, activeSection, onSelect }) {
+  return (
+    <nav className="section-tabs app-section-tabs" aria-label="Secciones principales">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          className={activeSection === option.id ? "section-tab is-active" : "section-tab"}
+          onClick={() => onSelect(option.id)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -2112,6 +2264,7 @@ function ChildHomeGrid({
   onToggleChild,
   onCreateRoutine,
   onEditProfile,
+  onUpdateLog,
   onAddChild,
 }) {
   return (
@@ -2131,6 +2284,7 @@ function ChildHomeGrid({
                 parentEmail={parentEmail}
                 onCreateRoutine={() => onCreateRoutine(child.id)}
                 onEditProfile={() => onEditProfile(child.id)}
+                onUpdateLog={(event, originalDate) => onUpdateLog(event, child.id, originalDate)}
                 onCollapse={() => onToggleChild(child.id)}
                 compact
               />
@@ -2306,6 +2460,7 @@ function HomeSection({
   parentEmail,
   onCreateRoutine,
   onEditProfile,
+  onUpdateLog,
   onCollapse,
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -2314,10 +2469,12 @@ function HomeSection({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewImprovement, setReviewImprovement] = useState("");
   const [reviewStatus, setReviewStatus] = useState("");
+  const [editingLogDate, setEditingLogDate] = useState("");
   if (!activeChild) return null;
   const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset);
   const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
+  const editingLog = activeChild.logs?.find((log) => log.date === editingLogDate);
 
   async function submitReview(event) {
     event.preventDefault();
@@ -2401,9 +2558,9 @@ function HomeSection({
                 <span className="sleep-time">{day.bedTime || "--:--"}</span>
                 <div className="sleep-bar-track">
                   {day.latency !== null ? (
-                    <div className="sleep-bar-fill" style={{ width: `${Math.max(8, (day.latency / weeklyChart.maxLatency) * 100)}%` }}>
-                      <span>{day.latency} min</span>
-                    </div>
+                    <button className="sleep-bar-fill sleep-bar-button" type="button" onClick={() => setEditingLogDate(day.dateKey)} style={{ width: `${Math.max(8, (day.latency / weeklyChart.maxLatency) * 100)}%` }}>
+                      <span>{day.latency} min · editar</span>
+                    </button>
                   ) : (
                     <span className="sleep-empty">Sin registro</span>
                   )}
@@ -2434,6 +2591,54 @@ function HomeSection({
                 ? "Your saved nights will fill this graph."
                 : "Tus noches guardadas van a llenar este gráfico."}
             </p>
+          ) : null}
+          {editingLog ? (
+            <form
+              className="edit-log-card"
+              onSubmit={(event) => {
+                onUpdateLog(event, editingLog.date);
+                setEditingLogDate("");
+              }}
+            >
+              <h3>Editar {editingLog.date}</h3>
+              <label className="stack compact">
+                <span>{strings.date}</span>
+                <input name="date" type="date" defaultValue={editingLog.date} required />
+              </label>
+              <label className="stack compact">
+                <span>{strings.routineStartTime}</span>
+                <input name="routineStartTime" type="time" defaultValue={editingLog.routineStartTime || ""} />
+              </label>
+              <label className="stack compact">
+                <span>{strings.bedTime}</span>
+                <input name="bedTime" type="time" defaultValue={editingLog.bedTime} required />
+              </label>
+              <label className="stack compact">
+                <span>{strings.sleepTime}</span>
+                <input name="sleepTime" type="time" defaultValue={editingLog.sleepTime} required />
+              </label>
+              <label className="stack compact">
+                <span>{strings.nightWakings}</span>
+                <select name="nightWakings" defaultValue={editingLog.nightWakings || "0"}>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3+">3+</option>
+                </select>
+              </label>
+              <label className="stack compact">
+                <span>{strings.notes}</span>
+                <textarea name="notes" defaultValue={editingLog.notes || ""} />
+              </label>
+              <div className="inline-actions">
+                <button className="button button-primary" type="submit">
+                  {strings.saveResults}
+                </button>
+                <button className="button button-ghost" type="button" onClick={() => setEditingLogDate("")}>
+                  {strings.cancel}
+                </button>
+              </div>
+            </form>
           ) : null}
         </section>
 
@@ -3034,14 +3239,6 @@ function RoutineSection({
 function VideoSection({ activeChild, strings }) {
   if (!activeChild) return null;
 
-  const suggestedVideos = [
-    "Presión profunda / squeeze",
-    "Compresiones articulares",
-    "Movimientos oculares",
-    "Tarareo y sonido mmm",
-    "Respiracion abdominal",
-  ];
-
   return (
     <article className="card card--feature">
       <div className="card-header">
@@ -3049,18 +3246,79 @@ function VideoSection({ activeChild, strings }) {
         <h2>{strings.readyForBunny}</h2>
       </div>
       <p className="lead-copy">
-        Aquí vamos a mostrar los videos embebidos por ejercicio. Ya dejé esta sección lista para vincularlos
-        cuando subas los links.
+        Aquí vamos a mostrar los videos embebidos cuando subas los links.
       </p>
       <div className="video-grid">
-        {suggestedVideos.map((video) => (
-          <div key={video} className="video-card">
+        {[strings.education, strings.activities].map((video) => (
+          <div key={video} className="video-card tip-card">
+            <span className="tip-card__moon" aria-hidden="true">☾</span>
             <strong>{video}</strong>
             <span>Espacio listo para embed</span>
           </div>
         ))}
       </div>
     </article>
+  );
+}
+
+function TipsSection({ strings, onOpen }) {
+  const cards = [
+    { id: "sleep-area", title: strings.facilitateSleep, copy: "Luz, ambiente, rutina y señales que ayudan al sistema nervioso a bajar." },
+    { id: "avoid", title: strings.whatToAvoid, copy: "Lo que más activa el cerebro y el cuerpo antes de dormir." },
+    { id: "foods", title: strings.foods, copy: "Alimentos que conviene evitar y alimentos que pueden apoyar el sueño." },
+    { id: "amazon", title: strings.products, copy: "Productos que amamos para crear un ambiente más regulador." },
+  ];
+
+  return (
+    <article className="card card--feature tips-hub">
+      <div className="brand-sky" aria-hidden="true">
+        <span>✦</span>
+        <span>☁</span>
+        <span>☾</span>
+      </div>
+      <div className="card-header">
+        <span className="section-label">Tips</span>
+        <h2>{strings.tipsTitle}</h2>
+      </div>
+      <div className="tip-card-grid">
+        {cards.map((card) => (
+          <button key={card.id} type="button" className="tip-card" onClick={() => onOpen(card.id)}>
+            <span className="tip-card__moon" aria-hidden="true">☾</span>
+            <strong>{card.title}</strong>
+            <p>{card.copy}</p>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function FoodsSection({ strings }) {
+  return (
+    <article className="card card--feature">
+      <div className="card-header">
+        <span className="section-label">{strings.foods}</span>
+        <h2>{strings.foods}</h2>
+      </div>
+      <div className="tip-detail-grid">
+        <FoodList title={strings.foodsToAvoid} items={foodAvoidItems} />
+        <FoodList title={strings.foodsForSleep} items={foodSleepItems} />
+      </div>
+    </article>
+  );
+}
+
+function FoodList({ title, items }) {
+  return (
+    <section className="tip-detail-card">
+      <h3>{title}</h3>
+      {items.map(([itemTitle, copy]) => (
+        <div className="tip-detail-item" key={itemTitle}>
+          <strong>{itemTitle}</strong>
+          <p>{copy}</p>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -3071,8 +3329,17 @@ function SleepAreaSection({ activeChild, strings, checkedCount, sleepAreaResult,
     <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.sleepArea}</span>
-        <h2>{strings.quickChecklist}</h2>
+        <h2>{strings.facilitateSleep}</h2>
       </div>
+      <div className="tip-detail-grid">
+        {facilitateSleepItems.map((item) => (
+          <div className="tip-detail-card" key={item.title}>
+            <h3>{item.title}</h3>
+            <p>{item.copy}</p>
+          </div>
+        ))}
+      </div>
+      <h3>{strings.quickChecklist}</h3>
       <p className="lead-copy">Esto le da una ventaja inmediata al sistema nervioso de tu hijo.</p>
       <div className="stack">
         {sleepAreaChecklist.map((item) => (
@@ -3127,7 +3394,9 @@ function AvoidSection({ strings, language }) {
 
 function WinsSection({ activeChild, strings, language, parentName, parentEmail }) {
   const [reviews, setReviews] = useState([]);
-  const [message, setMessage] = useState("");
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [improvementFeedback, setImprovementFeedback] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -3146,13 +3415,13 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
     };
   }, []);
 
-  async function sendWin(event) {
+  async function submitReview(event) {
     event.preventDefault();
-    if (!message.trim()) return;
+    if (!rating) return;
 
     setStatus("");
     try {
-      const response = await fetch("/api/support-message", {
+      const response = await fetch("/api/reviews", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3161,18 +3430,24 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
           parentName,
           email: parentEmail,
           childName: activeChild?.name || "",
-          topic: "win",
-          message,
+          rating,
+          comment,
+          improvementFeedback,
         }),
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.error || "No pude enviar el mensaje.");
+        throw new Error(payload.error || "No pude guardar la reseña.");
       }
-      setMessage("");
-      setStatus(strings.messageSent);
+      setComment("");
+      setImprovementFeedback("");
+      setRating(0);
+      setStatus(payload.public ? strings.reviewSavedPublic : strings.reviewSavedPrivate);
+      if (payload.public) {
+        setReviews((current) => [payload.review, ...current]);
+      }
     } catch (error) {
-      setStatus(error.message || "No pude enviar el mensaje.");
+      setStatus(error.message || "No pude guardar la reseña.");
     }
   }
 
@@ -3180,9 +3455,68 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
     <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.sections.wins}</span>
-        <h2>{strings.publicWinsWall}</h2>
+        <h2>{strings.reviews}</h2>
       </div>
-      <p className="lead-copy">{strings.publicWinsCopy}</p>
+      <p className="lead-copy">
+        {language === "es"
+          ? "¡Tu opinión nos importa! Cuéntanos cómo vamos."
+          : "Your opinion matters to us! Please let us know how we are doing."}
+      </p>
+
+      <form className="win-card review-submit-card" onSubmit={submitReview}>
+        <div className="star-rating star-rating--large" aria-label="Calificación de la app">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              className={rating >= star ? "is-selected" : ""}
+              onClick={() => setRating(star)}
+              aria-label={`${star} estrellas`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        {rating === 5 ? (
+          <label className="stack compact">
+            <span>
+              {language === "es"
+                ? "¡Qué alegría! Cuéntanos qué te gusta más y qué impacto ha tenido en su rutina."
+                : "Amazing! Tell us what you like best and what impact it has made in your night-time routine."}
+            </span>
+            <textarea value={comment} onChange={(event) => setComment(event.target.value)} required />
+          </label>
+        ) : null}
+        {rating === 4 ? (
+          <label className="stack compact">
+            <span>
+              {language === "es"
+                ? "Nos alegra que estés disfrutando la app. ¿Qué haría que esta experiencia sea de 5 estrellas para ti?"
+                : "We are happy you are enjoying the app. What would make this a 5-star experience for you?"}
+            </span>
+            <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
+          </label>
+        ) : null}
+        {rating > 0 && rating <= 3 ? (
+          <label className="stack compact">
+            <span>
+              {language === "es"
+                ? "Sentimos que la app no esté cumpliendo tus expectativas. ¿Cómo podemos hacer que esta sea una experiencia de 5 estrellas?"
+                : "We are sorry the app is not meeting your expectations. How can we make this a 5-star experience for you?"}
+            </span>
+            <textarea value={improvementFeedback} onChange={(event) => setImprovementFeedback(event.target.value)} required />
+          </label>
+        ) : null}
+        {status ? <p className="status-message status-success">{status}</p> : null}
+        <button className="button button-primary" type="submit" disabled={!rating}>
+          Submit
+        </button>
+      </form>
+
+      <div className="card-header">
+        <span className="section-label">{strings.publicWinsWall}</span>
+        <h2>El muro de los logros</h2>
+      </div>
 
       <div className="review-wall">
         {reviews.length ? (
@@ -3193,7 +3527,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
               </div>
               <p>{review.comment}</p>
               <span>
-                {review.parent_name || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
+                {formatPublicParentName(review.parent_name) || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
                 {review.child_name ? ` · ${review.child_name}` : ""}
               </span>
             </div>
@@ -3209,32 +3543,21 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail }
         )}
       </div>
 
-      <form className="win-card" onSubmit={sendWin}>
-        <strong>{strings.sharePrivateWin}</strong>
-        <p>{strings.privateMessageHelp}</p>
-        <textarea
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          placeholder={strings.messagePlaceholder}
-          required
-        />
-        {status ? <p className="status-message status-success">{status}</p> : null}
-        <button className="button button-primary" type="submit">
-          {strings.sendMessage}
-        </button>
-      </form>
     </article>
   );
+}
+
+function formatPublicParentName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1][0]}.`;
 }
 
 function ContactSection({ strings, language, activeChild, parentName, parentEmail }) {
   const [topic, setTopic] = useState("support");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("");
-  const contactText =
-    language === "es"
-      ? "Hola, necesito ayuda con Buenas Noches."
-      : "Hi, I need help with Buenas Noches.";
 
   async function sendPrivateMessage(event) {
     event.preventDefault();
@@ -3296,17 +3619,6 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
           {strings.sendMessage}
         </button>
       </form>
-      <div className="inline-actions">
-        <a className="button button-primary button-link" href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(contactText)}`}>
-          {strings.whatsapp}
-        </a>
-        <a
-          className="button button-secondary button-link"
-          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Buenas Noches - soporte")}&body=${encodeURIComponent(contactText)}`}
-        >
-          {strings.emailSupport}
-        </a>
-      </div>
     </article>
   );
 }
@@ -3315,6 +3627,9 @@ function AdminSection({ strings, language }) {
   const [adminCode, setAdminCode] = useState("");
   const [status, setStatus] = useState("");
   const [data, setData] = useState(null);
+  const [adminTab, setAdminTab] = useState("users");
+  const [selectedUserEmail, setSelectedUserEmail] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState("");
 
   async function loadAdminData(event) {
     event.preventDefault();
@@ -3337,6 +3652,33 @@ function AdminSection({ strings, language }) {
       setStatus(error.message || "No pude abrir el panel.");
     }
   }
+
+  async function deleteAdminMessage(messageId) {
+    setStatus("");
+    try {
+      const response = await fetch("/api/admin-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ adminCode, type: "delete_message", messageId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude borrar el mensaje.");
+      }
+      setData((current) => ({
+        ...current,
+        messages: current.messages.filter((message) => message.id !== messageId),
+      }));
+    } catch (error) {
+      setStatus(error.message || "No pude borrar el mensaje.");
+    }
+  }
+
+  const userGroups = data ? buildAdminUserGroups(data) : [];
+  const selectedUser = userGroups.find((user) => user.email === selectedUserEmail) || null;
+  const selectedChild = selectedUser?.children.find((child) => child.id === selectedChildId) || null;
 
   return (
     <article className="card card--feature admin-panel">
@@ -3362,61 +3704,171 @@ function AdminSection({ strings, language }) {
           </button>
         </form>
       ) : (
-        <div className="admin-grid">
-          <AdminList
-            title={language === "es" ? "Perfiles" : "Profiles"}
-            items={data.children}
-            renderItem={(child) => (
-              <>
-                <strong>{child.child_name || "Sin nombre"}</strong>
-                <span>{child.parent_email}</span>
-                <small>
-                  {child.primary_profile} · {child.age_years ?? "?"} años
-                </small>
-              </>
-            )}
-          />
-          <AdminList
-            title={language === "es" ? "Noches guardadas" : "Saved nights"}
-            items={data.logs}
-            renderItem={(log) => (
-              <>
-                <strong>
-                  {log.log_date} · {log.sleep_latency_minutes} min
-                </strong>
-                <span>{log.parent_email}</span>
-                <small>Despertares: {log.night_wakings}</small>
-              </>
-            )}
-          />
-          <AdminList
-            title={strings.supportMessages}
-            items={data.messages}
-            renderItem={(messageItem) => (
-              <>
-                <strong>{messageItem.parent_name || messageItem.parent_email || "Mensaje"}</strong>
-                <span>{messageItem.message}</span>
-                <small>{messageItem.topic} · {messageItem.created_at?.slice(0, 10)}</small>
-              </>
-            )}
-          />
-          <AdminList
-            title={strings.privateReviews}
-            items={data.reviews}
-            renderItem={(review) => (
-              <>
-                <strong>
-                  {review.rating}★ · {review.parent_name || review.parent_email || "Reseña"}
-                </strong>
-                <span>{review.public_approved ? review.comment : review.improvement_feedback || review.comment}</span>
-                <small>{review.public_approved ? "Pública" : "Privada"}</small>
-              </>
-            )}
-          />
-        </div>
+        <>
+          <div className="admin-tabs">
+            {[
+              ["users", strings.users],
+              ["messages", strings.messages],
+              ["reviews", strings.reviews],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={adminTab === id ? "section-tab is-active" : "section-tab"}
+                onClick={() => setAdminTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {adminTab === "users" ? (
+            <div className="admin-split">
+              <section className="admin-list">
+                <h3>{strings.users}</h3>
+                {userGroups.map((user) => (
+                  <button
+                    key={user.email}
+                    type="button"
+                    className={selectedUserEmail === user.email ? "admin-list-item admin-list-button is-active" : "admin-list-item admin-list-button"}
+                    onClick={() => {
+                      setSelectedUserEmail(user.email);
+                      setSelectedChildId("");
+                    }}
+                  >
+                    <strong>{user.email || "Sin email"}</strong>
+                    <span>{user.children.length} perfiles</span>
+                  </button>
+                ))}
+              </section>
+              <section className="admin-list">
+                <h3>{selectedUser ? selectedUser.email : "Perfiles"}</h3>
+                {selectedUser ? (
+                  selectedUser.children.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      className={selectedChildId === child.id ? "admin-list-item admin-list-button is-active" : "admin-list-item admin-list-button"}
+                      onClick={() => setSelectedChildId(child.id)}
+                    >
+                      <strong>{child.child_name || "Sin nombre"}</strong>
+                      <span>
+                        Perfil {child.primary_profile} · {child.age_years ?? "?"} años
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="muted">Selecciona un usuario.</p>
+                )}
+              </section>
+              <section className="admin-list">
+                <h3>{selectedChild ? selectedChild.child_name || "Actividad" : "Actividad"}</h3>
+                {selectedChild ? (
+                  <>
+                    {(selectedUser.logsByChild.get(selectedChild.id) || []).map((log) => (
+                      <div className="admin-list-item" key={log.id}>
+                        <strong>
+                          {log.log_date} · {log.sleep_latency_minutes} min
+                        </strong>
+                        <span>
+                          Cama {log.in_bed_at} · Sueño {log.fell_asleep_at}
+                        </span>
+                        <small>Despertares: {log.night_wakings}</small>
+                      </div>
+                    ))}
+                    {(selectedUser.eventsByChild.get(selectedChild.id) || []).map((event) => (
+                      <div className="admin-list-item" key={event.id}>
+                        <strong>{event.event_label}</strong>
+                        <span>{event.event_type}</span>
+                        <small>{event.created_at?.slice(0, 10)}</small>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <p className="muted">Selecciona un perfil para ver actividad.</p>
+                )}
+              </section>
+            </div>
+          ) : null}
+
+          {adminTab === "messages" ? (
+            <AdminList
+              title={strings.messages}
+              items={data.messages}
+              renderItem={(messageItem) => (
+                <>
+                  <strong>{messageItem.parent_email || "Sin email"}</strong>
+                  <span>{messageItem.message}</span>
+                  <small>
+                    {messageItem.topic} · {messageItem.created_at?.slice(0, 10)}
+                  </small>
+                  <button className="button button-danger" type="button" onClick={() => deleteAdminMessage(messageItem.id)}>
+                    Borrar mensaje
+                  </button>
+                </>
+              )}
+            />
+          ) : null}
+
+          {adminTab === "reviews" ? (
+            <AdminList
+              title={strings.reviews}
+              items={data.reviews}
+              renderItem={(review) => (
+                <>
+                  <strong>
+                    {review.rating}★ · {review.parent_email || "Sin email"}
+                  </strong>
+                  <span>{review.rating === 5 ? review.comment : review.improvement_feedback || review.comment}</span>
+                  <small>{review.public_approved ? "Publicada en muro" : "Privada"}</small>
+                </>
+              )}
+            />
+          ) : null}
+        </>
       )}
     </article>
   );
+}
+
+function buildAdminUserGroups(data) {
+  const groups = new Map();
+  (data.children || []).forEach((child) => {
+    const email = child.parent_email || "";
+    if (!groups.has(email)) {
+      groups.set(email, {
+        email,
+        children: [],
+        logsByChild: new Map(),
+        eventsByChild: new Map(),
+      });
+    }
+    groups.get(email).children.push(child);
+  });
+
+  (data.logs || []).forEach((log) => {
+    const email = log.parent_email || "";
+    if (!groups.has(email)) {
+      groups.set(email, { email, children: [], logsByChild: new Map(), eventsByChild: new Map() });
+    }
+    const childKey = log.child_id || "";
+    const user = groups.get(email);
+    if (!user.logsByChild.has(childKey)) user.logsByChild.set(childKey, []);
+    user.logsByChild.get(childKey).push(log);
+  });
+
+  (data.events || []).forEach((event) => {
+    const email = event.parent_email || "";
+    if (!groups.has(email)) {
+      groups.set(email, { email, children: [], logsByChild: new Map(), eventsByChild: new Map() });
+    }
+    const childKey = event.child_id || "";
+    const user = groups.get(email);
+    if (!user.eventsByChild.has(childKey)) user.eventsByChild.set(childKey, []);
+    user.eventsByChild.get(childKey).push(event);
+  });
+
+  return Array.from(groups.values()).sort((left, right) => left.email.localeCompare(right.email));
 }
 
 function AdminList({ title, items, renderItem }) {
