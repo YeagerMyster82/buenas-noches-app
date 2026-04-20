@@ -59,6 +59,7 @@ create table if not exists nightly_logs (
   parent_email text not null,
   child_id uuid references children(id) on delete cascade,
   log_date date not null,
+  routine_start_time time,
   in_bed_at time not null,
   fell_asleep_at time not null,
   sleep_latency_minutes integer not null,
@@ -68,6 +69,9 @@ create table if not exists nightly_logs (
   created_at timestamptz not null default now(),
   unique (child_id, log_date)
 );
+
+alter table nightly_logs
+  add column if not exists routine_start_time time;
 
 alter table nightly_logs
   add column if not exists night_wakings text not null default '0';
