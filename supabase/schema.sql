@@ -76,6 +76,36 @@ alter table nightly_logs
 alter table nightly_logs
   add column if not exists night_wakings text not null default '0';
 
+create table if not exists support_messages (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  parent_name text,
+  child_name text,
+  topic text not null default 'support',
+  message text not null,
+  status text not null default 'new',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists app_reviews (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  parent_name text,
+  child_name text,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  improvement_feedback text,
+  public_approved boolean not null default false,
+  needs_follow_up boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists support_messages_created_at_idx
+  on support_messages (created_at desc);
+
+create index if not exists app_reviews_public_created_at_idx
+  on app_reviews (public_approved, created_at desc);
+
 insert into profiles (code, name, description) values
   ('A', 'Segunda energía', 'Niño que en la noche parece activarse más.'),
   ('B', 'Despierto pero quieto', 'Niño que está acostado pero no logra dormirse.'),
