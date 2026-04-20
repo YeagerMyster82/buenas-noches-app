@@ -3643,13 +3643,20 @@ function AdminSection({ strings, language }) {
         },
         body: JSON.stringify({ adminCode }),
       });
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({
+        error: "La respuesta del servidor no fue JSON. Revisa si el deploy terminó correctamente.",
+      }));
       if (!response.ok) {
         throw new Error(payload.error || "No pude abrir el panel.");
       }
       setData(payload);
     } catch (error) {
-      setStatus(error.message || "No pude abrir el panel.");
+      const message = error.message || "";
+      setStatus(
+        message === "The string did not match the expected pattern."
+          ? "El código fue aceptado, pero el panel no pudo cargar datos. Sube los archivos actualizados y vuelve a desplegar."
+          : message || "No pude abrir el panel."
+      );
     }
   }
 
