@@ -106,6 +106,19 @@ create index if not exists support_messages_created_at_idx
 create index if not exists app_reviews_public_created_at_idx
   on app_reviews (public_approved, created_at desc);
 
+create table if not exists admin_activity_events (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  child_id uuid,
+  event_type text not null,
+  event_label text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists admin_activity_events_child_created_at_idx
+  on admin_activity_events (child_id, created_at desc);
+
 insert into profiles (code, name, description) values
   ('A', 'Segunda energía', 'Niño que en la noche parece activarse más.'),
   ('B', 'Despierto pero quieto', 'Niño que está acostado pero no logra dormirse.'),
