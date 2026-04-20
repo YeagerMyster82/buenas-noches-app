@@ -227,22 +227,23 @@ img {
   width: 100%;
   justify-content: center;
   border-radius: 22px;
-  background: rgba(248, 243, 234, 0.12);
+  background: rgba(248, 243, 234, 0.22);
 }
 
 .section-tab {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(248, 243, 234, 0.84);
-  color: var(--night-deep);
+  background: #f8f3ea;
+  color: #18283a;
   font-weight: 900;
   white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(13, 24, 38, 0.14);
 }
 
 .section-tab.is-active {
-  background: var(--night-deep);
-  color: #f8f3ea;
+  background: var(--moon);
+  color: #172233;
 }
 
 .child-strip--home {
@@ -318,14 +319,15 @@ img {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 999px;
-  background: transparent;
-  color: var(--ink-soft);
-  font-weight: 700;
+  background: #f8f3ea;
+  color: #18283a;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(13, 24, 38, 0.14);
 }
 
 .section-tab.is-active {
-  background: var(--night-deep);
-  color: #f8f3ea;
+  background: var(--moon);
+  color: #172233;
 }
 
 .child-strip {
@@ -804,6 +806,26 @@ img {
   object-position: center bottom;
   border-radius: 18px;
   background: rgba(248, 243, 234, 0.14);
+}
+
+.tip-card--locked {
+  position: relative;
+  opacity: 0.82;
+}
+
+.tip-card--locked::after {
+  content: "Premium";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(244, 231, 178, 0.96);
+  color: #172233;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .tip-detail-card h3 {
@@ -1456,6 +1478,11 @@ textarea {
 
 .preview-lock {
   align-content: start;
+}
+
+.preview-lock--inline {
+  margin-top: 16px;
+  background: rgba(248, 243, 234, 0.12);
 }
 
 .preview-lock p {
