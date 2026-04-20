@@ -127,5 +127,10 @@ insert into profiles (code, name, description) values
   ('E', 'Cuerpo inquieto', 'Niño que se mueve mucho en la cama y sigue buscando input.'),
   ('F', 'Necesita cerquita', 'Niño que necesita presencia y cercanía para bajar revoluciones.'),
   ('G', 'Mente encendida', 'Niño que no logra apagar la mente al dormir.'),
-  ('H', 'Se duerme, pero no sostiene el sueño', 'Niño que logra dormirse pero despierta más tarde.')
+  ('H', 'Se duerme, pero no sostiene el sueño', 'Niño que logra dormirse pero despierta más tarde.'),
+  ('EL_INAGOTABLE', 'El Inagotable', 'Overtired, missed the sleep window, cortisol is keeping them wired.'),
+  ('EL_DESVELADO', 'El Desvelado', 'Nervous system is stuck, tired but unable to drift into sleep.'),
+  ('EL_NEGOCIADOR', 'El Negociador', 'Needs connection before the body can let go and rest.'),
+  ('EL_BERRINCHE', 'El Berrinche', 'Full sympathetic activation, overwhelmed and unable to regulate.'),
+  ('EL_SONAMBULO', 'El Sonámbulo', 'Crashes into sleep from exhaustion but never fully came down first.')
 on conflict (code) do nothing;
