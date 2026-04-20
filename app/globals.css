@@ -1305,6 +1305,25 @@ textarea {
   color: rgba(248, 243, 234, 0.78);
 }
 
+.routine-countdown {
+  font-size: clamp(2.5rem, 14vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.routine-preview-step {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(31, 48, 68, 0.06);
+}
+
+.routine-preview-step span {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
 .routine-media {
   min-height: 190px;
   display: grid;
