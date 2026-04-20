@@ -33,6 +33,7 @@ const copy = {
       "sleep-area": "Área de sueño",
       avoid: "Qué evitar",
       wins: "Logros",
+      admin: "Admin",
     },
     menuLabel: "Menú",
     readyRoom: "Alista su cuarto",
@@ -145,6 +146,28 @@ const copy = {
     wakingPromptTitle: "Registro de anoche",
     wakingPromptCopy: "¿Tu hijo se despertó durante la noche?",
     saveWakings: "Guardar despertares",
+    publicWinsWall: "Muro de logros",
+    publicWinsCopy: "Aquí celebramos las historias que otras familias quieren compartir.",
+    sharePrivateWin: "Comparte tu logro o mensaje",
+    privateMessageHelp: "Este mensaje llega privado a QuiroKids. No se publica en el muro.",
+    messageTopic: "Tipo de mensaje",
+    topicWin: "Logro",
+    topicQuestion: "Pregunta",
+    topicSupport: "Soporte",
+    messagePlaceholder: "Cuéntanos qué pasó o en qué necesitas apoyo.",
+    sendMessage: "Enviar mensaje",
+    messageSent: "Mensaje enviado. Te responderemos lo antes posible.",
+    reviewPublicNote: "Las reseñas de 5 estrellas pueden aparecer en el muro de logros.",
+    reviewPrivateQuestion: "¿Qué necesitarías ver para que esta experiencia sea de 5 estrellas?",
+    reviewSavedPublic: "¡Gracias! Tu logro quedó guardado para el muro.",
+    reviewSavedPrivate: "Gracias por contarnos. Esto nos llega privado para poder mejorar.",
+    adminLogin: "Entrar como admin",
+    adminCode: "Código de admin",
+    loadAdmin: "Ver resultados",
+    adminOverview: "Panel de familias",
+    adminHint: "Entra con tu código para ver perfiles, noches guardadas, mensajes y reseñas.",
+    supportMessages: "Mensajes privados",
+    privateReviews: "Comentarios para mejorar",
   },
   en: {
     sections: {
@@ -154,6 +177,7 @@ const copy = {
       "sleep-area": "Sleep space",
       avoid: "Avoid",
       wins: "Wins",
+      admin: "Admin",
     },
     menuLabel: "Menu",
     readyRoom: "Prep their room",
@@ -246,6 +270,49 @@ const copy = {
     yes: "Yes",
     no: "No",
     sometimes: "Sometimes",
+    routinePreviewTitle: "Tonight's routine",
+    routinePreviewCopy: "This is the general idea. When you are ready, start the guide and the app will log the key times.",
+    beginRoutine: "Begin routine",
+    openGuidedRoutine: "Open guided routine",
+    routineStarted: "Routine started",
+    pauseRoutine: "Pause",
+    resumeRoutine: "Resume",
+    extendActivity: "Extend 2 minutes",
+    transitionSound: "Transition sound",
+    soundMode: "Sound mode",
+    soundSilent: "Silent",
+    soundTransition: "Transition only",
+    soundCalm: "Calming music",
+    soundNature: "Nature sounds",
+    markInBed: "They are in bed",
+    fellAsleepNow: "They fell asleep now",
+    routineStartTime: "Routine start time",
+    editTimesHelp: "You can adjust the times if you did not have your phone with you.",
+    wakingPromptTitle: "Last night's log",
+    wakingPromptCopy: "Did your child wake during the night?",
+    saveWakings: "Save wakings",
+    publicWinsWall: "Wins wall",
+    publicWinsCopy: "Here we celebrate the stories families choose to share.",
+    sharePrivateWin: "Share your win or message",
+    privateMessageHelp: "This message goes privately to QuiroKids. It is not posted on the wall.",
+    messageTopic: "Message type",
+    topicWin: "Win",
+    topicQuestion: "Question",
+    topicSupport: "Support",
+    messagePlaceholder: "Tell us what happened or what support you need.",
+    sendMessage: "Send message",
+    messageSent: "Message sent. We will reply as soon as possible.",
+    reviewPublicNote: "5-star reviews may appear on the wins wall.",
+    reviewPrivateQuestion: "What would you need to see to make this a 5-star experience?",
+    reviewSavedPublic: "Thank you. Your win was saved for the wall.",
+    reviewSavedPrivate: "Thank you for telling us. This goes privately to help us improve.",
+    adminLogin: "Admin login",
+    adminCode: "Admin code",
+    loadAdmin: "View results",
+    adminOverview: "Family dashboard",
+    adminHint: "Enter your code to see profiles, saved nights, messages, and reviews.",
+    supportMessages: "Private messages",
+    privateReviews: "Improvement comments",
   },
 };
 
@@ -464,6 +531,7 @@ function makeLogsFromSavedData(logs = []) {
 export default function BuenasNochesApp() {
   const [state, setState] = useState(initialState);
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
+  const [adminVisible, setAdminVisible] = useState(false);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
@@ -482,6 +550,14 @@ export default function BuenasNochesApp() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("admin") === "1") {
+      setAdminVisible(true);
+      setState((current) => ({ ...current, activeSection: "admin" }));
     }
   }, []);
 
@@ -548,6 +624,7 @@ export default function BuenasNochesApp() {
     { id: "amazon", label: strings.productsWeLove },
     { id: "wins", label: strings.sections.wins },
     { id: "contact", label: strings.contactUs },
+    ...(adminVisible ? [{ id: "admin", label: strings.sections.admin }] : []),
   ];
   const profileMap = getProfileMap(state.language);
   const questions = getQuestions(state.language);
@@ -1296,7 +1373,7 @@ export default function BuenasNochesApp() {
             <label className="main-menu">
               <span>{strings.menuLabel}</span>
               <select
-                value={["home", "sleep-area", "avoid", "wins", "contact"].includes(state.activeSection) ? state.activeSection : "home"}
+                value={["home", "sleep-area", "avoid", "wins", "contact", "admin"].includes(state.activeSection) ? state.activeSection : "home"}
                 onChange={(event) => handleMainMenu(event.target.value)}
               >
                 {mainMenuOptions.map((option) => (
@@ -1313,7 +1390,7 @@ export default function BuenasNochesApp() {
             ) : null}
           </div>
 
-          {(!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
+          {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <>
               <div className="gate-grid">
             <article className="card card--feature">
@@ -1568,6 +1645,8 @@ export default function BuenasNochesApp() {
                 strings={strings}
                 language={state.language}
                 profileMap={profileMap}
+                parentName={state.parentName}
+                parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
                 onToggleChild={(childId) =>
                   setState((current) => ({
                     ...current,
@@ -1601,9 +1680,23 @@ export default function BuenasNochesApp() {
           ) : state.activeSection === "avoid" ? (
             <AvoidSection strings={strings} language={state.language} />
           ) : state.activeSection === "wins" ? (
-            <WinsSection activeChild={activeChild} strings={strings} language={state.language} />
+            <WinsSection
+              activeChild={activeChild}
+              strings={strings}
+              language={state.language}
+              parentName={state.parentName}
+              parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+            />
           ) : state.activeSection === "contact" ? (
-            <ContactSection strings={strings} language={state.language} />
+            <ContactSection
+              strings={strings}
+              language={state.language}
+              activeChild={activeChild}
+              parentName={state.parentName}
+              parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+            />
+          ) : state.activeSection === "admin" ? (
+            <AdminSection strings={strings} language={state.language} />
           ) : (
             <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
           )}
@@ -1618,7 +1711,7 @@ export default function BuenasNochesApp() {
             <label className="main-menu main-menu--dark">
               <span>{strings.menuLabel}</span>
               <select
-                value={["home", "sleep-area", "avoid", "wins", "contact"].includes(state.activeSection) ? state.activeSection : "home"}
+                value={["home", "sleep-area", "avoid", "wins", "contact", "admin"].includes(state.activeSection) ? state.activeSection : "home"}
                 onChange={(event) => handleMainMenu(event.target.value)}
               >
                 {mainMenuOptions.map((option) => (
@@ -1635,7 +1728,7 @@ export default function BuenasNochesApp() {
             ) : null}
           </header>
 
-          {(!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
+          {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <section className="app-panel">
               <article className="card card--soft card--quiz">
                 <div className="card-header">
@@ -1793,6 +1886,8 @@ export default function BuenasNochesApp() {
                   strings={strings}
                   language={state.language}
                   profileMap={profileMap}
+                  parentName={state.parentName}
+                  parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
                   onToggleChild={(childId) =>
                     setState((current) => ({
                       ...current,
@@ -1862,9 +1957,27 @@ export default function BuenasNochesApp() {
 
               {state.activeSection === "avoid" ? <AvoidSection strings={strings} language={state.language} /> : null}
 
-              {state.activeSection === "wins" ? <WinsSection activeChild={activeChild} strings={strings} language={state.language} /> : null}
+              {state.activeSection === "wins" ? (
+                <WinsSection
+                  activeChild={activeChild}
+                  strings={strings}
+                  language={state.language}
+                  parentName={state.parentName}
+                  parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                />
+              ) : null}
 
-              {state.activeSection === "contact" ? <ContactSection strings={strings} language={state.language} /> : null}
+              {state.activeSection === "contact" ? (
+                <ContactSection
+                  strings={strings}
+                  language={state.language}
+                  activeChild={activeChild}
+                  parentName={state.parentName}
+                  parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                />
+              ) : null}
+
+              {state.activeSection === "admin" ? <AdminSection strings={strings} language={state.language} /> : null}
             </section>
           )}
 
@@ -1994,6 +2107,8 @@ function ChildHomeGrid({
   strings,
   language,
   profileMap,
+  parentName,
+  parentEmail,
   onToggleChild,
   onCreateRoutine,
   onEditProfile,
@@ -2012,6 +2127,8 @@ function ChildHomeGrid({
                 progressSummary={summary}
                 strings={strings}
                 profileMap={profileMap}
+                parentName={parentName}
+                parentEmail={parentEmail}
                 onCreateRoutine={() => onCreateRoutine(child.id)}
                 onEditProfile={() => onEditProfile(child.id)}
                 onCollapse={() => onToggleChild(child.id)}
@@ -2180,14 +2297,60 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
   };
 }
 
-function HomeSection({ activeChild, progressSummary, strings, profileMap, onCreateRoutine, onEditProfile, onCollapse }) {
+function HomeSection({
+  activeChild,
+  progressSummary,
+  strings,
+  profileMap,
+  parentName,
+  parentEmail,
+  onCreateRoutine,
+  onEditProfile,
+  onCollapse,
+}) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewImprovement, setReviewImprovement] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("");
   if (!activeChild) return null;
   const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset);
   const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
+
+  async function submitReview(event) {
+    event.preventDefault();
+    if (!reviewRating) return;
+
+    setReviewStatus("");
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          parentName,
+          email: parentEmail,
+          childName: activeChild.name,
+          rating: reviewRating,
+          comment: reviewComment,
+          improvementFeedback: reviewImprovement,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude guardar la reseña.");
+      }
+
+      setReviewStatus(payload.public ? strings.reviewSavedPublic : strings.reviewSavedPrivate);
+      setReviewComment("");
+      setReviewImprovement("");
+    } catch (error) {
+      setReviewStatus(error.message || "No pude guardar la reseña.");
+    }
+  }
 
   return (
     <div className="dashboard-grid dashboard-grid--single">
@@ -2283,7 +2446,7 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
               </button>
             ) : null}
             {reviewOpen ? (
-              <div className="review-box">
+              <form className="review-box" onSubmit={submitReview}>
                 <div className="star-rating" aria-label="Calificación de la app">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -2297,9 +2460,28 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
                     </button>
                   ))}
                 </div>
-                <textarea placeholder="Cuéntanos qué cambió para tu familia." />
-                <p className="muted">Más adelante enviaremos estas calificaciones al panel de admin.</p>
-              </div>
+                <textarea
+                  value={reviewComment}
+                  onChange={(event) => setReviewComment(event.target.value)}
+                  placeholder="Cuéntanos qué cambió para tu familia."
+                />
+                {reviewRating > 0 && reviewRating < 5 ? (
+                  <label className="stack compact">
+                    <span>{strings.reviewPrivateQuestion}</span>
+                    <textarea
+                      value={reviewImprovement}
+                      onChange={(event) => setReviewImprovement(event.target.value)}
+                      placeholder={strings.messagePlaceholder}
+                    />
+                  </label>
+                ) : (
+                  <p className="muted">{strings.reviewPublicNote}</p>
+                )}
+                {reviewStatus ? <p className="status-message status-success">{reviewStatus}</p> : null}
+                <button className="button button-secondary" type="submit">
+                  {strings.sendMessage}
+                </button>
+              </form>
             ) : null}
           </div>
         ) : null}
@@ -2943,52 +3125,146 @@ function AvoidSection({ strings, language }) {
   );
 }
 
-function WinsSection({ activeChild, strings, language }) {
-  if (!activeChild) return null;
-  const whatsappText =
-    language === "es"
-      ? `Quiero compartir un logro de ${activeChild.name} en Buenas Noches:`
-      : `I want to share a win from ${activeChild.name} in Buenas Noches:`;
+function WinsSection({ activeChild, strings, language, parentName, parentEmail }) {
+  const [reviews, setReviews] = useState([]);
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/reviews")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (active) {
+          setReviews(payload.reviews || []);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function sendWin(event) {
+    event.preventDefault();
+    if (!message.trim()) return;
+
+    setStatus("");
+    try {
+      const response = await fetch("/api/support-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          parentName,
+          email: parentEmail,
+          childName: activeChild?.name || "",
+          topic: "win",
+          message,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude enviar el mensaje.");
+      }
+      setMessage("");
+      setStatus(strings.messageSent);
+    } catch (error) {
+      setStatus(error.message || "No pude enviar el mensaje.");
+    }
+  }
 
   return (
     <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.sections.wins}</span>
-        <h2>{language === "es" ? "Celebra lo que está funcionando" : "Celebrate what is working"}</h2>
+        <h2>{strings.publicWinsWall}</h2>
       </div>
-      <p className="lead-copy">
-        {language === "es"
-          ? "Los logros pequeños importan: menos negociación, menos tiempo para dormir, menos despertares o una rutina más tranquila."
-          : "Small wins matter: less negotiation, less time to fall asleep, fewer wakings, or a calmer routine."}
-      </p>
-      <div className="win-card">
-        <strong>{language === "es" ? "Comparte un logro o pide apoyo" : "Share a win or ask for support"}</strong>
-        <p>
-          {language === "es"
-            ? "Por ahora esto abre WhatsApp o email para que me llegue directo. Más adelante podemos convertirlo en mensajería dentro de la app."
-            : "For now this opens WhatsApp or email so it reaches me directly. Later we can turn this into in-app messaging."}
-        </p>
-        <div className="inline-actions">
-          <a className="button button-primary button-link" href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(whatsappText)}`}>
-            {strings.whatsapp}
-          </a>
-          <a
-            className="button button-secondary button-link"
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Buenas Noches - win/support")}&body=${encodeURIComponent(whatsappText)}`}
-          >
-            {strings.emailSupport}
-          </a>
-        </div>
+      <p className="lead-copy">{strings.publicWinsCopy}</p>
+
+      <div className="review-wall">
+        {reviews.length ? (
+          reviews.map((review) => (
+            <div className="review-wall-card" key={review.id}>
+              <div className="star-line" aria-label={`${review.rating} estrellas`}>
+                {"★".repeat(review.rating)}
+              </div>
+              <p>{review.comment}</p>
+              <span>
+                {review.parent_name || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
+                {review.child_name ? ` · ${review.child_name}` : ""}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="review-wall-card review-wall-card--empty">
+            <p>
+              {language === "es"
+                ? "El primer logro público aparecerá aquí pronto."
+                : "The first public win will appear here soon."}
+            </p>
+          </div>
+        )}
       </div>
+
+      <form className="win-card" onSubmit={sendWin}>
+        <strong>{strings.sharePrivateWin}</strong>
+        <p>{strings.privateMessageHelp}</p>
+        <textarea
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder={strings.messagePlaceholder}
+          required
+        />
+        {status ? <p className="status-message status-success">{status}</p> : null}
+        <button className="button button-primary" type="submit">
+          {strings.sendMessage}
+        </button>
+      </form>
     </article>
   );
 }
 
-function ContactSection({ strings, language }) {
+function ContactSection({ strings, language, activeChild, parentName, parentEmail }) {
+  const [topic, setTopic] = useState("support");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("");
   const contactText =
     language === "es"
       ? "Hola, necesito ayuda con Buenas Noches."
       : "Hi, I need help with Buenas Noches.";
+
+  async function sendPrivateMessage(event) {
+    event.preventDefault();
+    if (!message.trim()) return;
+
+    setStatus("");
+    try {
+      const response = await fetch("/api/support-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          parentName,
+          email: parentEmail,
+          childName: activeChild?.name || "",
+          topic,
+          message,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude enviar el mensaje.");
+      }
+      setMessage("");
+      setStatus(strings.messageSent);
+    } catch (error) {
+      setStatus(error.message || "No pude enviar el mensaje.");
+    }
+  }
 
   return (
     <article className="card card--feature">
@@ -2997,6 +3273,29 @@ function ContactSection({ strings, language }) {
         <h2>{strings.needHelp}</h2>
       </div>
       <p className="lead-copy">{strings.contactCopy}</p>
+      <form className="win-card" onSubmit={sendPrivateMessage}>
+        <label className="stack compact">
+          <span>{strings.messageTopic}</span>
+          <select value={topic} onChange={(event) => setTopic(event.target.value)}>
+            <option value="support">{strings.topicSupport}</option>
+            <option value="question">{strings.topicQuestion}</option>
+            <option value="win">{strings.topicWin}</option>
+          </select>
+        </label>
+        <label className="stack compact">
+          <span>{strings.sharePrivateWin}</span>
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder={strings.messagePlaceholder}
+            required
+          />
+        </label>
+        {status ? <p className="status-message status-success">{status}</p> : null}
+        <button className="button button-primary" type="submit">
+          {strings.sendMessage}
+        </button>
+      </form>
       <div className="inline-actions">
         <a className="button button-primary button-link" href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(contactText)}`}>
           {strings.whatsapp}
@@ -3009,6 +3308,131 @@ function ContactSection({ strings, language }) {
         </a>
       </div>
     </article>
+  );
+}
+
+function AdminSection({ strings, language }) {
+  const [adminCode, setAdminCode] = useState("");
+  const [status, setStatus] = useState("");
+  const [data, setData] = useState(null);
+
+  async function loadAdminData(event) {
+    event.preventDefault();
+    setStatus("");
+
+    try {
+      const response = await fetch("/api/admin-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ adminCode }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude abrir el panel.");
+      }
+      setData(payload);
+    } catch (error) {
+      setStatus(error.message || "No pude abrir el panel.");
+    }
+  }
+
+  return (
+    <article className="card card--feature admin-panel">
+      <div className="card-header">
+        <span className="section-label">{strings.sections.admin}</span>
+        <h2>{strings.adminOverview}</h2>
+        <p className="lead-copy">{strings.adminHint}</p>
+      </div>
+      {!data ? (
+        <form className="stack compact" onSubmit={loadAdminData}>
+          <label className="stack compact">
+            <span>{strings.adminCode}</span>
+            <input
+              type="password"
+              value={adminCode}
+              onChange={(event) => setAdminCode(event.target.value)}
+              required
+            />
+          </label>
+          {status ? <p className="status-message status-warning">{status}</p> : null}
+          <button className="button button-primary" type="submit">
+            {strings.loadAdmin}
+          </button>
+        </form>
+      ) : (
+        <div className="admin-grid">
+          <AdminList
+            title={language === "es" ? "Perfiles" : "Profiles"}
+            items={data.children}
+            renderItem={(child) => (
+              <>
+                <strong>{child.child_name || "Sin nombre"}</strong>
+                <span>{child.parent_email}</span>
+                <small>
+                  {child.primary_profile} · {child.age_years ?? "?"} años
+                </small>
+              </>
+            )}
+          />
+          <AdminList
+            title={language === "es" ? "Noches guardadas" : "Saved nights"}
+            items={data.logs}
+            renderItem={(log) => (
+              <>
+                <strong>
+                  {log.log_date} · {log.sleep_latency_minutes} min
+                </strong>
+                <span>{log.parent_email}</span>
+                <small>Despertares: {log.night_wakings}</small>
+              </>
+            )}
+          />
+          <AdminList
+            title={strings.supportMessages}
+            items={data.messages}
+            renderItem={(messageItem) => (
+              <>
+                <strong>{messageItem.parent_name || messageItem.parent_email || "Mensaje"}</strong>
+                <span>{messageItem.message}</span>
+                <small>{messageItem.topic} · {messageItem.created_at?.slice(0, 10)}</small>
+              </>
+            )}
+          />
+          <AdminList
+            title={strings.privateReviews}
+            items={data.reviews}
+            renderItem={(review) => (
+              <>
+                <strong>
+                  {review.rating}★ · {review.parent_name || review.parent_email || "Reseña"}
+                </strong>
+                <span>{review.public_approved ? review.comment : review.improvement_feedback || review.comment}</span>
+                <small>{review.public_approved ? "Pública" : "Privada"}</small>
+              </>
+            )}
+          />
+        </div>
+      )}
+    </article>
+  );
+}
+
+function AdminList({ title, items, renderItem }) {
+  return (
+    <section className="admin-list">
+      <h3>{title}</h3>
+      {items?.length ? (
+        items.map((item) => (
+          <div className="admin-list-item" key={item.id}>
+            {renderItem(item)}
+          </div>
+        ))
+      ) : (
+        <p className="muted">Sin datos todavía.</p>
+      )}
+    </section>
   );
 }
 
