@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getProfileMap,
   getQuestions,
@@ -30,13 +30,13 @@ const copy = {
       home: "Inicio",
       routine: "Rutina",
       videos: "Videos",
-      "sleep-area": "Area de sueno",
-      avoid: "Que evitar",
+      "sleep-area": "Área de sueño",
+      avoid: "Qué evitar",
       wins: "Logros",
     },
-    menuLabel: "Menu",
+    menuLabel: "Menú",
     readyRoom: "Alista su cuarto",
-    contactUs: "Contactanos",
+    contactUs: "Contáctanos",
     editProfile: "Editar perfil",
     editChildProfile: "Editar perfil de",
     saveProfile: "Guardar cambios",
@@ -46,39 +46,38 @@ const copy = {
     accountEmail: "Correo de tu cuenta",
     restoreAccount: "Entrar a mi cuenta",
     restoringAccount: "Buscando perfil...",
-    noSavedProfiles: "No encontre perfiles guardados con ese correo.",
+    noSavedProfiles: "No encontré perfiles guardados con ese correo.",
     verifyEmailTitle: "Verificar email",
     deleteProfile: "Eliminar perfil",
-    deleteProfileConfirm: "¿Seguro que quieres eliminar este perfil? Esta accion no se puede deshacer y perderas todos los datos.",
+    deleteProfileConfirm: "¿Seguro que quieres eliminar este perfil? Esta acción no se puede deshacer y perderás todos los datos.",
     cancel: "Cancelar",
     consistencyEncouragement: "¡Vas muy bien! La consistencia es lo que va a dar los mejores resultados.",
-    sleepImprovedCongrats: "¡Que alegria! Tu hijo esta empezando a dormir mejor. Sigue asi.",
-    rateAppPrompt: "Tu hijo lleva 3 noches quedandose dormido en 15 minutos o menos. ¿Nos ayudas calificando la app?",
+    sleepImprovedCongrats: "¡Qué alegría! Tu hijo está empezando a dormir mejor. Sigue así.",
+    rateAppPrompt: "Tu hijo lleva 3 noches quedándose dormido en 15 minutos o menos. ¿Nos ayudas calificando la app?",
     rateApp: "Calificar la app",
     addChild: "Agregar perfil",
-    addAnotherChild: "Agregar otro nino",
+    addAnotherChild: "Agregar otro niño",
     unlockPremium: "Comprar premium",
-    needHelp: "Necesitas ayuda?",
-    contactCopy: "En QuiroKids estamos siempre disponibles para ti. Contactanos por el medio que prefieras.",
+    needHelp: "¿Necesitas ayuda?",
+    contactCopy: "En QuiroKids estamos siempre disponibles para ti. Contáctanos por el medio que prefieras.",
     whatsapp: "WhatsApp",
     emailSupport: "Email",
     productsWeLove: "Productos que amamos",
-    slotsFull: "Perfiles completos",
     premiumDashboard: "Dashboard premium",
     gateTitle: "Tu espacio para dejar de adivinar",
     verifyPurchase: "Verifica tu compra",
     usedPurchaseEmail: "Correo que usaste al comprar",
     enterApp: "Entrar a mi app",
     verifying: "Verificando...",
-    newChild: "Nuevo nino",
+    newChild: "Nuevo niño",
     createProfileFirst: "Creamos su perfil primero",
-    childName: "Nombre del nino",
+    childName: "Nombre del niño",
     birthday: "Fecha de nacimiento",
-    gender: "Genero",
-    boy: "Nino",
-    girl: "Nina",
-    parentName: "Tu primer nombre (de mama o papa)",
-    parentEmail: "Tu correo electronico",
+    gender: "Género",
+    boy: "Niño",
+    girl: "Niña",
+    parentName: "Tu primer nombre (de mamá o papá)",
+    parentEmail: "Tu correo electrónico",
     seeChildProfile: "Ver el perfil de mi hijo",
     freeAccountTitle: "¡Ya identificamos el perfil de tu hijo!",
     freeAccountCopy: "Crea tu cuenta gratis para ver el resultado y guardar su perfil de sueño para siempre.",
@@ -92,22 +91,22 @@ const copy = {
     enterDashboard: "Entrar al dashboard de",
     tonightRoutine: "Rutina de esta noche",
     mapNight: "Mapear la noche de",
-    wakeTime: "A que hora se desperto hoy?",
-    targetBedtime: "A que hora quieres que ya este dormido?",
-    dinnerTime: "A que hora cenan hoy? (opcional)",
+    wakeTime: "¿A qué hora se despertó hoy?",
+    targetBedtime: "¿A qué hora quieres que ya esté dormido?",
+    dinnerTime: "¿A qué hora cenan hoy? (opcional)",
     dinnerShared: "Puedes usar la misma hora para todos tus hijos si cenan juntos.",
-    prepareDuration: "Cuanto dura preparar para dormir? (bano, pijama, luz baja)",
-    prepareDurationHelp: "Usaremos este tiempo para calcular a que hora deben empezar.",
-    napQuestion: "Durmio siesta?",
-    napWakeTime: "A que hora se desperto de la siesta?",
+    prepareDuration: "¿Cuántos minutos suele tardar en prepararse para dormir? (baño, pijama, etc.)",
+    prepareDurationHelp: "Usaremos este tiempo para calcular a qué hora deben empezar.",
+    napQuestion: "¿Durmió siesta?",
+    napWakeTime: "¿A qué hora se despertó de la siesta?",
     generateRoutine: "Generar rutina",
     createTonightRoutine: "Crear rutina para esta noche",
     changeActivity: "Cambiar esta actividad",
     samePhaseOptions: "Opciones dentro de la misma fase",
-    logTitle: "Como les fue?",
+    logTitle: "¿Cómo les fue?",
     date: "Fecha",
-    bedTime: "A que hora se metio a la cama?",
-    sleepTime: "A que hora se quedo dormido?",
+    bedTime: "¿A qué hora se metió a la cama?",
+    sleepTime: "¿A qué hora se quedó dormido?",
     nightWakings: "Despertares nocturnos",
     notes: "Notas",
     saveResults: "Guardar resultados",
@@ -116,15 +115,36 @@ const copy = {
     averageToSleep: "Promedio para dormir",
     nightWakingsShort: "Despertares",
     consistency: "Consistencia",
-    noLogsYet: "Todavia no has guardado noches. Apenas registres una, aqui vas a ver su progreso.",
+    noLogsYet: "Todavía no has guardado noches. Apenas registres una, aquí vas a ver su progreso.",
     videoLibrary: "Biblioteca de videos",
     readyForBunny: "Lista para conectar con Bunny",
-    sleepArea: "Area de sueno",
-    quickChecklist: "Checklist rapido",
+    sleepArea: "Área de sueño",
+    quickChecklist: "Checklist rápido",
     avoidBeforeBed: "Antes de dormir",
-    yes: "Si",
+    yes: "Sí",
     no: "No",
     sometimes: "A veces",
+    routinePreviewTitle: "Tu rutina de esta noche",
+    routinePreviewCopy: "Esta es la idea general. Cuando estén listos, empieza la guía y la app registrará los tiempos importantes.",
+    beginRoutine: "Comenzar rutina",
+    openGuidedRoutine: "Abrir rutina guiada",
+    routineStarted: "Rutina iniciada",
+    pauseRoutine: "Pausar",
+    resumeRoutine: "Continuar",
+    extendActivity: "Extender 2 minutos",
+    transitionSound: "Sonido de transición",
+    soundMode: "Modo de sonido",
+    soundSilent: "Silencio",
+    soundTransition: "Solo transición",
+    soundCalm: "Música tranquila",
+    soundNature: "Sonidos de naturaleza",
+    markInBed: "Ya está en cama",
+    fellAsleepNow: "Se durmió ahora",
+    routineStartTime: "Hora de inicio de rutina",
+    editTimesHelp: "Puedes ajustar las horas si no tenías el teléfono contigo.",
+    wakingPromptTitle: "Registro de anoche",
+    wakingPromptCopy: "¿Tu hijo se despertó durante la noche?",
+    saveWakings: "Guardar despertares",
   },
   en: {
     sections: {
@@ -230,9 +250,9 @@ const copy = {
 };
 
 const sleepAreaChecklist = [
-  { id: "dark", title: "Oscuridad", copy: "El cuarto esta oscuro (sin luz visible)" },
-  { id: "warm-light", title: "Luz antes de dormir", copy: "Uso luz calida y baja antes de dormir" },
-  { id: "cool-room", title: "Temperatura", copy: "El cuarto esta fresco (no caliente)" },
+  { id: "dark", title: "Oscuridad", copy: "El cuarto está oscuro (sin luz visible)" },
+  { id: "warm-light", title: "Luz antes de dormir", copy: "Uso luz cálida y baja antes de dormir" },
+  { id: "cool-room", title: "Temperatura", copy: "El cuarto está fresco (no caliente)" },
   { id: "sound", title: "Sonido", copy: "Hay silencio o sonido constante (sin ruidos bruscos)" },
   { id: "screens", title: "Pantallas", copy: "No hay pantallas antes de dormir" },
   { id: "consistent", title: "Consistencia", copy: "El ambiente es igual cada noche" },
@@ -241,15 +261,15 @@ const sleepAreaChecklist = [
 const avoidItems = [
   {
     title: "Pantallas (especialmente cerca de dormir)",
-    avoid: ["Tablet, celular o TV", "Videos estimulantes", "Juegos electronicos"],
+    avoid: ["Tablet, celular o TV", "Videos estimulantes", "Juegos electrónicos"],
     why: "La luz azul y el contenido activo mantienen el cerebro en modo alerta y retrasan la melatonina.",
     source:
-      "American Academy of Pediatrics y Harvard Medical School: las pantallas antes de dormir se asocian con peor calidad de sueno y menor melatonina.",
+      "American Academy of Pediatrics y Harvard Medical School: las pantallas antes de dormir se asocian con peor calidad de sueño y menor melatonina.",
   },
   {
     title: "Luz blanca brillante",
-    avoid: ["Luces LED blancas intensas", "Iluminacion de techo muy brillante"],
-    why: "Le dice al cerebro que todavia es de dia.",
+    avoid: ["Luces LED blancas intensas", "Iluminación de techo muy brillante"],
+    why: "Le dice al cerebro que todavía es de día.",
     source:
       "Harvard Health Publishing y National Sleep Foundation: la luz brillante en la noche altera el ritmo circadiano.",
   },
@@ -258,43 +278,43 @@ const avoidItems = [
     avoid: ["Correr", "Saltar", "Juegos competitivos", "Actividades intensas"],
     why: "Sube cortisol y adrenalina, y activa el sistema nervioso cuando queremos que baje.",
     source:
-      "Sleep Foundation y American Academy of Sleep Medicine: la activacion intensa cerca de dormir puede dificultar conciliar el sueno.",
+      "Sleep Foundation y American Academy of Sleep Medicine: la activación intensa cerca de dormir puede dificultar conciliar el sueño.",
   },
   {
-    title: "Azucar y alimentos estimulantes",
-    avoid: ["Dulces", "Postres", "Bebidas azucaradas", "Chocolate en ninos sensibles"],
-    why: "Puede subir energia y dificultar la regulacion.",
-    source: "Sleep Foundation: dietas altas en azucar pueden afectar la calidad del sueno.",
+    title: "Azúcar y alimentos estimulantes",
+    avoid: ["Dulces", "Postres", "Bebidas azucaradas", "Chocolate en niños sensibles"],
+    why: "Puede subir energía y dificultar la regulación.",
+    source: "Sleep Foundation: dietas altas en azúcar pueden afectar la calidad del sueño.",
   },
   {
-    title: "Cafeina aunque sea poquita",
-    avoid: ["Chocolate oscuro en exceso", "Gaseosas", "Te con cafeina"],
-    why: "Bloquea la sensacion de sueno.",
-    source: "American Academy of Sleep Medicine: la cafeina interfiere con la capacidad de conciliar el sueno.",
+    title: "Cafeína aunque sea poquita",
+    avoid: ["Chocolate oscuro en exceso", "Gaseosas", "Té con cafeína"],
+    why: "Bloquea la sensación de sueño.",
+    source: "American Academy of Sleep Medicine: la cafeína interfiere con la capacidad de conciliar el sueño.",
   },
   {
     title: "Comer muy tarde o pesado",
     avoid: ["Cenas muy grandes justo antes de dormir", "Comer inmediatamente antes de acostarse"],
-    why: "El cuerpo sigue en modo digestion y no entra en modo descanso.",
-    source: "Sleep Foundation: comer tarde puede afectar el inicio del sueno.",
+    why: "El cuerpo sigue en modo digestión y no entra en modo descanso.",
+    source: "Sleep Foundation: comer tarde puede afectar el inicio del sueño.",
   },
   {
     title: "Conversaciones estimulantes o emociones intensas",
-    avoid: ["Discusiones", "Temas que activan emociones fuertes", "Sobreestimulacion verbal"],
+    avoid: ["Discusiones", "Temas que activan emociones fuertes", "Sobreestimulación verbal"],
     why: "Activa el cerebro y el sistema nervioso.",
-    source: "National Sleep Foundation: la activacion emocional dificulta el inicio del sueno.",
+    source: "National Sleep Foundation: la activación emocional dificulta el inicio del sueño.",
   },
   {
     title: "Actividades mentales muy activas",
-    avoid: ["Juegos competitivos", "Resolver problemas complejos", "Juegos que generan excitacion"],
+    avoid: ["Juegos competitivos", "Resolver problemas complejos", "Juegos que generan excitación"],
     why: "Mantienen la mente encendida.",
-    source: "American Academy of Sleep Medicine: la activacion cognitiva retrasa el sueno.",
+    source: "American Academy of Sleep Medicine: la activación cognitiva retrasa el sueño.",
   },
   {
     title: "Rutinas inconsistentes",
     avoid: ["Cambiar todo cada noche", "Horarios totalmente variables"],
-    why: "El cerebro no logra anticipar el sueno.",
-    source: "National Sleep Foundation: la consistencia mejora la latencia del sueno.",
+    why: "El cerebro no logra anticipar el sueño.",
+    source: "National Sleep Foundation: la consistencia mejora la latencia del sueño.",
   },
 ];
 
@@ -336,13 +356,31 @@ const initialState = {
     napWakeTime: "",
   },
   currentPlan: null,
+  routinePreviewOpen: false,
+  routineSession: {
+    startedAt: "",
+    inBedAt: "",
+    fellAsleepAt: "",
+    soundMode: "transition",
+  },
   expandedSwapStep: "",
   editingChildId: "",
   savedLogDate: "",
+  wakingPromptLogDate: "",
 };
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function getCurrentTimeValue() {
+  return new Date().toTimeString().slice(0, 5);
+}
+
+function getYesterdayKey() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return yesterday.toISOString().slice(0, 10);
 }
 
 function genderize(value, gender) {
@@ -413,6 +451,7 @@ function collapseLegacySavedChildren(children) {
 function makeLogsFromSavedData(logs = []) {
   return logs.map((log) => ({
     date: log.log_date,
+    routineStartTime: log.routine_start_time || "",
     bedTime: log.in_bed_at,
     sleepTime: log.fell_asleep_at,
     latency: log.sleep_latency_minutes,
@@ -476,6 +515,22 @@ export default function BuenasNochesApp() {
       currentPlan: child.lastPlan || null,
     }));
   }, [state.activeChildId, state.children]);
+
+  useEffect(() => {
+    if (!state.activeChildId || state.wakingPromptLogDate) return;
+    const child = state.children.find((entry) => entry.id === state.activeChildId);
+    if (!child) return;
+    const yesterdayKey = getYesterdayKey();
+    const needsWakingCheck = child.logs?.find(
+      (log) => log.date === yesterdayKey && log.nightWakings === "pending"
+    );
+    if (!needsWakingCheck) return;
+
+    setState((current) => ({
+      ...current,
+      wakingPromptLogDate: yesterdayKey,
+    }));
+  }, [state.activeChildId, state.children, state.wakingPromptLogDate]);
 
   useEffect(() => {
     const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
@@ -632,7 +687,7 @@ export default function BuenasNochesApp() {
             accessStatus: "not_found",
             premiumAccess: null,
             accessMessage:
-              "Todavia no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
+              "Todavía no encuentro una compra activa con ese correo. Revisa si usaste otro email o vuelve en un momento si acabas de comprar.",
           }));
         }
         return { hasAccess: false, payload };
@@ -961,6 +1016,13 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       currentPlan: plan,
+      routinePreviewOpen: true,
+      routineSession: {
+        startedAt: "",
+        inBedAt: "",
+        fellAsleepAt: "",
+        soundMode: current.routineSession?.soundMode || "transition",
+      },
       expandedSwapStep: "",
       savedLogDate: "",
     }));
@@ -1039,10 +1101,11 @@ export default function BuenasNochesApp() {
             : entry
         ),
         currentPlan: rebuiltPlan,
+        routinePreviewOpen: true,
         expandedSwapStep: "",
         persistenceMessage:
           current.language === "es"
-            ? "Actividad cambiada. Ya actualice la rutina de esta noche."
+            ? "Actividad cambiada. Ya actualicé la rutina de esta noche."
             : "Activity updated. Tonight's routine has been refreshed.",
       };
     });
@@ -1053,10 +1116,11 @@ export default function BuenasNochesApp() {
     if (!activeChild || !state.currentPlan) return;
 
     const formData = new FormData(event.currentTarget);
+    const routineStartTime = String(formData.get("routineStartTime") || state.routineSession.startedAt || "");
     const bedTime = String(formData.get("bedTime"));
     const sleepTime = String(formData.get("sleepTime"));
     const notes = String(formData.get("notes") || "");
-    const nightWakings = String(formData.get("nightWakings") || "0");
+    const nightWakings = String(formData.get("nightWakings") || "pending");
 
     const ratings = state.currentPlan.steps
       .filter((step) => step.selectedActivity)
@@ -1081,6 +1145,7 @@ export default function BuenasNochesApp() {
 
     const nextLog = {
       date: String(formData.get("date")),
+      routineStartTime,
       bedTime,
       sleepTime,
       latency: calculateLatency(bedTime, sleepTime),
@@ -1104,7 +1169,7 @@ export default function BuenasNochesApp() {
       savedLogDate: nextLog.date,
       persistenceMessage:
         current.language === "es"
-          ? "Guardado. Esta noche quedo registrado exitosamente."
+          ? "Guardado. Esta noche quedó registrada exitosamente."
           : "Saved. Tonight was registered successfully.",
     }));
 
@@ -1121,6 +1186,7 @@ export default function BuenasNochesApp() {
             childId: activeChild.id,
             childName: activeChild.name,
             logDate: nextLog.date,
+            routineStartTime: nextLog.routineStartTime,
             inBedAt: nextLog.bedTime,
             fellAsleepAt: nextLog.sleepTime,
             sleepLatencyMinutes: nextLog.latency,
@@ -1133,8 +1199,47 @@ export default function BuenasNochesApp() {
         setState((current) => ({
           ...current,
           savedLogDate: nextLog.date,
-          persistenceMessage: "Guardado. Esta noche quedo registrado exitosamente.",
+          persistenceMessage: "Guardado. Esta noche quedó registrada exitosamente.",
         }));
+      } catch {
+        return;
+      }
+    }
+  }
+
+  async function updateNightWakingsForPrompt(event) {
+    event.preventDefault();
+    if (!activeChild || !state.wakingPromptLogDate) return;
+
+    const formData = new FormData(event.currentTarget);
+    const nightWakings = String(formData.get("nightWakings") || "0");
+    const logDate = state.wakingPromptLogDate;
+
+    updateChild(activeChild.id, (child) => ({
+      logs: (child.logs || []).map((log) => (log.date === logDate ? { ...log, nightWakings } : log)),
+    }));
+
+    setState((current) => ({
+      ...current,
+      wakingPromptLogDate: "",
+      persistenceMessage: current.language === "es" ? "Despertares guardados." : "Night wakings saved.",
+    }));
+
+    if (state.accessStatus === "granted" && state.verifiedEmail) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "update_night_wakings",
+            email: state.verifiedEmail,
+            childId: activeChild.id,
+            logDate,
+            nightWakings,
+          }),
+        });
       } catch {
         return;
       }
@@ -1175,6 +1280,15 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
+      {state.wakingPromptLogDate ? (
+        <NightWakingPrompt
+          strings={strings}
+          logDate={state.wakingPromptLogDate}
+          onSubmit={updateNightWakingsForPrompt}
+          onClose={() => setState((current) => ({ ...current, wakingPromptLogDate: "" }))}
+        />
+      ) : null}
+
       {state.accessStatus !== "granted" ? (
         <section className="gate-shell">
           <div className="gate-header">
@@ -1208,9 +1322,9 @@ export default function BuenasNochesApp() {
               <ul className="feature-list">
                 <li>{state.language === "es" ? "Perfil guardado con nombre y fecha de nacimiento" : "Saved profile with name and birthday"}</li>
                 <li>{state.language === "es" ? "Rutina de esta noche con actividades intercambiables" : "Tonight's routine with swappable activities"}</li>
-                <li>{state.language === "es" ? "Grafico de progreso con minutos para dormir y despertares" : "Progress graph with minutes to fall asleep and night wakings"}</li>
-                <li>{state.language === "es" ? "Area de sueno y lista de que evitar" : "Sleep space and what to avoid sections"}</li>
-                <li>{state.language === "es" ? "Hasta 3 perfiles de ninos incluidos" : "Up to 3 child profiles included"}</li>
+                <li>{state.language === "es" ? "Gráfico de progreso con minutos para dormir y despertares" : "Progress graph with minutes to fall asleep and night wakings"}</li>
+                <li>{state.language === "es" ? "Área de sueño y lista de qué evitar" : "Sleep space and what to avoid sections"}</li>
+                <li>{state.language === "es" ? "Hasta 3 perfiles de niños incluidos" : "Up to 3 child profiles included"}</li>
               </ul>
               <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
                 {state.language === "es" ? "Comprar premium" : "Purchase premium"}
@@ -1259,7 +1373,7 @@ export default function BuenasNochesApp() {
               <form className="stack" onSubmit={beginQuiz}>
                 <p className="lead-copy">
                   {state.language === "es"
-                    ? "Puedes usar esta parte gratis para descubrir el perfil de sueno de tu hijo. Despues, si quieres, desbloqueas el dashboard completo."
+                    ? "Puedes usar esta parte gratis para descubrir el perfil de sueño de tu hijo. Después, si quieres, desbloqueas el dashboard completo."
                     : "You can use this part for free to discover your child's sleep profile. Then, if you want, you can unlock the full dashboard."}
                 </p>
                 <label className="stack compact">
@@ -1367,7 +1481,7 @@ export default function BuenasNochesApp() {
                 <p>
                   <strong>
                     {state.language === "es"
-                      ? "De estas dos opciones, cual sientes que describe mas a tu hijo en este momento?"
+                      ? "De estas dos opciones, ¿cuál sientes que describe más a tu hijo en este momento?"
                       : "Out of these two options, which one feels more true for your child right now?"}
                   </strong>
                 </p>
@@ -1402,7 +1516,7 @@ export default function BuenasNochesApp() {
                     {resultCopy.secondaryName ? (
                       <p className="content-note">
                         {state.language === "es"
-                          ? `Tambien veo rasgos de ${resultCopy.secondaryName}, asi que puede haber una mezcla de patrones.`
+                          ? `También veo rasgos de ${resultCopy.secondaryName}, así que puede haber una mezcla de patrones.`
                           : `I also see traits of ${resultCopy.secondaryName}, so there may be a mixed pattern.`}
                       </p>
                     ) : null}
@@ -1525,7 +1639,7 @@ export default function BuenasNochesApp() {
             <section className="app-panel">
               <article className="card card--soft card--quiz">
                 <div className="card-header">
-                  <span className="section-label">Nuevo nino</span>
+                  <span className="section-label">Nuevo niño</span>
                   <h2>{strings.createProfileFirst}</h2>
                 </div>
 
@@ -1533,7 +1647,7 @@ export default function BuenasNochesApp() {
                   <form className="stack" onSubmit={beginQuiz}>
                     <p className="lead-copy">
                       Vamos a guardar su nombre y fecha de nacimiento para que la app siempre sepa su edad,
-                      incluso muchos meses despues.
+                      incluso muchos meses después.
                     </p>
                     <label className="stack compact">
                       <span>{strings.childName}</span>
@@ -1634,7 +1748,7 @@ export default function BuenasNochesApp() {
                   <div className="stack">
                     <p>Estoy viendo una mezcla entre dos patrones.</p>
                     <p>
-                      <strong>De estas dos opciones, cual sientes que describe mas a tu hijo en este momento?</strong>
+                      <strong>De estas dos opciones, ¿cuál sientes que describe más a tu hijo en este momento?</strong>
                     </p>
                     {state.tieCandidates.map((code) => (
                       <button key={code} className="button button-secondary" type="button" onClick={() => chooseTieWinner(code)}>
@@ -1701,9 +1815,18 @@ export default function BuenasNochesApp() {
                   profileMap={profileMap}
                   routineForm={state.routineForm}
                   currentPlan={state.currentPlan}
+                  routinePreviewOpen={state.routinePreviewOpen}
+                  routineSession={state.routineSession}
                   onRoutineFieldChange={updateRoutineField}
                   onGenerateRoutine={generateRoutine}
                   onClose={() => setState((current) => ({ ...current, activeSection: "home", expandedChildId: activeChild?.id || current.expandedChildId }))}
+                  onClosePreview={() => setState((current) => ({ ...current, routinePreviewOpen: false }))}
+                  onRoutineSessionChange={(patch) =>
+                    setState((current) => ({
+                      ...current,
+                      routineSession: { ...current.routineSession, ...patch },
+                    }))
+                  }
                   onChangeActivity={changeActivity}
                   expandedSwapStep={state.expandedSwapStep}
                   onToggleSwapStep={(stepId) =>
@@ -1832,6 +1955,37 @@ function AccountLookupModal({ strings, email, status, message, onEmailChange, on
   );
 }
 
+function NightWakingPrompt({ strings, logDate, onSubmit, onClose }) {
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label={strings.wakingPromptTitle}>
+      <article className="profile-modal__panel card card--soft">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label={strings.close}>
+          ×
+        </button>
+        <div className="card-header">
+          <span className="section-label">{logDate}</span>
+          <h2>{strings.wakingPromptTitle}</h2>
+          <p className="muted">{strings.wakingPromptCopy}</p>
+        </div>
+        <form className="stack" onSubmit={onSubmit}>
+          <label className="stack compact">
+            <span>{strings.nightWakings}</span>
+            <select name="nightWakings" defaultValue="0">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3+">3+</option>
+            </select>
+          </label>
+          <button className="button button-primary" type="submit">
+            {strings.saveWakings}
+          </button>
+        </form>
+      </article>
+    </div>
+  );
+}
+
 function ChildHomeGrid({
   children,
   activeChildId,
@@ -1889,7 +2043,7 @@ function ChildHomeGrid({
       {canAddChild ? (
         <button type="button" className="child-card child-card--ghost" onClick={onAddChild}>
           <strong>{strings.addAnotherChild}</strong>
-          <span>{language === "es" ? "Crear otro perfil de sueno" : "Create another sleep profile"}</span>
+          <span>{language === "es" ? "Crear otro perfil de sueño" : "Create another sleep profile"}</span>
         </button>
       ) : null}
     </div>
@@ -2063,7 +2217,7 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
           <div className="chart-heading">
             <div>
               <span className="section-label">Progreso</span>
-              <h2>7 dias</h2>
+              <h2>7 días</h2>
             </div>
             <div className="chart-arrows">
               <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)} aria-label="Ver semana anterior">
@@ -2074,7 +2228,7 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
               </button>
             </div>
           </div>
-          <div className="chart-legend" aria-label="Leyenda del grafico">
+          <div className="chart-legend" aria-label="Leyenda del gráfico">
             <span><i className="legend-bar" /> Tiempo en cama hasta dormirse</span>
           </div>
           <div className="sleep-latency-chart">
@@ -2115,7 +2269,7 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
             <p className="muted">
               {strings.age === "Age"
                 ? "Your saved nights will fill this graph."
-                : "Tus noches guardadas van a llenar este grafico."}
+                : "Tus noches guardadas van a llenar este gráfico."}
             </p>
           ) : null}
         </section>
@@ -2130,7 +2284,7 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
             ) : null}
             {reviewOpen ? (
               <div className="review-box">
-                <div className="star-rating" aria-label="Calificacion de la app">
+                <div className="star-rating" aria-label="Calificación de la app">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -2158,15 +2312,84 @@ function HomeSection({ activeChild, progressSummary, strings, profileMap, onCrea
   );
 }
 
+function getStepDurationSeconds(step) {
+  if (!step?.start || !step?.end) return 180;
+  const [startHour, startMinute] = step.start.split(":").map(Number);
+  const [endHour, endMinute] = step.end.split(":").map(Number);
+  const start = startHour * 60 + startMinute;
+  const end = endHour * 60 + endMinute;
+  return Math.max(60, (end - start) * 60);
+}
+
+function formatTimer(seconds) {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function playTransitionTone(soundMode) {
+  if (soundMode === "silent") return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContext();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = soundMode === "nature" ? "triangle" : "sine";
+    oscillator.frequency.value = soundMode === "calm" ? 432 : 660;
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.75);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.8);
+  } catch {
+    // Browsers may block audio until interaction; the routine still works silently.
+  }
+}
+
+function startAmbientSound(soundMode) {
+  if (!["calm", "nature"].includes(soundMode)) return null;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContext();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = soundMode === "nature" ? "triangle" : "sine";
+    oscillator.frequency.value = soundMode === "nature" ? 174 : 220;
+    gain.gain.setValueAtTime(0.018, audioContext.currentTime);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    return {
+      stop() {
+        try {
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
+          oscillator.stop(audioContext.currentTime + 0.3);
+        } catch {
+          // The browser may already have stopped the audio context.
+        }
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 function RoutineSection({
   activeChild,
   strings,
   profileMap,
   routineForm,
   currentPlan,
+  routinePreviewOpen,
+  routineSession,
   onRoutineFieldChange,
   onGenerateRoutine,
   onClose,
+  onClosePreview,
+  onRoutineSessionChange,
   onChangeActivity,
   expandedSwapStep,
   onToggleSwapStep,
@@ -2176,8 +2399,63 @@ function RoutineSection({
 }) {
   const [routinePlayerOpen, setRoutinePlayerOpen] = useState(false);
   const [routineStepIndex, setRoutineStepIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const hasPlayedEndToneRef = useRef(false);
+  const ambientSoundRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
+
+  useEffect(() => {
+    if (!playerStep) return;
+    setSecondsLeft(getStepDurationSeconds(playerStep));
+    hasPlayedEndToneRef.current = false;
+  }, [playerStep?.id]);
+
+  useEffect(() => {
+    if (!routinePlayerOpen || isPaused || !playerStep) return undefined;
+    const timer = window.setInterval(() => {
+      setSecondsLeft((current) => {
+        if (current <= 1) {
+          if (!hasPlayedEndToneRef.current) {
+            playTransitionTone(routineSession.soundMode);
+            hasPlayedEndToneRef.current = true;
+          }
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [routinePlayerOpen, isPaused, playerStep, routineSession.soundMode]);
+
+  useEffect(() => {
+    ambientSoundRef.current?.stop();
+    ambientSoundRef.current = null;
+    if (routinePlayerOpen && !isPaused) {
+      ambientSoundRef.current = startAmbientSound(routineSession.soundMode);
+    }
+    return () => {
+      ambientSoundRef.current?.stop();
+      ambientSoundRef.current = null;
+    };
+  }, [routinePlayerOpen, isPaused, routineSession.soundMode]);
+
   if (!activeChild) return null;
+
+  function beginGuidedRoutine() {
+    const startedAt = routineSession.startedAt || getCurrentTimeValue();
+    onRoutineSessionChange({ startedAt });
+    setRoutineStepIndex(0);
+    setIsPaused(false);
+    setRoutinePlayerOpen(true);
+    onClosePreview();
+  }
+
+  function finishGuidedRoutine() {
+    const inBedAt = routineSession.inBedAt || getCurrentTimeValue();
+    onRoutineSessionChange({ inBedAt });
+    setRoutinePlayerOpen(false);
+  }
 
   return (
     <div className="dashboard-grid">
@@ -2249,6 +2527,52 @@ function RoutineSection({
 
       {currentPlan ? (
         <>
+          {routinePreviewOpen ? (
+            <div className="routine-modal" role="dialog" aria-modal="true" aria-label={strings.routinePreviewTitle}>
+              <div className="routine-modal__panel">
+                <button className="routine-modal__close" type="button" onClick={onClosePreview}>
+                  ×
+                </button>
+                <span className="section-label">{strings.tonightRoutine}</span>
+                <h2>{strings.routinePreviewTitle}</h2>
+                <p>{strings.routinePreviewCopy}</p>
+                <div className="summary-grid">
+                  <Stat label="Cena" value={currentPlan.dinnerTime} />
+                  <Stat label="Empezar rutina" value={currentPlan.routineStart} />
+                  <Stat label="En cama" value={currentPlan.bedtime} />
+                  <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
+                </div>
+                <div className="stack compact">
+                  {currentPlan.steps.slice(0, 4).map((step) => (
+                    <div className="routine-preview-step" key={step.id}>
+                      <strong>{step.label}</strong>
+                      <span>
+                        {step.selectedActivity?.displayName ||
+                          step.guidance?.title ||
+                          step.preparationItems?.map((item) => item.displayName).join(", ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <label className="stack compact">
+                  <span>{strings.soundMode}</span>
+                  <select
+                    value={routineSession.soundMode}
+                    onChange={(event) => onRoutineSessionChange({ soundMode: event.target.value })}
+                  >
+                    <option value="transition">{strings.soundTransition}</option>
+                    <option value="calm">{strings.soundCalm}</option>
+                    <option value="nature">{strings.soundNature}</option>
+                    <option value="silent">{strings.soundSilent}</option>
+                  </select>
+                </label>
+                <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
+                  {strings.beginRoutine}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <article className="card card--feature">
             <div className="card-header">
               <span className="section-label">Plan de hoy</span>
@@ -2266,11 +2590,10 @@ function RoutineSection({
               className="button button-primary"
               type="button"
               onClick={() => {
-                setRoutineStepIndex(0);
-                setRoutinePlayerOpen(true);
+                beginGuidedRoutine();
               }}
             >
-              Abrir rutina guiada
+              {strings.openGuidedRoutine}
             </button>
             <div className="stack">
               {currentPlan.steps.map((step) => (
@@ -2351,11 +2674,12 @@ function RoutineSection({
                     {playerStep.selectedActivity?.displayName || playerStep.guidance?.title || "Preparar para dormir"}
                   </strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
+                  <strong className="routine-countdown">{formatTimer(secondsLeft)}</strong>
                 </div>
                 <div className="routine-media">
                   <span>
                     {playerStep.selectedActivity
-                      ? "Aqui podremos mostrar el video o foto de esta actividad."
+                      ? "Aquí podremos mostrar el video o foto de esta actividad."
                       : "Esta parte puede quedar como lista simple sin video."}
                   </span>
                 </div>
@@ -2377,6 +2701,21 @@ function RoutineSection({
                   </ul>
                 ) : null}
                 <div className="inline-actions">
+                  <button className="button button-ghost" type="button" onClick={() => setIsPaused((paused) => !paused)}>
+                    {isPaused ? strings.resumeRoutine : strings.pauseRoutine}
+                  </button>
+                  <button
+                    className="button button-ghost"
+                    type="button"
+                    onClick={() => {
+                      hasPlayedEndToneRef.current = false;
+                      setSecondsLeft((current) => current + 120);
+                    }}
+                  >
+                    {strings.extendActivity}
+                  </button>
+                </div>
+                <div className="inline-actions">
                   <button
                     className="button button-ghost"
                     type="button"
@@ -2390,9 +2729,10 @@ function RoutineSection({
                     type="button"
                     onClick={() => {
                       if (routineStepIndex >= currentPlan.steps.length - 1) {
-                        setRoutinePlayerOpen(false);
+                        finishGuidedRoutine();
                         return;
                       }
+                      playTransitionTone(routineSession.soundMode);
                       setRoutineStepIndex((index) => index + 1);
                     }}
                   >
@@ -2410,35 +2750,57 @@ function RoutineSection({
             </div>
             {savedLogDate ? (
               <div className="save-confirmation">
-                <strong>Guardado. Esta noche quedo registrado exitosamente.</strong>
+                <strong>Guardado. Esta noche quedó registrada exitosamente.</strong>
                 <p>
                   {strings.age === "Age"
                     ? "Your progress graph has been updated."
-                    : "El grafico de progreso ya fue actualizado."}
+                    : "El gráfico de progreso ya fue actualizado."}
                 </p>
+                <button className="button button-primary" type="button" onClick={onClose}>
+                  {strings.backToChildren}
+                </button>
               </div>
             ) : (
             <form className="stack" onSubmit={onSubmitNightLog}>
+              <label className="stack compact">
+                <span>{strings.routineStartTime}</span>
+                <input
+                  name="routineStartTime"
+                  type="time"
+                  value={routineSession.startedAt}
+                  onChange={(event) => onRoutineSessionChange({ startedAt: event.target.value })}
+                />
+                <small className="field-help">{strings.editTimesHelp}</small>
+              </label>
               <label className="stack compact">
                 <span>{strings.date}</span>
                 <input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required />
               </label>
               <label className="stack compact">
                 <span>{strings.bedTime}</span>
-                <input name="bedTime" type="time" required />
+                <input
+                  name="bedTime"
+                  type="time"
+                  value={routineSession.inBedAt}
+                  onChange={(event) => onRoutineSessionChange({ inBedAt: event.target.value })}
+                  required
+                />
+                <button className="button button-ghost" type="button" onClick={() => onRoutineSessionChange({ inBedAt: getCurrentTimeValue() })}>
+                  {strings.markInBed}
+                </button>
               </label>
               <label className="stack compact">
                 <span>{strings.sleepTime}</span>
-                <input name="sleepTime" type="time" required />
-              </label>
-              <label className="stack compact">
-                <span>{strings.nightWakings}</span>
-                <select name="nightWakings" defaultValue="0">
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3+">3+</option>
-                </select>
+                <input
+                  name="sleepTime"
+                  type="time"
+                  value={routineSession.fellAsleepAt}
+                  onChange={(event) => onRoutineSessionChange({ fellAsleepAt: event.target.value })}
+                  required
+                />
+                <button className="button button-ghost" type="button" onClick={() => onRoutineSessionChange({ fellAsleepAt: getCurrentTimeValue() })}>
+                  {strings.fellAsleepNow}
+                </button>
               </label>
 
               {currentPlan.steps
@@ -2448,18 +2810,18 @@ function RoutineSection({
                     <strong>{step.selectedActivity.displayName}</strong>
                     <span className="muted">{step.label}</span>
                     <label className="stack compact">
-                      <span>Como se sintio esta actividad?</span>
+                      <span>¿Cómo se sintió esta actividad?</span>
                       <select name={`rating-${step.id}`} defaultValue="3">
-                        <option value="3">Le ayudo mucho</option>
-                        <option value="2">Mas o menos</option>
-                        <option value="1">No ayudo mucho</option>
+                        <option value="3">Le ayudó mucho</option>
+                        <option value="2">Más o menos</option>
+                        <option value="1">No ayudó mucho</option>
                       </select>
                     </label>
                     <label className="stack compact">
-                      <span>No le gusto esta actividad?</span>
+                      <span>¿No le gustó esta actividad?</span>
                       <select name={`disliked-${step.id}`} defaultValue="no">
                         <option value="no">No</option>
-                        <option value="yes">Si</option>
+                        <option value="yes">Sí</option>
                       </select>
                     </label>
                   </div>
@@ -2467,7 +2829,7 @@ function RoutineSection({
 
               <label className="stack compact">
                 <span>{strings.notes}</span>
-                <textarea name="notes" placeholder="Algo importante de esta noche?" />
+                <textarea name="notes" placeholder="¿Algo importante de esta noche?" />
               </label>
               <button className="button button-primary" type="submit">
                 {strings.saveResults}
@@ -2476,7 +2838,7 @@ function RoutineSection({
             )}
             {safetyTriggered ? (
               <div className="safety-card">
-                Lo que me estas contando va mas alla de lo que esta herramienta puede orientar. Merece una evaluacion
+                Lo que me estás contando va más allá de lo que esta herramienta puede orientar. Merece una evaluación
                 directa con un profesional que pueda ver a tu hijo en persona.
               </div>
             ) : null}
@@ -2491,7 +2853,7 @@ function VideoSection({ activeChild, strings }) {
   if (!activeChild) return null;
 
   const suggestedVideos = [
-    "Presion profunda / squeeze",
+    "Presión profunda / squeeze",
     "Compresiones articulares",
     "Movimientos oculares",
     "Tarareo y sonido mmm",
@@ -2505,7 +2867,7 @@ function VideoSection({ activeChild, strings }) {
         <h2>{strings.readyForBunny}</h2>
       </div>
       <p className="lead-copy">
-        Aqui vamos a mostrar los videos embebidos por ejercicio. Ya deje esta seccion lista para vincularlos
+        Aquí vamos a mostrar los videos embebidos por ejercicio. Ya dejé esta sección lista para vincularlos
         cuando subas los links.
       </p>
       <div className="video-grid">
@@ -2570,7 +2932,7 @@ function AvoidSection({ strings, language }) {
                 ))}
               </ul>
               <p>
-                <strong>{language === "en" ? "Why:" : "Por que:"}</strong> {language === "en" ? translateAvoidWhy(item.why) : item.why}
+                <strong>{language === "en" ? "Why:" : "Por qué:"}</strong> {language === "en" ? translateAvoidWhy(item.why) : item.why}
               </p>
               <p className="muted">{language === "en" ? translateAvoidSource(item.source) : item.source}</p>
             </div>
@@ -2592,18 +2954,18 @@ function WinsSection({ activeChild, strings, language }) {
     <article className="card card--feature">
       <div className="card-header">
         <span className="section-label">{strings.sections.wins}</span>
-        <h2>{language === "es" ? "Celebra lo que esta funcionando" : "Celebrate what is working"}</h2>
+        <h2>{language === "es" ? "Celebra lo que está funcionando" : "Celebrate what is working"}</h2>
       </div>
       <p className="lead-copy">
         {language === "es"
-          ? "Los logros pequenos importan: menos negociacion, menos tiempo para dormir, menos despertares o una rutina mas tranquila."
+          ? "Los logros pequeños importan: menos negociación, menos tiempo para dormir, menos despertares o una rutina más tranquila."
           : "Small wins matter: less negotiation, less time to fall asleep, fewer wakings, or a calmer routine."}
       </p>
       <div className="win-card">
         <strong>{language === "es" ? "Comparte un logro o pide apoyo" : "Share a win or ask for support"}</strong>
         <p>
           {language === "es"
-            ? "Por ahora esto abre WhatsApp o email para que me llegue directo. Mas adelante podemos convertirlo en mensajeria dentro de la app."
+            ? "Por ahora esto abre WhatsApp o email para que me llegue directo. Más adelante podemos convertirlo en mensajería dentro de la app."
             : "For now this opens WhatsApp or email so it reaches me directly. Later we can turn this into in-app messaging."}
         </p>
         <div className="inline-actions">
@@ -2655,10 +3017,10 @@ function LockedPreviewCard({ activeSection, language }) {
     home: language === "es" ? "Inicio" : "Home",
     routine: language === "es" ? "Rutina de esta noche" : "Tonight's routine",
     videos: language === "es" ? "Biblioteca de videos" : "Video library",
-    "sleep-area": language === "es" ? "Area de sueno" : "Sleep space",
-    avoid: language === "es" ? "Que evitar" : "What to avoid",
+    "sleep-area": language === "es" ? "Área de sueño" : "Sleep space",
+    avoid: language === "es" ? "Qué evitar" : "What to avoid",
     wins: language === "es" ? "Logros" : "Wins",
-    contact: language === "es" ? "Contactanos" : "Contact us",
+    contact: language === "es" ? "Contáctanos" : "Contact us",
   };
 
   return (
@@ -2669,12 +3031,12 @@ function LockedPreviewCard({ activeSection, language }) {
       </div>
       <p className="lead-copy">
         {language === "es"
-          ? "Asi se ve esta seccion dentro de la app completa. Puedes explorar el shell, pero esta parte se desbloquea con la compra."
+          ? "Así se ve esta sección dentro de la app completa. Puedes explorar el shell, pero esta parte se desbloquea con la compra."
           : "This is how this section looks inside the full app. You can explore the shell, but this part unlocks with purchase."}
       </p>
       <div className="preview-grid">
         <div className="preview-block">
-          <strong>{language === "es" ? "Lo que encontraras aqui" : "What you'll find here"}</strong>
+          <strong>{language === "es" ? "Lo que encontrarás aquí" : "What you'll find here"}</strong>
           <ul className="mini-list">
             <li>
               {activeSection === "routine"
@@ -2689,12 +3051,12 @@ function LockedPreviewCard({ activeSection, language }) {
                 : null}
               {activeSection === "sleep-area"
                 ? language === "es"
-                  ? "Checklist rapido del cuarto y su impacto"
+                  ? "Checklist rápido del cuarto y su impacto"
                   : "Quick room checklist and its impact"
                 : null}
               {activeSection === "avoid"
                 ? language === "es"
-                  ? "Lista clara de lo que mas interfiere con el sueno"
+                  ? "Lista clara de lo que más interfiere con el sueño"
                   : "Clear list of what most interferes with sleep"
                 : null}
               {activeSection === "wins"
@@ -2724,7 +3086,7 @@ function LockedPreviewCard({ activeSection, language }) {
           <strong>{language === "es" ? "Funcion premium" : "Premium feature"}</strong>
           <p>
             {language === "es"
-              ? "Desbloquea esta seccion para usar el dashboard completo, la rutina de esta noche y el seguimiento."
+              ? "Desbloquea esta sección para usar el dashboard completo, la rutina de esta noche y el seguimiento."
               : "Unlock this section to use the full dashboard, tonight's routine, and progress tracking."}
           </p>
           <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
@@ -2750,8 +3112,8 @@ function translateAvoidTitle(value) {
     "Pantallas (especialmente cerca de dormir)": "Screens (especially close to bedtime)",
     "Luz blanca brillante": "Bright white light",
     "Juego muy activo justo antes de dormir": "Very active play right before bed",
-    "Azucar y alimentos estimulantes": "Sugar and stimulating foods",
-    "Cafeina aunque sea poquita": "Caffeine, even a little",
+    "Azúcar y alimentos estimulantes": "Sugar and stimulating foods",
+    "Cafeína aunque sea poquita": "Caffeine, even a little",
     "Comer muy tarde o pesado": "Eating too late or too heavily",
     "Conversaciones estimulantes o emociones intensas": "Stimulating conversations or intense emotions",
     "Actividades mentales muy activas": "Highly activating mental activities",
@@ -2764,9 +3126,9 @@ function translateAvoidEntry(value) {
   const map = {
     "Tablet, celular o TV": "Tablet, phone, or TV",
     "Videos estimulantes": "Stimulating videos",
-    "Juegos electronicos": "Electronic games",
+    "Juegos electrónicos": "Electronic games",
     "Luces LED blancas intensas": "Bright white LED lights",
-    "Iluminacion de techo muy brillante": "Very bright overhead lights",
+    "Iluminación de techo muy brillante": "Very bright overhead lights",
     Correr: "Running",
     Saltar: "Jumping",
     "Juegos competitivos": "Competitive games",
@@ -2774,17 +3136,17 @@ function translateAvoidEntry(value) {
     Dulces: "Candy",
     Postres: "Desserts",
     "Bebidas azucaradas": "Sugary drinks",
-    "Chocolate en ninos sensibles": "Chocolate in sensitive children",
+    "Chocolate en niños sensibles": "Chocolate in sensitive children",
     "Chocolate oscuro en exceso": "Too much dark chocolate",
     Gaseosas: "Sodas",
-    "Te con cafeina": "Caffeinated tea",
+    "Té con cafeína": "Caffeinated tea",
     "Cenas muy grandes justo antes de dormir": "Very heavy dinners right before bed",
     "Comer inmediatamente antes de acostarse": "Eating right before lying down",
     Discusiones: "Arguments",
     "Temas que activan emociones fuertes": "Topics that trigger strong emotions",
-    "Sobreestimulacion verbal": "Too much verbal stimulation",
+    "Sobreestimulación verbal": "Too much verbal stimulation",
     "Resolver problemas complejos": "Solving complex problems",
-    "Juegos que generan excitacion": "Games that create excitement",
+    "Juegos que generan excitación": "Games that create excitement",
     "Cambiar todo cada noche": "Changing everything every night",
     "Horarios totalmente variables": "Completely variable schedules",
   };
@@ -2795,39 +3157,39 @@ function translateAvoidWhy(value) {
   const map = {
     "La luz azul y el contenido activo mantienen el cerebro en modo alerta y retrasan la melatonina.":
       "Blue light and activating content keep the brain alert and delay melatonin.",
-    "Le dice al cerebro que todavia es de dia.": "It tells the brain that it is still daytime.",
+    "Le dice al cerebro que todavía es de día.": "It tells the brain that it is still daytime.",
     "Sube cortisol y adrenalina, y activa el sistema nervioso cuando queremos que baje.":
       "It raises cortisol and adrenaline, activating the nervous system when we want it to settle.",
-    "Puede subir energia y dificultar la regulacion.": "It can raise energy and make regulation harder.",
-    "Bloquea la sensacion de sueno.": "It blocks the feeling of sleepiness.",
-    "El cuerpo sigue en modo digestion y no entra en modo descanso.":
+    "Puede subir energía y dificultar la regulación.": "It can raise energy and make regulation harder.",
+    "Bloquea la sensación de sueño.": "It blocks the feeling of sleepiness.",
+    "El cuerpo sigue en modo digestión y no entra en modo descanso.":
       "The body stays in digestion mode instead of rest mode.",
     "Activa el cerebro y el sistema nervioso.": "It activates the brain and nervous system.",
     "Mantienen la mente encendida.": "They keep the mind switched on.",
-    "El cerebro no logra anticipar el sueno.": "The brain cannot predict that sleep is coming.",
+    "El cerebro no logra anticipar el sueño.": "The brain cannot predict that sleep is coming.",
   };
   return map[value] || value;
 }
 
 function translateAvoidSource(value) {
   const map = {
-    "American Academy of Pediatrics y Harvard Medical School: las pantallas antes de dormir se asocian con peor calidad de sueno y menor melatonina.":
+    "American Academy of Pediatrics y Harvard Medical School: las pantallas antes de dormir se asocian con peor calidad de sueño y menor melatonina.":
       "American Academy of Pediatrics and Harvard Medical School: screens before bed are linked to poorer sleep quality and lower melatonin.",
     "Harvard Health Publishing y National Sleep Foundation: la luz brillante en la noche altera el ritmo circadiano.":
       "Harvard Health Publishing and the National Sleep Foundation: bright light at night disrupts circadian rhythm.",
-    "Sleep Foundation y American Academy of Sleep Medicine: la activacion intensa cerca de dormir puede dificultar conciliar el sueno.":
+    "Sleep Foundation y American Academy of Sleep Medicine: la activación intensa cerca de dormir puede dificultar conciliar el sueño.":
       "Sleep Foundation and the American Academy of Sleep Medicine: intense activation close to bedtime can make it harder to fall asleep.",
-    "Sleep Foundation: dietas altas en azucar pueden afectar la calidad del sueno.":
+    "Sleep Foundation: dietas altas en azúcar pueden afectar la calidad del sueño.":
       "Sleep Foundation: high-sugar diets can affect sleep quality.",
-    "American Academy of Sleep Medicine: la cafeina interfiere con la capacidad de conciliar el sueno.":
+    "American Academy of Sleep Medicine: la cafeína interfiere con la capacidad de conciliar el sueño.":
       "American Academy of Sleep Medicine: caffeine interferes with the ability to fall asleep.",
-    "Sleep Foundation: comer tarde puede afectar el inicio del sueno.":
+    "Sleep Foundation: comer tarde puede afectar el inicio del sueño.":
       "Sleep Foundation: eating late can affect sleep onset.",
-    "National Sleep Foundation: la activacion emocional dificulta el inicio del sueno.":
+    "National Sleep Foundation: la activación emocional dificulta el inicio del sueño.":
       "National Sleep Foundation: emotional activation makes sleep onset harder.",
-    "American Academy of Sleep Medicine: la activacion cognitiva retrasa el sueno.":
+    "American Academy of Sleep Medicine: la activación cognitiva retrasa el sueño.":
       "American Academy of Sleep Medicine: cognitive activation delays sleep.",
-    "National Sleep Foundation: la consistencia mejora la latencia del sueno.":
+    "National Sleep Foundation: la consistencia mejora la latencia del sueño.":
       "National Sleep Foundation: consistency improves sleep latency.",
   };
   return map[value] || value;
