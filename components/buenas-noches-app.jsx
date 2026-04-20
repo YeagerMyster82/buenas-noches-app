@@ -3745,7 +3745,10 @@ function AdminSection({ strings, language }) {
                     }}
                   >
                     <strong>{user.email || "Sin email"}</strong>
-                    <span>{user.children.length} perfiles</span>
+                    <span>
+                      {user.children.length} perfiles
+                      {user.isPremium ? <em className="premium-badge">Premium</em> : null}
+                    </span>
                   </button>
                 ))}
               </section>
@@ -3841,11 +3844,18 @@ function AdminSection({ strings, language }) {
 
 function buildAdminUserGroups(data) {
   const groups = new Map();
+  const premiumEmails = new Set(
+    (data.purchases || [])
+      .filter((purchase) => purchase.premium_unlocked || String(purchase.purchase_status || "").toLowerCase() === "paid")
+      .map((purchase) => String(purchase.email || "").trim().toLowerCase())
+  );
+
   (data.children || []).forEach((child) => {
     const email = child.parent_email || "";
     if (!groups.has(email)) {
       groups.set(email, {
         email,
+        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
         children: [],
         logsByChild: new Map(),
         eventsByChild: new Map(),
@@ -3861,6 +3871,7 @@ function buildAdminUserGroups(data) {
     if (!groups.has(email)) {
       groups.set(email, {
         email,
+        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
         children: [],
         logsByChild: new Map(),
         eventsByChild: new Map(),
@@ -3880,15 +3891,28 @@ function buildAdminUserGroups(data) {
         created_at: result.created_at,
       });
     }
+    if (!user.eventsByChild.has(childId)) user.eventsByChild.set(childId, []);
+    user.eventsByChild.get(childId).push({
+      id: `quiz-${result.id}`,
+      event_type: "profile_created",
+      event_label: "Perfil creado desde el quiz",
+      created_at: result.created_at,
+    });
   });
 
   (data.logs || []).forEach((log) => {
     const email = log.parent_email || "";
     if (!groups.has(email)) {
-      groups.set(email, { email, children: [], logsByChild: new Map(), eventsByChild: new Map() });
+      groups.set(email, {
+        email,
+        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
+        children: [],
+        logsByChild: new Map(),
+        eventsByChild: new Map(),
+      });
     }
-    const childKey = log.child_id || "";
     const user = groups.get(email);
+    const childKey = log.child_id || user.children[0]?.id || "";
     if (!user.logsByChild.has(childKey)) user.logsByChild.set(childKey, []);
     user.logsByChild.get(childKey).push(log);
   });
@@ -3896,7 +3920,13 @@ function buildAdminUserGroups(data) {
   (data.events || []).forEach((event) => {
     const email = event.parent_email || "";
     if (!groups.has(email)) {
-      groups.set(email, { email, children: [], logsByChild: new Map(), eventsByChild: new Map() });
+      groups.set(email, {
+        email,
+        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
+        children: [],
+        logsByChild: new Map(),
+        eventsByChild: new Map(),
+      });
     }
     const childKey = event.child_id || "";
     const user = groups.get(email);
@@ -3904,7 +3934,9 @@ function buildAdminUserGroups(data) {
     user.eventsByChild.get(childKey).push(event);
   });
 
-  return Array.from(groups.values()).sort((left, right) => left.email.localeCompare(right.email));
+  return Array.from(groups.values())
+    .filter((user) => user.isPremium)
+    .sort((left, right) => left.email.localeCompare(right.email));
 }
 
 function AdminList({ title, items, renderItem }) {
