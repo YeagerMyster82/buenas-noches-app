@@ -1,4 +1,4 @@
-import { getAdminDashboardData } from "../../../lib/community-data";
+import { deleteSupportMessage, getAdminDashboardData } from "../../../lib/community-data";
 
 export async function POST(request) {
   const payload = await request.json();
@@ -11,6 +11,11 @@ export async function POST(request) {
 
   if (!submittedCode || submittedCode !== expectedCode) {
     return Response.json({ error: "Invalid admin code" }, { status: 401 });
+  }
+
+  if (payload.type === "delete_message") {
+    const result = await deleteSupportMessage({ messageId: payload.messageId });
+    return Response.json({ ok: true, result });
   }
 
   const data = await getAdminDashboardData();
