@@ -3853,6 +3853,34 @@ function buildAdminUserGroups(data) {
     groups.get(email).children.push(child);
   });
 
+  (data.quizResults || []).forEach((result) => {
+    const email = result.parent_email || "";
+    const metadata = Array.isArray(result.answers) ? {} : result.answers || {};
+    const childId = result.child_id || result.id;
+    if (!groups.has(email)) {
+      groups.set(email, {
+        email,
+        children: [],
+        logsByChild: new Map(),
+        eventsByChild: new Map(),
+      });
+    }
+    const user = groups.get(email);
+    const alreadyExists = user.children.some((child) => child.id === childId || child.quiz_result_id === result.id);
+    if (!alreadyExists) {
+      user.children.push({
+        id: childId,
+        quiz_result_id: result.id,
+        parent_email: email,
+        child_name: metadata.childName || "Perfil guardado",
+        age_years: metadata.childBirthday ? calculateAgeFromBirthday(metadata.childBirthday) : 0,
+        primary_profile: result.primary_profile,
+        secondary_profile: result.secondary_profile,
+        created_at: result.created_at,
+      });
+    }
+  });
+
   (data.logs || []).forEach((log) => {
     const email = log.parent_email || "";
     if (!groups.has(email)) {
