@@ -11,6 +11,7 @@ import {
 import {
   buildPlan,
   buildProgressSummary,
+  calculateAgeFromBirthday,
   calculateLatency,
   formatAgeLabel,
   getChildSlots,
