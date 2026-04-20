@@ -1,4 +1,12 @@
-import { deleteQuizProfile, getMemberData, saveDailyPlan, saveNightlyLog, saveQuizResult, updateQuizProfile } from "../../../lib/member-data";
+import {
+  deleteQuizProfile,
+  getMemberData,
+  saveDailyPlan,
+  saveNightlyLog,
+  saveQuizResult,
+  updateNightWakings,
+  updateQuizProfile,
+} from "../../../lib/member-data";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -73,12 +81,23 @@ export async function POST(request) {
       parentEmail: email,
       childId: payload.childId || null,
       logDate: payload.logDate,
+      routineStartTime: payload.routineStartTime || null,
       inBedAt: payload.inBedAt,
       fellAsleepAt: payload.fellAsleepAt,
       sleepLatencyMinutes: payload.sleepLatencyMinutes,
       nightWakings: payload.nightWakings || "0",
       notes: payload.notes || "",
       ratings: payload.ratings || [],
+    });
+    return Response.json({ ok: true, result });
+  }
+
+  if (payload.type === "update_night_wakings") {
+    const result = await updateNightWakings({
+      parentEmail: email,
+      childId: payload.childId,
+      logDate: payload.logDate,
+      nightWakings: payload.nightWakings || "0",
     });
     return Response.json({ ok: true, result });
   }
