@@ -534,6 +534,58 @@ function getYesterdayKey() {
   return yesterday.toISOString().slice(0, 10);
 }
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
+async function subscribeToPushNotifications({ email, role }) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    throw new Error("Este navegador no permite notificaciones push.");
+  }
+
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!publicKey) {
+    throw new Error("Falta configurar NEXT_PUBLIC_VAPID_PUBLIC_KEY en Vercel.");
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    throw new Error("No se activaron las notificaciones.");
+  }
+
+  const registration = await navigator.serviceWorker.register("/sw.js");
+  const existingSubscription = await registration.pushManager.getSubscription();
+  const subscription =
+    existingSubscription ||
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    }));
+
+  const response = await fetch("/api/push-subscription", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, role, subscription }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "No pude guardar la suscripción.");
+  }
+
+  return payload;
+}
+
 function genderize(value, gender) {
   if (gender !== "girl" || !value) return value;
   return value
@@ -3797,7 +3849,28 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
   const [topic, setTopic] = useState("support");
   const [message, setMessage] = useState("");
   const [contactEmail, setContactEmail] = useState(parentEmail || "");
+  const [messages, setMessages] = useState([]);
+  const [replyDrafts, setReplyDrafts] = useState({});
   const [status, setStatus] = useState("");
+  const [pushStatus, setPushStatus] = useState("");
+
+  const emailForInbox = (parentEmail || contactEmail).trim().toLowerCase();
+
+  useEffect(() => {
+    let active = true;
+    if (!emailForInbox) return undefined;
+
+    fetch(`/api/support-message?email=${encodeURIComponent(emailForInbox)}`)
+      .then((response) => response.json())
+      .then((payload) => {
+        if (active) setMessages(payload.messages || []);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [emailForInbox]);
 
   async function sendPrivateMessage(event) {
     event.preventDefault();
@@ -3824,9 +3897,61 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
         throw new Error(payload.error || "No pude enviar el mensaje.");
       }
       setMessage("");
+      setMessages((current) => [payload.message, ...current]);
       setStatus(strings.messageSent);
     } catch (error) {
       setStatus(error.message || "No pude enviar el mensaje.");
+    }
+  }
+
+  async function sendUserReply(event, messageId) {
+    event.preventDefault();
+    const reply = String(replyDrafts[messageId] || "").trim();
+    if (!reply) return;
+
+    setStatus("");
+    try {
+      const response = await fetch("/api/support-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "reply",
+          messageId,
+          message: reply,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude enviar la respuesta.");
+      }
+
+      setReplyDrafts((current) => ({ ...current, [messageId]: "" }));
+      setMessages((current) =>
+        current.map((thread) =>
+          thread.id === messageId
+            ? {
+                ...thread,
+                status: "new",
+                replies: [...(thread.replies || []), payload.reply],
+              }
+            : thread
+        )
+      );
+      setStatus(strings.messageSent);
+    } catch (error) {
+      setStatus(error.message || "No pude enviar la respuesta.");
+    }
+  }
+
+  async function enablePush() {
+    setPushStatus("");
+    try {
+      await subscribeToPushNotifications({ email: emailForInbox, role: "user" });
+      setPushStatus("Listo. Te avisaremos cuando tengas una respuesta.");
+    } catch (error) {
+      setPushStatus(error.message || "No pude activar las notificaciones.");
     }
   }
 
@@ -3837,6 +3962,10 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
         <h2>{strings.needHelp}</h2>
       </div>
       <p className="lead-copy">{strings.contactCopy}</p>
+      <button className="button button-secondary" type="button" onClick={enablePush} disabled={!emailForInbox}>
+        Activar notificaciones de respuestas
+      </button>
+      {pushStatus ? <p className="status-message status-success">{pushStatus}</p> : null}
       <form className="win-card" onSubmit={sendPrivateMessage}>
         {!parentEmail ? (
           <label className="stack compact">
@@ -3872,6 +4001,45 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
           {strings.sendMessage}
         </button>
       </form>
+      <section className="message-thread-list">
+        <div className="card-header">
+          <span className="section-label">Mensajes</span>
+          <h3>Tu conversación con Buenas Noches</h3>
+        </div>
+        {messages.length ? (
+          messages.map((thread) => (
+            <div className="message-thread" key={thread.id}>
+              <div className="message-bubble message-bubble--user">
+                <strong>Tú</strong>
+                <p>{thread.message}</p>
+                <small>{thread.created_at?.slice(0, 10)}</small>
+              </div>
+              {(thread.replies || []).map((reply) => (
+                <div
+                  className={reply.sender === "admin" ? "message-bubble message-bubble--admin" : "message-bubble message-bubble--user"}
+                  key={reply.id}
+                >
+                  <strong>{reply.sender === "admin" ? "Joline" : "Tú"}</strong>
+                  <p>{reply.message}</p>
+                  <small>{reply.created_at?.slice(0, 10)}</small>
+                </div>
+              ))}
+              <form className="message-reply-form" onSubmit={(event) => sendUserReply(event, thread.id)}>
+                <textarea
+                  value={replyDrafts[thread.id] || ""}
+                  onChange={(event) => setReplyDrafts((current) => ({ ...current, [thread.id]: event.target.value }))}
+                  placeholder="Responder a este mensaje..."
+                />
+                <button className="button button-secondary" type="submit">
+                  Responder
+                </button>
+              </form>
+            </div>
+          ))
+        ) : (
+          <p className="muted">Aún no hay mensajes guardados.</p>
+        )}
+      </section>
     </article>
   );
 }
@@ -3883,6 +4051,8 @@ function AdminSection({ strings, language, onHome }) {
   const [adminTab, setAdminTab] = useState("users");
   const [selectedUserEmail, setSelectedUserEmail] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
+  const [replyDrafts, setReplyDrafts] = useState({});
+  const [pushStatus, setPushStatus] = useState("");
 
   async function loadAdminData(event) {
     event.preventDefault();
@@ -3936,6 +4106,59 @@ function AdminSection({ strings, language, onHome }) {
     }
   }
 
+  async function replyToMessage(event, messageItem) {
+    event.preventDefault();
+    const reply = String(replyDrafts[messageItem.id] || "").trim();
+    if (!reply) return;
+
+    setStatus("");
+    try {
+      const response = await fetch("/api/admin-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminCode,
+          type: "reply_message",
+          messageId: messageItem.id,
+          email: messageItem.parent_email,
+          message: reply,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "No pude enviar la respuesta.");
+      }
+
+      setReplyDrafts((current) => ({ ...current, [messageItem.id]: "" }));
+      setData((current) => ({
+        ...current,
+        messages: current.messages.map((message) =>
+          message.id === messageItem.id
+            ? {
+                ...message,
+                status: "answered",
+                replies: [...(message.replies || []), payload.reply],
+              }
+            : message
+        ),
+      }));
+    } catch (error) {
+      setStatus(error.message || "No pude enviar la respuesta.");
+    }
+  }
+
+  async function enableAdminPush() {
+    setPushStatus("");
+    try {
+      await subscribeToPushNotifications({ email: "admin@buenasnoches.local", role: "admin" });
+      setPushStatus("Listo. Este dispositivo recibirá notificaciones de mensajes y reseñas.");
+    } catch (error) {
+      setPushStatus(error.message || "No pude activar las notificaciones.");
+    }
+  }
+
   const userGroups = data ? buildAdminUserGroups(data) : [];
   const selectedUser = userGroups.find((user) => user.email === selectedUserEmail) || null;
   const selectedChild = selectedUser?.children.find((child) => child.id === selectedChildId) || null;
@@ -3949,6 +4172,15 @@ function AdminSection({ strings, language, onHome }) {
         <button className="button button-secondary" type="button" onClick={onHome}>
           Inicio
         </button>
+        {data ? (
+          <>
+            <button className="button button-primary" type="button" onClick={enableAdminPush}>
+              Activar notificaciones admin
+            </button>
+            {pushStatus ? <p className="status-message status-success">{pushStatus}</p> : null}
+          </>
+        ) : null}
+        {data && status ? <p className="status-message status-warning">{status}</p> : null}
       </div>
       {!data ? (
         <form className="stack compact" onSubmit={loadAdminData}>
@@ -4068,6 +4300,22 @@ function AdminSection({ strings, language, onHome }) {
                   <small>
                     {messageItem.topic} · {messageItem.created_at?.slice(0, 10)}
                   </small>
+                  {(messageItem.replies || []).map((reply) => (
+                    <div className="message-bubble message-bubble--admin" key={reply.id}>
+                      <strong>{reply.sender === "admin" ? "Tú" : "Usuario"}</strong>
+                      <p>{reply.message}</p>
+                    </div>
+                  ))}
+                  <form className="message-reply-form" onSubmit={(event) => replyToMessage(event, messageItem)}>
+                    <textarea
+                      value={replyDrafts[messageItem.id] || ""}
+                      onChange={(event) => setReplyDrafts((current) => ({ ...current, [messageItem.id]: event.target.value }))}
+                      placeholder="Responder a este usuario..."
+                    />
+                    <button className="button button-secondary" type="submit">
+                      Responder
+                    </button>
+                  </form>
                   <button className="button button-danger" type="button" onClick={() => deleteAdminMessage(messageItem.id)}>
                     Borrar mensaje
                   </button>
