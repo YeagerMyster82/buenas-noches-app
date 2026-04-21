@@ -905,6 +905,50 @@ img {
   border: 1px dashed rgba(248, 243, 234, 0.22);
 }
 
+.message-thread-list,
+.message-thread {
+  display: grid;
+  gap: 14px;
+}
+
+.message-thread {
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(248, 243, 234, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(248, 243, 234, 0.09);
+}
+
+.message-bubble {
+  display: grid;
+  gap: 5px;
+  width: min(92%, 620px);
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+
+.message-bubble p {
+  margin: 0;
+}
+
+.message-bubble small {
+  color: rgba(248, 243, 234, 0.58);
+}
+
+.message-bubble--user {
+  justify-self: end;
+  background: rgba(169, 216, 221, 0.18);
+}
+
+.message-bubble--admin {
+  justify-self: start;
+  background: rgba(244, 231, 178, 0.16);
+}
+
+.message-reply-form {
+  display: grid;
+  gap: 10px;
+}
+
 .admin-grid {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }

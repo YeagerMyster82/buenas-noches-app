@@ -1,4 +1,5 @@
 import { listPublicReviews, saveAppReview } from "../../../lib/community-data";
+import { notifyAdmins } from "../../../lib/push-notifications";
 
 export async function GET() {
   const reviews = await listPublicReviews();
@@ -17,6 +18,16 @@ export async function POST(request) {
       comment: payload.comment,
       improvementFeedback: payload.improvementFeedback,
     });
+
+    try {
+      await notifyAdmins({
+        title: "Nueva reseña en Buenas Noches",
+        body: `${payload.email || "Una familia"} dejó ${payload.rating} estrellas.`,
+        url: "/?section=admin",
+      });
+    } catch {
+      // The review should still be saved even if push is not configured yet.
+    }
 
     return Response.json({
       ok: true,

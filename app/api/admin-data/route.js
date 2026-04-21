@@ -1,4 +1,5 @@
-import { deleteSupportMessage, getAdminDashboardData } from "../../../lib/community-data";
+import { deleteSupportMessage, getAdminDashboardData, saveSupportReply } from "../../../lib/community-data";
+import { notifyUserByEmail } from "../../../lib/push-notifications";
 
 export async function POST(request) {
   try {
@@ -17,6 +18,28 @@ export async function POST(request) {
     if (payload.type === "delete_message") {
       const result = await deleteSupportMessage({ messageId: payload.messageId });
       return Response.json({ ok: true, result });
+    }
+
+    if (payload.type === "reply_message") {
+      const reply = await saveSupportReply({
+        messageId: payload.messageId,
+        sender: "admin",
+        message: payload.message,
+      });
+
+      if (payload.email) {
+        try {
+          await notifyUserByEmail(payload.email, {
+            title: "Tienes una respuesta de Buenas Noches",
+            body: "Joline respondió tu mensaje.",
+            url: "/?section=contact",
+          });
+        } catch {
+          // The reply should still be saved even if push is not configured yet.
+        }
+      }
+
+      return Response.json({ ok: true, reply });
     }
 
     const data = await getAdminDashboardData();
