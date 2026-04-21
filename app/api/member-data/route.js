@@ -35,6 +35,7 @@ export async function POST(request) {
       childName: payload.childName || "",
       childBirthday: payload.childBirthday || "",
       childGender: payload.childGender || "boy",
+      parentName: payload.parentName || "",
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
