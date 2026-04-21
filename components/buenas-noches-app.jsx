@@ -108,7 +108,12 @@ const copy = {
     boy: "Niño",
     girl: "Niña",
     parentName: "Tu primer nombre (de mamá o papá)",
+    parentLastName: "Tu apellido (opcional)",
     parentEmail: "Tu correo electrónico",
+    parentSettings: "Datos de mamá o papá",
+    saveAccountSettings: "Guardar datos",
+    sleepNeed: "Sueño recomendado",
+    sleepGoal: "Meta de sueño",
     seeChildProfile: "Ver el perfil de mi hijo",
     freeAccountTitle: "¡Ya identificamos el perfil de tu hijo!",
     freeAccountCopy: "Crea tu cuenta gratis para ver el resultado y guardar su perfil de sueño para siempre.",
@@ -286,7 +291,12 @@ const copy = {
     boy: "Boy",
     girl: "Girl",
     parentName: "Your first name (parent or caregiver)",
+    parentLastName: "Your last name (optional)",
     parentEmail: "Your email",
+    parentSettings: "Parent settings",
+    saveAccountSettings: "Save settings",
+    sleepNeed: "Recommended sleep",
+    sleepGoal: "Sleep goal",
     seeChildProfile: "See my child's profile",
     freeAccountTitle: "We identified your child's sleep profile!",
     freeAccountCopy: "Create your free account to see the result and save their sleep profile forever.",
@@ -515,6 +525,7 @@ const initialState = {
   premiumAccess: null,
   persistenceMessage: "",
   parentName: "",
+  parentLastName: "",
   parentEmail: "",
   parentProfileSaved: false,
   accountCreatedAt: "",
@@ -723,6 +734,19 @@ function childGenderLabel(gender, language = "es") {
   return gender === "girl" ? "Niña" : "Niño";
 }
 
+function getRecommendedSleepHours(birthday, language = "es") {
+  const age = calculateAgeFromBirthday(birthday);
+  let range = "9-12";
+  if (age < 1) range = "12-16";
+  else if (age < 2) range = "11-14";
+  else if (age < 3) range = "11-14";
+  else if (age <= 5) range = "10-13";
+  else if (age <= 12) range = "9-12";
+  else range = "8-10";
+
+  return language === "en" ? `${range} hours` : `${range} horas`;
+}
+
 function makeEmptyChild(childDraft) {
   return {
     id: generateId(),
@@ -737,6 +761,7 @@ function makeEmptyChild(childDraft) {
     selectedActivities: {},
     dislikedCounts: {},
     sleepAreaChecks: {},
+    sleepGoal: "",
   };
 }
 
@@ -756,6 +781,7 @@ function makeChildFromSavedQuiz(result) {
     quizResultId: result.id || "",
     primaryProfile: result.primary_profile || "",
     secondaryProfile: result.secondary_profile || "",
+    sleepGoal: metadata.sleepGoal || "",
     answers: responses,
     isLegacyProfile: !childName || !childBirthday,
   };
@@ -1002,6 +1028,20 @@ export default function BuenasNochesApp() {
     setState((current) => ({ ...current, activeChildId: childId || current.activeChildId, activeSection: "routine" }));
   }
 
+  function saveParentSettings(event) {
+    event.preventDefault();
+    setState((current) => ({
+      ...current,
+      parentName: current.parentName.trim(),
+      parentLastName: current.parentLastName.trim(),
+      parentEmail: current.parentEmail.trim().toLowerCase(),
+      purchaseEmail: current.purchaseEmail || current.parentEmail.trim().toLowerCase(),
+      parentProfileSaved: true,
+      persistenceMessage: "Datos guardados.",
+      activeSection: "home",
+    }));
+  }
+
   function beginQuiz(event) {
     event.preventDefault();
     if (!state.childDraft.name.trim() || !state.childDraft.birthday || !state.childDraft.gender) return;
@@ -1130,6 +1170,19 @@ export default function BuenasNochesApp() {
     const email = state.accountLookupEmail.trim().toLowerCase();
     if (!email) return;
 
+    if (state.children.length && state.parentEmail.trim().toLowerCase() === email) {
+      setState((current) => ({
+        ...current,
+        parentProfileSaved: true,
+        accountLookupOpen: false,
+        accountLookupStatus: "success",
+        accountLookupMessage: "",
+        activeSection: "home",
+        expandedChildId: current.children[0]?.id || "",
+      }));
+      return;
+    }
+
     setState((current) => ({
       ...current,
       accountLookupStatus: "loading",
@@ -1172,9 +1225,12 @@ export default function BuenasNochesApp() {
         ...child,
         logs: makeLogsFromSavedData(logsByChildId.get(child.id) || (index === 0 ? legacySavedLogs : [])),
       }));
+      const savedParentName =
+        (data.quizResults || []).map((result) => (Array.isArray(result.answers) ? "" : result.answers?.parentName || "")).find(Boolean) || "";
 
       setState((current) => ({
         ...current,
+        parentName: current.parentName || savedParentName,
         parentEmail: email,
         purchaseEmail: email,
         verifiedEmail: premiumCheck?.hasAccess ? email : current.verifiedEmail,
@@ -1217,6 +1273,7 @@ export default function BuenasNochesApp() {
       primaryProfile: state.quizResult.primary,
       secondaryProfile: state.quizResult.secondary || "",
       answers: state.answers,
+      sleepGoal: state.routineForm.targetBedtime || "",
     };
 
     setState((current) => ({
@@ -1283,6 +1340,7 @@ export default function BuenasNochesApp() {
             childBirthday: child.birthday,
             childGender: child.gender,
             parentName: parentName || state.parentName,
+            sleepGoal: child.sleepGoal,
             answers: child.answers,
             primaryProfile: child.primaryProfile,
             secondaryProfile: child.secondaryProfile || null,
@@ -1321,12 +1379,14 @@ export default function BuenasNochesApp() {
     const name = String(formData.get("childName") || "").trim();
     const birthday = String(formData.get("birthday") || "");
     const gender = String(formData.get("gender") || "boy");
+    const sleepGoal = String(formData.get("sleepGoal") || "");
     if (!name || !birthday) return;
 
     updateChild(childId, () => ({
       name,
       birthday,
       gender,
+      sleepGoal,
     }));
 
     setState((current) => ({
@@ -1350,6 +1410,7 @@ export default function BuenasNochesApp() {
             childName: name,
             childBirthday: birthday,
             childGender: gender,
+            sleepGoal,
           }),
         });
       } catch {
@@ -1944,6 +2005,7 @@ export default function BuenasNochesApp() {
           hasSleepWindow={Boolean(state.sleepWindowCompleted)}
           onGoProfile={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, activeSection: "child" }))}
           onGoSleepWindow={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, sleepWindowOpen: true }))}
+          onClose={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false }))}
         />
       ) : null}
 
@@ -2203,6 +2265,7 @@ export default function BuenasNochesApp() {
                 onOpenSleepWindow={() => setState((current) => ({ ...current, sleepWindowOpen: true }))}
                 onOpenRoutine={() => requestRoutine(activeChild?.id)}
                 onOpenSleep={() => setState((current) => ({ ...current, activeSection: "sleep" }))}
+                onOpenTips={() => setState((current) => ({ ...current, activeSection: "tips" }))}
                 onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
               />
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
@@ -2243,6 +2306,15 @@ export default function BuenasNochesApp() {
               timer={state.quickSleepTimer}
               onStart={startQuickSleepTimer}
               onStop={stopQuickSleepTimer}
+            />
+          ) : state.activeSection === "settings" ? (
+            <ParentSettingsSection
+              strings={strings}
+              parentName={state.parentName}
+              parentLastName={state.parentLastName}
+              parentEmail={state.parentEmail}
+              onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
+              onSave={saveParentSettings}
             />
           ) : state.activeSection === "tips" ? (
             <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
@@ -2462,6 +2534,7 @@ export default function BuenasNochesApp() {
                   onOpenSleepWindow={() => setState((current) => ({ ...current, sleepWindowOpen: true }))}
                   onOpenRoutine={() => requestRoutine(activeChild?.id)}
                   onOpenSleep={() => setState((current) => ({ ...current, activeSection: "sleep" }))}
+                  onOpenTips={() => setState((current) => ({ ...current, activeSection: "tips" }))}
                   onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
                 />
               ) : null}
@@ -2559,6 +2632,17 @@ export default function BuenasNochesApp() {
                   timer={state.quickSleepTimer}
                   onStart={startQuickSleepTimer}
                   onStop={stopQuickSleepTimer}
+                />
+              ) : null}
+
+              {state.activeSection === "settings" ? (
+                <ParentSettingsSection
+                  strings={strings}
+                  parentName={state.parentName}
+                  parentLastName={state.parentLastName}
+                  parentEmail={state.parentEmail}
+                  onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
+                  onSave={saveParentSettings}
                 />
               ) : null}
 
@@ -2993,7 +3077,7 @@ function ProfileIntroModal({ child, profileMap, language, onClose }) {
   );
 }
 
-function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine, onOpenSleep, onOpenWins }) {
+function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine, onOpenSleep, onOpenTips, onOpenWins }) {
   return (
     <section className="home-card-grid">
       <button className="home-action-card" type="button" onClick={onOpenSleepWindow}>
@@ -3010,6 +3094,11 @@ function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine
         <span className="home-card-icon">▥</span>
         <strong>{strings.sleepTracker}</strong>
         <small>Registrar cuánto tarda en dormir</small>
+      </button>
+      <button className="home-action-card" type="button" onClick={onOpenTips}>
+        <span className="home-card-icon">✦</span>
+        <strong>{strings.sections.tips}</strong>
+        <small>Ideas rápidas para mejorar la noche</small>
       </button>
       <button className="home-action-card" type="button" onClick={onOpenWins}>
         <span className="home-card-icon">★</span>
@@ -3044,16 +3133,44 @@ function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
         <strong>{timer.startedAt || "--:--"}</strong>
       </div>
       <div className="inline-actions">
-        <button className="button button-primary" type="button" onClick={onStart} disabled={timer.running}>
-          Iniciar cuando esté en cama
+        <button className="icon-button sleep-log-icon-button" type="button" onClick={onStart} disabled={timer.running} aria-label="Iniciar timer">
+          ▶
         </button>
-        <button className="button button-secondary" type="button" onClick={onStop} disabled={!timer.running}>
-          Detener cuando se duerma
+        <button className="icon-button sleep-log-icon-button" type="button" onClick={onStop} disabled={!timer.running} aria-label="Detener timer">
+          ■
         </button>
       </div>
       <p className="muted">
         Este registro aparecerá en Reportes en color azul porque no fue calculado desde una rutina guiada.
       </p>
+    </article>
+  );
+}
+
+function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, onChange, onSave }) {
+  return (
+    <article className="card card--feature parent-settings-card">
+      <div className="card-header">
+        <span className="section-label">Cuenta</span>
+        <h2>{strings.parentSettings}</h2>
+      </div>
+      <form className="stack" onSubmit={onSave}>
+        <label className="stack compact">
+          <span>{strings.parentName}</span>
+          <input type="text" value={parentName} onChange={(event) => onChange("parentName", event.target.value)} required />
+        </label>
+        <label className="stack compact">
+          <span>{strings.parentLastName}</span>
+          <input type="text" value={parentLastName} onChange={(event) => onChange("parentLastName", event.target.value)} />
+        </label>
+        <label className="stack compact">
+          <span>{strings.parentEmail}</span>
+          <input type="email" value={parentEmail} onChange={(event) => onChange("parentEmail", event.target.value)} required />
+        </label>
+        <button className="button button-primary" type="submit">
+          {strings.saveAccountSettings}
+        </button>
+      </form>
     </article>
   );
 }
@@ -3114,10 +3231,13 @@ function SleepWindowModal({ strings, activeChild, onCalculated, onClose }) {
   );
 }
 
-function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, onGoSleepWindow }) {
+function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, onGoSleepWindow, onClose }) {
   return (
     <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Premium">
       <article className="profile-modal__panel card card--soft premium-steps-card">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label={strings.close}>
+          ×
+        </button>
         <span className="section-label">Premium</span>
         <h2>3 pasos para generar tu rutina y dormir más rápido hoy</h2>
         <button className={hasProfile ? "premium-step is-complete" : "premium-step"} type="button" onClick={onGoProfile}>
@@ -3245,6 +3365,10 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
               <option value="girl">{strings.girl}</option>
             </select>
           </label>
+          <label className="stack compact">
+            <span>{strings.sleepGoal}</span>
+            <input name="sleepGoal" type="time" defaultValue={activeChild.sleepGoal || ""} />
+          </label>
           <div className="inline-actions">
             <button className="button button-primary" type="submit">
               {strings.saveProfile}
@@ -3316,9 +3440,11 @@ function getSleepProgressMessage(logs, strings) {
 
 function buildWeeklyProgressChart(logs, weekOffset = 0) {
   const today = new Date();
-  const endDate = addDateDays(today, weekOffset * 7);
+  const sortedLogs = [...(logs || [])].filter((log) => log.date).sort((left, right) => (left.date > right.date ? 1 : -1));
+  const firstLogDate = sortedLogs[0]?.date ? new Date(`${sortedLogs[0].date}T00:00:00`) : today;
+  const startDate = addDateDays(firstLogDate, weekOffset * 7);
   const days = Array.from({ length: 7 }, (_, index) => {
-    const date = addDateDays(endDate, index - 6);
+    const date = addDateDays(startDate, index);
     const dateKey = getDateKey(date);
     const log = logs.find((entry) => entry.date === dateKey);
     return {
@@ -3339,22 +3465,22 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
     maxLatency,
     maxWakings,
     empty: !logs.length,
-    canGoForward: weekOffset < 0,
+    canGoForward: weekOffset < Math.max(0, Math.ceil((today - firstLogDate) / (7 * 24 * 60 * 60 * 1000))),
   };
 }
 
 function NightSleepTimelineChart({ days, onEditDay }) {
-  const startMinute = timeToMinutes("16:00");
+  const startMinute = timeToMinutes("11:00");
   const endMinute = timeToMinutes("23:00");
   const range = endMinute - startMinute;
-  const hourLabels = ["16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
+  const hourLabels = ["23:00", "21:00", "19:00", "17:00", "15:00", "13:00", "11:00"];
 
   function getBarStyle(day) {
     if (!day.bedTime || !day.sleepTime) return {};
     const bed = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.bedTime)));
     const sleep = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.sleepTime)));
-    const top = ((bed - startMinute) / range) * 100;
-    const height = Math.max(3, ((sleep - bed) / range) * 100);
+    const top = 100 - ((Math.max(bed, sleep) - startMinute) / range) * 100;
+    const height = Math.max(3, (Math.abs(sleep - bed) / range) * 100);
     return {
       top: `${top}%`,
       height: `${height}%`,
@@ -3466,6 +3592,8 @@ function HomeSection({
         <div className="summary-grid">
           <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
           <Stat label={strings.gender} value={childGenderLabel(activeChild.gender, strings.age === "Age" ? "en" : "es")} />
+          <Stat label={strings.sleepNeed} value={getRecommendedSleepHours(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
+          <Stat label={strings.sleepGoal} value={activeChild.sleepGoal || "--:--"} />
           <Stat label={strings.averageToSleep} value={`${progressSummary.averageLatency || 0} min`} />
           <Stat label={strings.nightWakingsShort} value={`${progressSummary.averageNightWakings || 0}`} />
           <Stat label={strings.consistency} value={`${progressSummary.bedtimeConsistency || 0}%`} />
@@ -4660,15 +4788,21 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
     let active = true;
     if (!emailForInbox) return undefined;
 
-    fetch(`/api/support-message?email=${encodeURIComponent(emailForInbox)}`)
-      .then((response) => response.json())
-      .then((payload) => {
-        if (active) setMessages(payload.messages || []);
-      })
-      .catch(() => undefined);
+    async function loadMessages() {
+      fetch(`/api/support-message?email=${encodeURIComponent(emailForInbox)}`)
+        .then((response) => response.json())
+        .then((payload) => {
+          if (active) setMessages(payload.messages || []);
+        })
+        .catch(() => undefined);
+    }
+
+    loadMessages();
+    const interval = window.setInterval(loadMessages, 20000);
 
     return () => {
       active = false;
+      window.clearInterval(interval);
     };
   }, [emailForInbox]);
 
@@ -4797,8 +4931,8 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
           />
         </label>
         {status ? <p className="status-message status-success">{status}</p> : null}
-        <button className="button button-primary" type="submit">
-          {strings.sendMessage}
+        <button className="icon-button message-icon-action" type="submit" aria-label={strings.sendMessage}>
+          ➤
         </button>
       </form>
       <section className="message-thread-list">
@@ -4830,8 +4964,8 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
                   onChange={(event) => setReplyDrafts((current) => ({ ...current, [thread.id]: event.target.value }))}
                   placeholder="Responder a este mensaje..."
                 />
-                <button className="button button-secondary" type="submit">
-                  Responder
+                <button className="icon-button message-icon-action" type="submit" aria-label="Responder">
+                  ➤
                 </button>
               </form>
             </div>
@@ -5112,12 +5246,12 @@ function AdminSection({ strings, language, onHome }) {
                       onChange={(event) => setReplyDrafts((current) => ({ ...current, [messageItem.id]: event.target.value }))}
                       placeholder="Responder a este usuario..."
                     />
-                    <button className="button button-secondary" type="submit">
-                      Responder
+                    <button className="icon-button message-icon-action" type="submit" aria-label="Responder">
+                      ➤
                     </button>
                   </form>
-                  <button className="button button-danger" type="button" onClick={() => deleteAdminMessage(messageItem.id)}>
-                    Borrar mensaje
+                  <button className="icon-button message-icon-action message-icon-action--danger" type="button" onClick={() => deleteAdminMessage(messageItem.id)} aria-label="Borrar mensaje">
+                    🗑
                   </button>
                 </>
               )}
