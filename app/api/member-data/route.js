@@ -36,6 +36,7 @@ export async function POST(request) {
       childBirthday: payload.childBirthday || "",
       childGender: payload.childGender || "boy",
       parentName: payload.parentName || "",
+      sleepGoal: payload.sleepGoal || "",
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
@@ -50,6 +51,7 @@ export async function POST(request) {
       childName: payload.childName || "",
       childBirthday: payload.childBirthday || "",
       childGender: payload.childGender || "boy",
+      sleepGoal: payload.sleepGoal || "",
     });
     return Response.json({ ok: true, result });
   }
