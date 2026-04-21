@@ -710,6 +710,19 @@ function childNoun(gender) {
   return gender === "girl" ? "hija" : "hijo";
 }
 
+function childPronoun(gender) {
+  return gender === "girl" ? "ella" : "él";
+}
+
+function childArticle(gender) {
+  return gender === "girl" ? "la" : "lo";
+}
+
+function childGenderLabel(gender, language = "es") {
+  if (language === "en") return gender === "girl" ? "Girl" : "Boy";
+  return gender === "girl" ? "Niña" : "Niño";
+}
+
 function makeEmptyChild(childDraft) {
   return {
     id: generateId(),
@@ -2864,9 +2877,94 @@ function NightWakingPrompt({ strings, logDate, onSubmit, onClose }) {
   );
 }
 
+function getProfilePopupCopy(child, profileName) {
+  const name = child.name || "Tu hijo";
+  const gender = child.gender || "boy";
+  const pronoun = childPronoun(gender);
+  const article = childArticle(gender);
+  const masculine = gender !== "girl";
+  const tired = masculine ? "cansado" : "cansada";
+  const asleep = masculine ? "dormido" : "dormida";
+  const calm = masculine ? "calmarlo" : "calmarla";
+  const difficult = masculine ? "difícil" : "difícil";
+
+  const sharedCta = {
+    cta: `Desbloquear la rutina de ${name} para ESTA NOCHE →`,
+    price: "Precio fundador $147 USD · Pago único · Sin suscripción · Acceso de por vida",
+  };
+
+  const copyByProfile = {
+    "El Inagotable": {
+      title: `${name} tiene el perfil de sueño: El Inagotable`,
+      paragraphs: [
+        `A ${name} le cuesta apagar. No es terquedad, no es que no quiera dormir. Su sistema nervioso genuinamente no sabe cómo hacer la transición de la activación al descanso sin ayuda.`,
+        `Por eso las noches se ven así: está ${tired} pero no para. Cuanto más ${article} intentas, más se activa. Y tú llevas horas intentando que se calme mientras sientes que estás haciendo algo mal, aunque no sabes exactamente qué.`,
+        `No estás haciendo nada mal. Su sistema nervioso necesita una secuencia específica para bajar. Una que ninguna rutina genérica de internet puede darte, porque esa secuencia depende de ${name} específicamente.`,
+        `Buenas Noches Premium calcula esa secuencia para esta noche. Basada en su perfil, su ventana de sueño, y la hora a la que quieres que esté ${asleep}.`,
+      ],
+      ...sharedCta,
+    },
+    "El Desvelado": {
+      title: `${name} tiene el perfil de sueño: El Desvelado`,
+      paragraphs: [
+        `${name} se ve ${tired}. Tú sabes que está ${tired}. ${pronoun === "él" ? "Él" : "Ella"} probablemente también lo sabe. Y aun así, el sueño no llega.`,
+        `No es que no quiera dormir. Es que su sistema nervioso está atrapado en un estado de alerta que no puede soltar solo. El cuerpo dice “descansa” pero algo más profundo dice “todavía no es seguro.”`,
+        `Por eso puedes apagar las luces, hacer silencio, hacer todo “bien”, y seguir ahí cuarenta minutos después esperando que finalmente cierre los ojos.`,
+        `Lo que ${name} necesita no es más calma en el ambiente. Necesita una secuencia que le indique a su sistema nervioso que es seguro soltar. Paso a paso, en el orden correcto, sin saltarse nada.`,
+        "Buenas Noches Premium genera esa secuencia para esta noche.",
+      ],
+      ...sharedCta,
+    },
+    "El Negociador": {
+      title: `${name} tiene el perfil de sueño: El Negociador`,
+      paragraphs: [
+        `Un cuento más. Agua. Un abrazo. La puerta entreabierta exactamente así. Revisar que el osito está en su lugar. Otra pregunta. Otro cuento.`,
+        `${name} no está siendo ${difficult}. Está buscando conexión, porque su sistema nervioso no puede descansar hasta que ese vaso esté lleno. Y el problema es que a las 9 de la noche, después de un día entero, tú ya no tienes mucho que dar.`,
+        `Así que negocias. Cedes. O te frustras. Y ninguna de las dos opciones termina bien la noche.`,
+        `Lo que ${name} necesita es que la conexión llegue en el momento correcto de la rutina, en la dosis correcta, antes de que empiece a pedirla. Cuando eso sucede, el resto de la noche cambia completamente.`,
+        "Buenas Noches Premium sabe exactamente cuándo y cómo dársela esta noche.",
+      ],
+      ...sharedCta,
+    },
+    "El Berrinche": {
+      title: `${name} tiene el perfil de sueño: El Berrinche`,
+      paragraphs: [
+        `La hora de dormir desata algo. Llanto, rabietas, resistencia intensa, a veces sin razón aparente. Y cuanto más intentas ${calm}, más escala.`,
+        `No es manipulación. No es mala conducta. Es un sistema nervioso con demasiada activación acumulada que no tiene manera de descargarse, y la hora de dormir es cuando ese límite explota.`,
+        `El problema es que lo que instintivamente queremos hacer, calmar, contener, apresurar el proceso, es exactamente lo contrario de lo que su sistema nervioso necesita en ese momento.`,
+        `${name} necesita descargar antes de poder descansar. Hay una secuencia precisa para hacer eso sin escalar la situación ni alargar la noche. Una que su cuerpo pueda seguir aunque esté en el pico de la activación.`,
+        "Buenas Noches Premium la calcula para esta noche.",
+      ],
+      ...sharedCta,
+    },
+    "El Sonámbulo": {
+      title: `${name} tiene el perfil de sueño: El Sonámbulo`,
+      paragraphs: [
+        `Se duerme fácil. Demasiado fácil a veces, en el sofá, en el coche, en cualquier lugar menos en su cama a la hora correcta. Y luego se despierta en mitad de la noche, o muy temprano, o simplemente no descansa aunque haya dormido las horas.`,
+        `El sueño de ${name} parece ligero. Interrumpido. Como si nunca terminara de llegar a un descanso profundo.`,
+        `Lo que está pasando es que su sistema nervioso está llegando al sueño sin haber completado el proceso de transición. Se desploma en lugar de descansar. Y eso tiene consecuencias en la calidad de lo que viene después.`,
+        `La rutina de ${name} necesita preparar activamente ese descenso, no solo apagar las luces y esperar. Cuando el sistema nervioso llega al sueño habiendo completado cada paso, la calidad de esa noche cambia completamente.`,
+        "Buenas Noches Premium genera esa secuencia para esta noche.",
+      ],
+      ...sharedCta,
+    },
+  };
+
+  return copyByProfile[profileName] || {
+    title: `${name} tiene el perfil de sueño: ${profileName}`,
+    paragraphs: [
+      `Este resultado te ayuda a entender qué necesita el sistema nervioso de ${name} para bajar revoluciones antes de dormir.`,
+      `Buenas Noches Premium calcula una rutina para esta noche basada en su perfil, su ventana de sueño y tu meta de horario.`,
+    ],
+    ...sharedCta,
+  };
+}
+
 function ProfileIntroModal({ child, profileMap, language, onClose }) {
   if (!child) return null;
   const profile = profileMap[child.primaryProfile];
+  const profileName = profile?.name || child.primaryProfile;
+  const popupCopy = getProfilePopupCopy(child, profileName);
 
   return (
     <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Perfil de sueño">
@@ -2875,26 +2973,19 @@ function ProfileIntroModal({ child, profileMap, language, onClose }) {
           ×
         </button>
         <span className="section-label">{language === "es" ? "Perfil de sueño" : "Sleep profile"}</span>
-        <h2>
-          {child.name}: {profile?.name || child.primaryProfile}
-        </h2>
-        <div className="routine-media profile-video-placeholder">
-          <span>
-            {language === "es"
-              ? "Aquí irá el video de explicación de este perfil."
-              : "The explanation video for this profile will go here."}
-          </span>
+        <h2>{popupCopy.title}</h2>
+        <div className="profile-intro-copy">
+          {popupCopy.paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
         </div>
-        <p className="lead-copy">{profile?.description}</p>
-        <div className="content-block">
-          <strong>{language === "es" ? "Qué significa esto" : "What this means"}</strong>
-          <p>
-            {language === "es"
-              ? "Este resultado te ayuda a elegir el tipo de rutina que más probablemente va a calmar el sistema nervioso de tu hijo. No es una etiqueta fija; es una guía para saber por dónde empezar esta noche."
-              : "This result helps you choose the kind of routine most likely to calm your child's nervous system. It is not a fixed label; it is a guide for where to start tonight."}
-          </p>
+        <div className="profile-intro-cta">
+          <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+            {popupCopy.cta}
+          </a>
+          <p>{popupCopy.price}</p>
         </div>
-        <button className="button button-primary" type="button" onClick={onClose}>
+        <button className="button button-ghost" type="button" onClick={onClose}>
           {language === "es" ? "Explorar la app" : "Explore the app"}
         </button>
       </article>
@@ -3097,6 +3188,7 @@ function ChildHomeGrid({
                 <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                 <strong>{child.name}</strong>
                 <span>{formatAgeLabel(child.birthday, language)}</span>
+                <span>{childGenderLabel(child.gender, language)}</span>
                 <small>
                   {summary.averageLatency
                     ? `${summary.averageLatency} min promedio`
@@ -3373,6 +3465,7 @@ function HomeSection({
         </header>
         <div className="summary-grid">
           <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
+          <Stat label={strings.gender} value={childGenderLabel(activeChild.gender, strings.age === "Age" ? "en" : "es")} />
           <Stat label={strings.averageToSleep} value={`${progressSummary.averageLatency || 0} min`} />
           <Stat label={strings.nightWakingsShort} value={`${progressSummary.averageNightWakings || 0}`} />
           <Stat label={strings.consistency} value={`${progressSummary.bedtimeConsistency || 0}%`} />
