@@ -517,6 +517,7 @@ const initialState = {
   editingChildId: "",
   savedLogDate: "",
   wakingPromptLogDate: "",
+  profileIntroChildId: "",
 };
 
 function generateId() {
@@ -1000,6 +1001,7 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
+      profileIntroChildId: child.id,
     }));
 
     const leadPayload = {
@@ -1514,6 +1516,16 @@ export default function BuenasNochesApp() {
 
   return (
     <main className="shell app-shell">
+      {state.profileIntroChildId ? (
+        <ProfileIntroModal
+          child={state.children.find((child) => child.id === state.profileIntroChildId)}
+          profileMap={profileMap}
+          strings={strings}
+          language={state.language}
+          onClose={() => setState((current) => ({ ...current, profileIntroChildId: "" }))}
+        />
+      ) : null}
+
       {editingChild ? (
         <EditProfileModal
           activeChild={editingChild}
@@ -1864,7 +1876,7 @@ export default function BuenasNochesApp() {
               parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
             />
           ) : state.activeSection === "admin" ? (
-            <AdminSection strings={strings} language={state.language} />
+            <AdminSection strings={strings} language={state.language} onHome={() => setState((current) => ({ ...current, activeSection: "home" }))} />
           ) : (
             <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
           )}
@@ -2151,7 +2163,13 @@ export default function BuenasNochesApp() {
                 />
               ) : null}
 
-              {state.activeSection === "admin" ? <AdminSection strings={strings} language={state.language} /> : null}
+              {state.activeSection === "admin" ? (
+                <AdminSection
+                  strings={strings}
+                  language={state.language}
+                  onHome={() => setState((current) => ({ ...current, activeSection: "home" }))}
+                />
+              ) : null}
             </section>
           )}
 
@@ -2285,6 +2303,44 @@ function NightWakingPrompt({ strings, logDate, onSubmit, onClose }) {
             {strings.saveWakings}
           </button>
         </form>
+      </article>
+    </div>
+  );
+}
+
+function ProfileIntroModal({ child, profileMap, language, onClose }) {
+  if (!child) return null;
+  const profile = profileMap[child.primaryProfile];
+
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Perfil de sueño">
+      <article className="profile-modal__panel card card--feature profile-intro-card">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label="Cerrar">
+          ×
+        </button>
+        <span className="section-label">{language === "es" ? "Perfil de sueño" : "Sleep profile"}</span>
+        <h2>
+          {child.name}: {profile?.name || child.primaryProfile}
+        </h2>
+        <div className="routine-media profile-video-placeholder">
+          <span>
+            {language === "es"
+              ? "Aquí irá el video de explicación de este perfil."
+              : "The explanation video for this profile will go here."}
+          </span>
+        </div>
+        <p className="lead-copy">{profile?.description}</p>
+        <div className="content-block">
+          <strong>{language === "es" ? "Qué significa esto" : "What this means"}</strong>
+          <p>
+            {language === "es"
+              ? "Este resultado te ayuda a elegir el tipo de rutina que más probablemente va a calmar el sistema nervioso de tu hijo. No es una etiqueta fija; es una guía para saber por dónde empezar esta noche."
+              : "This result helps you choose the kind of routine most likely to calm your child's nervous system. It is not a fixed label; it is a guide for where to start tonight."}
+          </p>
+        </div>
+        <button className="button button-primary" type="button" onClick={onClose}>
+          {language === "es" ? "Explorar la app" : "Explore the app"}
+        </button>
       </article>
     </div>
   );
@@ -2763,14 +2819,16 @@ function playTransitionTone(soundMode) {
       const oscillator = audioContext.createOscillator();
       const gain = audioContext.createGain();
       oscillator.type = soundMode === "nature" ? "triangle" : "sine";
-      oscillator.frequency.value = soundMode === "calm" ? 432 : 660;
+      oscillator.frequency.setValueAtTime(soundMode === "nature" ? 880 : 660, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(soundMode === "nature" ? 1320 : 520, audioContext.currentTime + 0.18);
+      oscillator.frequency.exponentialRampToValueAtTime(soundMode === "nature" ? 940 : 740, audioContext.currentTime + 0.36);
       gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.75);
+      gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.42);
       oscillator.connect(gain);
       gain.connect(audioContext.destination);
       oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.8);
+      oscillator.stop(audioContext.currentTime + 0.45);
     };
 
     if (audioContext.state === "suspended") {
@@ -3139,6 +3197,18 @@ function RoutineSection({
                   </span>
                 </div>
                 <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p>
+                {playerStep.selectedActivity ? (
+                  <label className="stack compact">
+                    <span>{strings.changeActivity}</span>
+                    <select value={playerStep.selectedActivityId} onChange={(event) => onChangeActivity(playerStep.id, event.target.value)}>
+                      {playerStep.alternatives.map((activity) => (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 {playerStep.preparationItems?.length ? (
                   <ul className="mini-list">
                     {playerStep.preparationItems.map((item) => (
@@ -3337,6 +3407,11 @@ function RoutineSection({
 
 function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
+  const videoCards = [
+    { title: "Perfiles", subtitle: "Acceso gratis", icon: "child", locked: false },
+    { title: strings.education, subtitle: locked ? "Premium 🔒" : "Espacio listo para embed", icon: "books", locked },
+    { title: "NeuroHacks", subtitle: locked ? "Premium 🔒" : "Actividades por rutina", icon: "brain", locked },
+  ];
 
   return (
     <article className="card card--feature">
@@ -3350,11 +3425,11 @@ function VideoSection({ activeChild, strings, locked = false }) {
           : "Aquí vamos a mostrar los videos embebidos cuando subas los links."}
       </p>
       <div className="video-grid">
-        {[strings.education, strings.activities].map((video) => (
-          <div key={video} className={locked ? "video-card tip-card tip-card--locked" : "video-card tip-card"}>
-            <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
-            <strong>{video}</strong>
-            <span>{locked ? "Premium 🔒" : "Espacio listo para embed"}</span>
+        {videoCards.map((video) => (
+          <div key={video.title} className={video.locked ? "video-card tip-card tip-card--locked" : "video-card tip-card"}>
+            <BrandIcon type={video.icon} />
+            <strong>{video.title}</strong>
+            <span>{video.subtitle}</span>
           </div>
         ))}
       </div>
@@ -3369,10 +3444,10 @@ function VideoSection({ activeChild, strings, locked = false }) {
 
 function TipsSection({ strings, onOpen, locked = false }) {
   const cards = [
-    { id: "sleep-area", title: strings.facilitateSleep, copy: "Luz, ambiente, rutina y señales que ayudan al sistema nervioso a bajar." },
-    { id: "avoid", title: strings.whatToAvoid, copy: "Lo que más activa el cerebro y el cuerpo antes de dormir." },
-    { id: "foods", title: strings.foods, copy: "Alimentos que conviene evitar y alimentos que pueden apoyar el sueño." },
-    { id: "amazon", title: strings.products, copy: "Productos que amamos para crear un ambiente más regulador." },
+    { id: "sleep-area", title: strings.facilitateSleep, copy: "Luz, ambiente, rutina y señales que ayudan al sistema nervioso a bajar.", icon: "bear" },
+    { id: "avoid", title: strings.whatToAvoid, copy: "Lo que más activa el cerebro y el cuerpo antes de dormir.", icon: "cat-no" },
+    { id: "foods", title: strings.foods, copy: "Alimentos que conviene evitar y alimentos que pueden apoyar el sueño.", icon: "bunny" },
+    { id: "amazon", title: strings.products, copy: "Productos que amamos para crear un ambiente más regulador.", icon: "amazon" },
   ];
 
   return (
@@ -3390,7 +3465,7 @@ function TipsSection({ strings, onOpen, locked = false }) {
             className={locked && card.id !== "amazon" ? "tip-card tip-card--locked" : "tip-card"}
             onClick={() => (locked && card.id !== "amazon" ? undefined : onOpen(card.id))}
           >
-            <img className="tip-card__animal" src="/brand/animales-buenas-noches.png" alt="" />
+            <BrandIcon type={card.icon} />
             <strong>
               {card.title} {locked && card.id !== "amazon" ? "🔒" : ""}
             </strong>
@@ -3408,6 +3483,24 @@ function TipsSection({ strings, onOpen, locked = false }) {
         </div>
       ) : null}
     </article>
+  );
+}
+
+function BrandIcon({ type }) {
+  const icons = {
+    bear: "🐻",
+    "cat-no": "🙅‍♀️",
+    bunny: "🥕",
+    amazon: "a",
+    child: "👧",
+    books: "📚",
+    brain: "🧠",
+  };
+
+  return (
+    <span className={`brand-mini-icon brand-mini-icon--${type}`} aria-hidden="true">
+      {icons[type] || "✦"}
+    </span>
   );
 }
 
@@ -3651,8 +3744,8 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
           <strong>{language === "es" ? "Reseñas premium" : "Premium reviews"}</strong>
           <p>
             {language === "es"
-              ? "Puedes leer el muro de logros. Para dejar una reseña, desbloquea premium."
-              : "You can read the wins wall. To leave a review, unlock premium."}
+              ? "Puedes leer el muro de logros. Para dejar una reseña, primero tienes que haber usado la rutina premium."
+              : "You can read the wins wall. To leave a review, you first need to have used the premium routine."}
           </p>
           <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
             {strings.unlockPremium}
@@ -3783,7 +3876,7 @@ function ContactSection({ strings, language, activeChild, parentName, parentEmai
   );
 }
 
-function AdminSection({ strings, language }) {
+function AdminSection({ strings, language, onHome }) {
   const [adminCode, setAdminCode] = useState("");
   const [status, setStatus] = useState("");
   const [data, setData] = useState(null);
@@ -3853,6 +3946,9 @@ function AdminSection({ strings, language }) {
         <span className="section-label">{strings.sections.admin}</span>
         <h2>{strings.adminOverview}</h2>
         <p className="lead-copy">{strings.adminHint}</p>
+        <button className="button button-secondary" type="button" onClick={onHome}>
+          Inicio
+        </button>
       </div>
       {!data ? (
         <form className="stack compact" onSubmit={loadAdminData}>
@@ -4094,8 +4190,10 @@ function buildAdminUserGroups(data) {
   });
 
   return Array.from(groups.values())
-    .filter((user) => user.isPremium)
-    .sort((left, right) => left.email.localeCompare(right.email));
+    .sort((left, right) => {
+      if (left.isPremium !== right.isPremium) return left.isPremium ? -1 : 1;
+      return left.email.localeCompare(right.email);
+    });
 }
 
 function AdminList({ title, items, renderItem }) {
