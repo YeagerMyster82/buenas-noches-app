@@ -37,7 +37,9 @@ const copy = {
   es: {
     sections: {
       home: "Inicio",
+      reports: "Reportes",
       routine: "Rutina",
+      child: "Niño",
       tips: "Tips",
       videos: "Video",
       reviews: "Reseñas",
@@ -55,6 +57,12 @@ const copy = {
     close: "Cerrar",
     backToChildren: "Volver a perfiles",
     alreadyHaveAccount: "Ya tengo cuenta",
+    accountSetupTitle: "Vamos a crear tu cuenta gratis",
+    accountSetupCopy: "Primero guarda tu nombre y correo para que podamos recordar tu progreso y el perfil de tu hijo.",
+    welcomeBackTitle: "¡Bienvenida de vuelta!",
+    welcomeBackCopy: "Entra con el correo que usaste para registrarte.",
+    childNextStep: "Ahora ve a Niño para determinar su perfil neurológico de sueño y su horario ideal.",
+    childTabPrompt: "Determina el perfil neurológico de sueño de tu hijo y su horario ideal.",
     accountEmail: "Correo de tu cuenta",
     restoreAccount: "Entrar a mi cuenta",
     restoringAccount: "Buscando perfil...",
@@ -75,6 +83,17 @@ const copy = {
     whatsapp: "WhatsApp",
     emailSupport: "Email",
     productsWeLove: "Productos que amamos",
+    sleepWindow: "Ventana de sueño",
+    sleepWindowIntro: "Muchos problemas de sueño se pueden resolver simplemente asegurando que tu hijo no se pase de su ventana de sueño.",
+    calculateNow: "Calcular ahora",
+    calculate: "Calcular",
+    napsCount: "¿Cuántas siestas hace?",
+    sleepWindowResult: "Según esta información, estos son sus mejores horarios:",
+    firstNapWindow: "Primera siesta",
+    nightSleepWindow: "Dormir de noche",
+    sleepTracker: "Sleep",
+    startSleepTimer: "Empezar timer",
+    stopSleepTimer: "Se durmió",
     premiumDashboard: "Dashboard premium",
     gateTitle: "Tu espacio para dejar de adivinar",
     verifyPurchase: "Verifica tu compra",
@@ -195,7 +214,9 @@ const copy = {
   en: {
     sections: {
       home: "Home",
+      reports: "Reports",
       routine: "Routine",
+      child: "Child",
       tips: "Tips",
       videos: "Video",
       reviews: "Reviews",
@@ -213,6 +234,12 @@ const copy = {
     close: "Close",
     backToChildren: "Back to profiles",
     alreadyHaveAccount: "I already have an account",
+    accountSetupTitle: "Let's get your free account set up",
+    accountSetupCopy: "First save your name and email so we can remember your progress and your child's profile.",
+    welcomeBackTitle: "Welcome back!",
+    welcomeBackCopy: "Please enter with the email that you used to sign up.",
+    childNextStep: "Now go to Child to determine their neurological sleep profile and ideal sleep schedule.",
+    childTabPrompt: "Determine your child's neurological sleep profile and ideal sleep schedule.",
     accountEmail: "Account email",
     restoreAccount: "Open my account",
     restoringAccount: "Finding profile...",
@@ -233,6 +260,17 @@ const copy = {
     whatsapp: "WhatsApp",
     emailSupport: "Email",
     productsWeLove: "Products we love",
+    sleepWindow: "Sleep window",
+    sleepWindowIntro: "Many sleep problems can be solved simply by making sure your child does not pass their sleep window.",
+    calculateNow: "Calculate now",
+    calculate: "Calculate",
+    napsCount: "How many naps?",
+    sleepWindowResult: "Based on this information, these are their best windows:",
+    firstNapWindow: "First nap",
+    nightSleepWindow: "Night sleep",
+    sleepTracker: "Sleep",
+    startSleepTimer: "Start timer",
+    stopSleepTimer: "Fell asleep",
     slotsFull: "All profiles used",
     premiumDashboard: "Premium dashboard",
     gateTitle: "Your place to stop guessing",
@@ -479,6 +517,9 @@ const initialState = {
   parentName: "",
   parentEmail: "",
   parentProfileSaved: false,
+  accountCreatedAt: "",
+  freeLeadBasicSent: false,
+  freeLeadProfileSent: false,
   accountLookupOpen: false,
   accountLookupEmail: "",
   accountLookupStatus: "idle",
@@ -518,6 +559,13 @@ const initialState = {
   savedLogDate: "",
   wakingPromptLogDate: "",
   profileIntroChildId: "",
+  sleepWindowOpen: false,
+  sleepWindowCompleted: false,
+  premiumRoutineGateOpen: false,
+  quickSleepTimer: {
+    startedAt: "",
+    running: false,
+  },
 };
 
 function generateId() {
@@ -532,6 +580,42 @@ function getYesterdayKey() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   return yesterday.toISOString().slice(0, 10);
+}
+
+function timeToMinutes(value) {
+  const [hours = 0, minutes = 0] = String(value || "00:00").split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(value) {
+  const day = 24 * 60;
+  const safeValue = ((Math.round(value) % day) + day) % day;
+  const hours = Math.floor(safeValue / 60);
+  const minutes = safeValue % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function calculateSleepWindow({ birthday, wakeTime, napsCount }) {
+  const ageYears = calculateAgeFromBirthday(birthday);
+  const wakeMinutes = timeToMinutes(wakeTime);
+  const napCount = Number(napsCount || 0);
+  const awakeMinutes =
+    ageYears < 1 ? 180 :
+      ageYears < 2 ? 240 :
+        ageYears < 3 ? 330 :
+          ageYears < 5 ? 720 :
+            750;
+  const nightAwakeMinutes = napCount > 0 && ageYears <= 5 ? 390 : awakeMinutes;
+  const firstNapStart = wakeMinutes + Math.min(awakeMinutes, ageYears < 3 ? awakeMinutes : 330);
+  const firstNapEnd = firstNapStart + 30;
+  const bedtimeStart = Math.max(timeToMinutes("18:30"), Math.min(timeToMinutes("21:00"), wakeMinutes + nightAwakeMinutes - 30));
+  const bedtimeEnd = Math.max(timeToMinutes("19:00"), Math.min(timeToMinutes("21:30"), bedtimeStart + 30));
+
+  return {
+    ageYears,
+    firstNap: napCount > 0 ? `${minutesToTime(firstNapStart)} - ${minutesToTime(firstNapEnd)}` : "",
+    nightSleep: `${minutesToTime(bedtimeStart)} - ${minutesToTime(bedtimeEnd)}`,
+  };
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -559,7 +643,9 @@ async function subscribeToPushNotifications({ email, role }) {
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    throw new Error("No se activaron las notificaciones.");
+    throw new Error(
+      "No se activaron las notificaciones. Safari suele bloquearlas en ventana privada; prueba en una ventana normal y permite las notificaciones del sitio."
+    );
   }
 
   const registration = await navigator.serviceWorker.register("/sw.js");
@@ -770,9 +856,19 @@ export default function BuenasNochesApp() {
 
   const childSlots = useMemo(() => getChildSlots(state.premiumAccess), [state.premiumAccess]);
   const strings = copy[state.language] || copy.es;
+  const bottomMenuOptions = [
+    { id: "home", label: strings.sections.home },
+    { id: "reports", label: strings.sections.reports },
+    { id: "routine", label: strings.sections.routine },
+    { id: "child", label: strings.sections.child },
+    { id: "videos", label: strings.sections.videos },
+    ...(!isVerifiedPremiumState(state) ? [{ id: "purchase", label: strings.unlockPremium }] : []),
+  ];
   const mainMenuOptions = [
     { id: "home", label: strings.sections.home },
-    { id: "tips", label: strings.sections.tips },
+    { id: "reports", label: strings.sections.reports },
+    { id: "routine", label: strings.sections.routine },
+    { id: "child", label: strings.sections.child },
     { id: "videos", label: strings.sections.videos },
     { id: "wins", label: strings.sections.reviews },
     { id: "contact", label: strings.contactUs },
@@ -789,6 +885,42 @@ export default function BuenasNochesApp() {
   const checkedCount = activeChild ? Object.values(activeChild.sleepAreaChecks || {}).filter(Boolean).length : 0;
   const sleepAreaResult = getSleepAreaResult(checkedCount);
 
+  useEffect(() => {
+    const createdAt = state.accountCreatedAt ? new Date(state.accountCreatedAt).getTime() : 0;
+    const shouldSendBasicLead =
+      state.parentProfileSaved &&
+      state.parentEmail &&
+      createdAt &&
+      !state.freeLeadBasicSent &&
+      !state.freeLeadProfileSent &&
+      !state.children.length &&
+      Date.now() - createdAt >= 24 * 60 * 60 * 1000;
+
+    if (!shouldSendBasicLead) return;
+
+    fetch("/api/free-profile-lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parentName: state.parentName,
+        email: state.parentEmail,
+        source: "buenas_noches_free_account_incomplete",
+      }),
+    })
+      .then(() => {
+        setState((current) => ({ ...current, freeLeadBasicSent: true }));
+      })
+      .catch(() => undefined);
+  }, [
+    state.accountCreatedAt,
+    state.children.length,
+    state.freeLeadBasicSent,
+    state.freeLeadProfileSent,
+    state.parentEmail,
+    state.parentName,
+    state.parentProfileSaved,
+  ]);
+
   function updateChild(childId, updater) {
     setState((current) => ({
       ...current,
@@ -804,7 +936,30 @@ export default function BuenasNochesApp() {
       return;
     }
 
+    if (value === "purchase") {
+      window.location.href = SALES_FUNNEL_URL;
+      return;
+    }
+
     setState((current) => ({ ...current, activeSection: value }));
+  }
+
+  function saveFreeAccount(event) {
+    event.preventDefault();
+    const parentName = state.parentName.trim();
+    const parentEmail = state.parentEmail.trim().toLowerCase();
+    if (!parentName || !parentEmail) return;
+
+    setState((current) => ({
+      ...current,
+      parentName,
+      parentEmail,
+      purchaseEmail: current.purchaseEmail || parentEmail,
+      parentProfileSaved: true,
+      accountCreatedAt: current.accountCreatedAt || new Date().toISOString(),
+      activeSection: "child",
+      persistenceMessage: strings.childNextStep,
+    }));
   }
 
   function startAddChild() {
@@ -819,6 +974,19 @@ export default function BuenasNochesApp() {
       activeSection: "home",
       currentPlan: null,
     }));
+  }
+
+  function requestRoutine(childId = state.activeChildId) {
+    if (childId) {
+      setState((current) => ({ ...current, activeChildId: childId }));
+    }
+
+    if (!hasPremiumAccess) {
+      setState((current) => ({ ...current, premiumRoutineGateOpen: true }));
+      return;
+    }
+
+    setState((current) => ({ ...current, activeChildId: childId || current.activeChildId, activeSection: "routine" }));
   }
 
   function beginQuiz(event) {
@@ -1080,6 +1248,7 @@ export default function BuenasNochesApp() {
           },
           body: JSON.stringify(leadPayload),
         });
+        setState((current) => ({ ...current, freeLeadProfileSent: true }));
       } catch {
         // The profile is saved locally even if the external lead webhook is unavailable.
       }
@@ -1100,6 +1269,7 @@ export default function BuenasNochesApp() {
             childName: child.name,
             childBirthday: child.birthday,
             childGender: child.gender,
+            parentName: parentName || state.parentName,
             answers: child.answers,
             primaryProfile: child.primaryProfile,
             secondaryProfile: child.secondaryProfile || null,
@@ -1346,6 +1516,145 @@ export default function BuenasNochesApp() {
             : "Activity updated. Tonight's routine has been refreshed.",
       };
     });
+  }
+
+  async function saveGuidedRoutineLog(sessionPatch = {}) {
+    if (!activeChild || !state.currentPlan) return;
+
+    const session = { ...state.routineSession, ...sessionPatch };
+    const bedTime = session.inBedAt || getCurrentTimeValue();
+    const sleepTime = session.fellAsleepAt || getCurrentTimeValue();
+    const nextLog = {
+      date: new Date().toISOString().slice(0, 10),
+      routineStartTime: session.startedAt || state.currentPlan.routineStart || "",
+      bedTime,
+      sleepTime,
+      latency: calculateLatency(bedTime, sleepTime),
+      nightWakings: "pending",
+      notes: "Registrado desde la rutina guiada.",
+      ratings: [],
+    };
+
+    const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
+      left.date < right.date ? 1 : -1
+    );
+
+    updateChild(activeChild.id, () => ({
+      logs: updatedLogs,
+    }));
+
+    setState((current) => ({
+      ...current,
+      routineSession: session,
+      savedLogDate: nextLog.date,
+      currentPlan: null,
+      routinePreviewOpen: false,
+      persistenceMessage:
+        nextLog.latency <= 15
+          ? "¡Qué alegría! Rutina registrada exitosamente y se durmió dentro de 15 minutos."
+          : "Rutina registrada exitosamente.",
+    }));
+
+    if (hasPremiumAccess && state.verifiedEmail) {
+      try {
+        const response = await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nightly_log",
+            email: state.verifiedEmail,
+            childId: activeChild.id,
+            childName: activeChild.name,
+            logDate: nextLog.date,
+            routineStartTime: nextLog.routineStartTime,
+            inBedAt: nextLog.bedTime,
+            fellAsleepAt: nextLog.sleepTime,
+            sleepLatencyMinutes: nextLog.latency,
+            nightWakings: nextLog.nightWakings,
+            notes: nextLog.notes,
+            ratings: nextLog.ratings,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "No pude guardar la noche en el sistema.");
+        }
+      } catch {
+        return;
+      }
+    }
+  }
+
+  function startQuickSleepTimer() {
+    setState((current) => ({
+      ...current,
+      quickSleepTimer: {
+        startedAt: getCurrentTimeValue(),
+        running: true,
+      },
+    }));
+  }
+
+  async function stopQuickSleepTimer() {
+    if (!activeChild || !state.quickSleepTimer.startedAt) return;
+    const sleepTime = getCurrentTimeValue();
+    const nextLog = {
+      date: new Date().toISOString().slice(0, 10),
+      routineStartTime: "",
+      bedTime: state.quickSleepTimer.startedAt,
+      sleepTime,
+      latency: calculateLatency(state.quickSleepTimer.startedAt, sleepTime),
+      nightWakings: "pending",
+      notes: "Registrado con el tracker rápido de sueño.",
+      ratings: [],
+      source: "quick_sleep_tracker",
+    };
+
+    const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
+      left.date < right.date ? 1 : -1
+    );
+
+    updateChild(activeChild.id, () => ({
+      logs: updatedLogs,
+    }));
+
+    setState((current) => ({
+      ...current,
+      quickSleepTimer: { startedAt: "", running: false },
+      activeSection: "reports",
+      expandedChildId: activeChild.id,
+      persistenceMessage: "Sueño registrado exitosamente.",
+    }));
+
+    const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (email) {
+      try {
+        await fetch("/api/member-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nightly_log",
+            email,
+            childId: activeChild.id,
+            childName: activeChild.name,
+            logDate: nextLog.date,
+            routineStartTime: nextLog.routineStartTime,
+            inBedAt: nextLog.bedTime,
+            fellAsleepAt: nextLog.sleepTime,
+            sleepLatencyMinutes: nextLog.latency,
+            nightWakings: nextLog.nightWakings,
+            notes: nextLog.notes,
+            ratings: nextLog.ratings,
+          }),
+        });
+      } catch {
+        return;
+      }
+    }
   }
 
   async function submitNightLog(event) {
@@ -1606,6 +1915,25 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
+      {state.sleepWindowOpen ? (
+        <SleepWindowModal
+          strings={strings}
+          activeChild={activeChild}
+          onCalculated={() => setState((current) => ({ ...current, sleepWindowCompleted: true }))}
+          onClose={() => setState((current) => ({ ...current, sleepWindowOpen: false }))}
+        />
+      ) : null}
+
+      {state.premiumRoutineGateOpen ? (
+        <PremiumRoutineGate
+          strings={strings}
+          hasProfile={Boolean(activeChild?.primaryProfile)}
+          hasSleepWindow={Boolean(state.sleepWindowCompleted)}
+          onGoProfile={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, activeSection: "child" }))}
+          onGoSleepWindow={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, sleepWindowOpen: true }))}
+        />
+      ) : null}
+
       {state.wakingPromptLogDate ? (
         <NightWakingPrompt
           strings={strings}
@@ -1617,66 +1945,33 @@ export default function BuenasNochesApp() {
 
       {!hasPremiumAccess ? (
         <section className="gate-shell">
-          <div className="gate-header">
-            <img className="brand-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-            <SectionNav options={mainMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
-            {!hasPremiumAccess && state.activeSection !== "admin" ? (
-              <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
-                {strings.unlockPremium}
-              </a>
-            ) : null}
-          </div>
+          <AppTopBar
+            activeChild={activeChild}
+            children={state.children}
+            strings={strings}
+            onSelectChild={(childId) => setState((current) => ({ ...current, activeChildId: childId }))}
+            onAddChild={startAddChild}
+            onOpenMessages={() => setState((current) => ({ ...current, activeSection: "contact" }))}
+            onOpenSettings={() => setState((current) => ({ ...current, activeSection: "settings" }))}
+          />
 
-          {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
+          {!state.parentProfileSaved && state.activeSection !== "admin" ? (
+            <FreeAccountSetup
+              strings={strings}
+              parentName={state.parentName}
+              parentEmail={state.parentEmail}
+              onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
+              onSubmit={saveFreeAccount}
+              onAlreadyHaveAccount={() =>
+                setState((current) => ({
+                  ...current,
+                  accountLookupOpen: true,
+                  accountLookupMessage: "",
+                }))
+              }
+            />
+          ) : state.activeSection !== "admin" && state.activeSection === "child" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <>
-              <div className="gate-grid">
-            <article className="card card--feature">
-              <span className="section-label">Lo que vas a desbloquear</span>
-              <h2>Un dashboard real para cada hijo</h2>
-              <ul className="feature-list">
-                <li>{state.language === "es" ? "Perfil guardado con nombre y fecha de nacimiento" : "Saved profile with name and birthday"}</li>
-                <li>{state.language === "es" ? "Rutina de esta noche con actividades intercambiables" : "Tonight's routine with swappable activities"}</li>
-                <li>{state.language === "es" ? "Gráfico de progreso con minutos para dormir y despertares" : "Progress graph with minutes to fall asleep and night wakings"}</li>
-                <li>{state.language === "es" ? "Área de sueño y lista de qué evitar" : "Sleep space and what to avoid sections"}</li>
-                <li>{state.language === "es" ? "Hasta 3 perfiles de niños incluidos" : "Up to 3 child profiles included"}</li>
-              </ul>
-              <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
-                {state.language === "es" ? "Comprar premium" : "Purchase premium"}
-              </a>
-            </article>
-
-            <article className="card card--soft">
-              <span className="section-label">{state.language === "es" ? "Acceso" : "Access"}</span>
-              <h2>{strings.verifyPurchase}</h2>
-              <form className="stack" onSubmit={verifyPremiumAccess}>
-                <label className="stack compact">
-                  <span>{strings.usedPurchaseEmail}</span>
-                  <input
-                    type="email"
-                    placeholder="tuemail@ejemplo.com"
-                    value={state.purchaseEmail}
-                    onChange={(event) => setState((current) => ({ ...current, purchaseEmail: event.target.value }))}
-                    required
-                  />
-                </label>
-                {state.accessMessage ? (
-                  <p
-                    className={
-                      hasPremiumAccess
-                        ? "status-message status-success"
-                        : "status-message status-warning"
-                    }
-                  >
-                    {state.accessMessage}
-                  </p>
-                ) : null}
-                <button className="button button-primary" type="submit" disabled={state.accessStatus === "loading"}>
-                  {state.accessStatus === "loading" ? strings.verifying : strings.verifyPurchase}
-                </button>
-              </form>
-            </article>
-              </div>
-
               <article className="card card--soft card--quiz">
             <div className="card-header">
               <span className="section-label">{strings.newChild}</span>
@@ -1732,6 +2027,21 @@ export default function BuenasNochesApp() {
                   >
                     <option value="boy">{strings.boy}</option>
                     <option value="girl">{strings.girl}</option>
+                  </select>
+                </label>
+                <label className="stack compact">
+                  <span>{strings.targetBedtime}</span>
+                  <input
+                    type="time"
+                    value={state.routineForm.targetBedtime}
+                    onChange={(event) => updateRoutineField("targetBedtime", event.target.value)}
+                  />
+                </label>
+                <label className="stack compact">
+                  <span>{strings.napQuestion}</span>
+                  <select value={state.routineForm.napTaken} onChange={(event) => updateRoutineField("napTaken", event.target.value)}>
+                    <option value="no">{strings.no}</option>
+                    <option value="yes">{strings.yes}</option>
                   </select>
                 </label>
                 <button className="button button-primary" type="submit">
@@ -1874,6 +2184,21 @@ export default function BuenasNochesApp() {
             </>
           ) : state.activeSection === "home" ? (
             <>
+              <HomeQuickCards
+                strings={strings}
+                activeChild={activeChild}
+                onOpenSleepWindow={() => setState((current) => ({ ...current, sleepWindowOpen: true }))}
+                onOpenRoutine={() => requestRoutine(activeChild?.id)}
+                onOpenSleep={() => setState((current) => ({ ...current, activeSection: "sleep" }))}
+                onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
+              />
+              {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+            </>
+          ) : state.activeSection === "reports" || state.activeSection === "child" ? (
+            <>
+              {state.activeSection === "child" && !state.onboardingMode ? (
+                <p className="status-message status-success">{strings.childTabPrompt}</p>
+              ) : null}
               <ChildHomeGrid
                 children={state.children}
                 activeChildId={state.activeChildId}
@@ -1891,15 +2216,21 @@ export default function BuenasNochesApp() {
                     expandedChildId: current.expandedChildId === childId ? "" : childId,
                   }))
                 }
-                onCreateRoutine={(childId) =>
-                  setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
-                }
+                onCreateRoutine={(childId) => requestRoutine(childId)}
                 onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                 onUpdateLog={updateSavedNightLog}
                 onAddChild={startAddChild}
               />
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
+          ) : state.activeSection === "sleep" ? (
+            <SleepTrackerSection
+              strings={strings}
+              activeChild={activeChild}
+              timer={state.quickSleepTimer}
+              onStart={startQuickSleepTimer}
+              onStop={stopQuickSleepTimer}
+            />
           ) : state.activeSection === "tips" ? (
             <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
           ) : state.activeSection === "videos" ? (
@@ -1933,20 +2264,19 @@ export default function BuenasNochesApp() {
             <LockedPreviewCard activeSection={state.activeSection} language={state.language} />
           )}
 
+          <BottomAppNav options={bottomMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
         </section>
       ) : (
         <>
-          <header className="topbar">
-            <div className="topbar__brand">
-              <img className="topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-            </div>
-            <SectionNav options={mainMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
-            {!hasPremiumAccess && state.activeSection !== "admin" ? (
-              <a className="button button-primary button-link header-cta" href={SALES_FUNNEL_URL}>
-                {strings.unlockPremium}
-              </a>
-            ) : null}
-          </header>
+          <AppTopBar
+            activeChild={activeChild}
+            children={state.children}
+            strings={strings}
+            onSelectChild={(childId) => setState((current) => ({ ...current, activeChildId: childId }))}
+            onAddChild={startAddChild}
+            onOpenMessages={() => setState((current) => ({ ...current, activeSection: "contact" }))}
+            onOpenSettings={() => setState((current) => ({ ...current, activeSection: "settings" }))}
+          />
 
           {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <section className="app-panel">
@@ -2004,6 +2334,21 @@ export default function BuenasNochesApp() {
                       >
                         <option value="boy">{strings.boy}</option>
                         <option value="girl">{strings.girl}</option>
+                      </select>
+                    </label>
+                    <label className="stack compact">
+                      <span>{strings.targetBedtime}</span>
+                      <input
+                        type="time"
+                        value={state.routineForm.targetBedtime}
+                        onChange={(event) => updateRoutineField("targetBedtime", event.target.value)}
+                      />
+                    </label>
+                    <label className="stack compact">
+                      <span>{strings.napQuestion}</span>
+                      <select value={state.routineForm.napTaken} onChange={(event) => updateRoutineField("napTaken", event.target.value)}>
+                        <option value="no">{strings.no}</option>
+                        <option value="yes">{strings.yes}</option>
                       </select>
                     </label>
                     <button className="button button-primary" type="submit">
@@ -2098,6 +2443,17 @@ export default function BuenasNochesApp() {
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
 
               {state.activeSection === "home" ? (
+                <HomeQuickCards
+                  strings={strings}
+                  activeChild={activeChild}
+                  onOpenSleepWindow={() => setState((current) => ({ ...current, sleepWindowOpen: true }))}
+                  onOpenRoutine={() => requestRoutine(activeChild?.id)}
+                  onOpenSleep={() => setState((current) => ({ ...current, activeSection: "sleep" }))}
+                  onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
+                />
+              ) : null}
+
+              {state.activeSection === "reports" ? (
                 <ChildHomeGrid
                   children={state.children}
                   activeChildId={state.activeChildId}
@@ -2118,6 +2474,31 @@ export default function BuenasNochesApp() {
                   onCreateRoutine={(childId) =>
                     setState((current) => ({ ...current, activeChildId: childId, activeSection: "routine" }))
                   }
+                  onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
+                  onUpdateLog={updateSavedNightLog}
+                  onAddChild={startAddChild}
+                />
+              ) : null}
+
+              {state.activeSection === "child" ? (
+                <ChildHomeGrid
+                  children={state.children}
+                  activeChildId={state.activeChildId}
+                  expandedChildId={state.expandedChildId}
+                  canAddChild={canAddChild}
+                  strings={strings}
+                  language={state.language}
+                  profileMap={profileMap}
+                  parentName={state.parentName}
+                  parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                  onToggleChild={(childId) =>
+                    setState((current) => ({
+                      ...current,
+                      activeChildId: childId,
+                      expandedChildId: current.expandedChildId === childId ? "" : childId,
+                    }))
+                  }
+                  onCreateRoutine={(childId) => requestRoutine(childId)}
                   onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                   onUpdateLog={updateSavedNightLog}
                   onAddChild={startAddChild}
@@ -2152,8 +2533,19 @@ export default function BuenasNochesApp() {
                     }))
                   }
                   onSubmitNightLog={submitNightLog}
+                  onSaveGuidedRoutine={saveGuidedRoutineLog}
                   safetyTriggered={safetyTriggered}
                   savedLogDate={state.savedLogDate}
+                />
+              ) : null}
+
+              {state.activeSection === "sleep" ? (
+                <SleepTrackerSection
+                  strings={strings}
+                  activeChild={activeChild}
+                  timer={state.quickSleepTimer}
+                  onStart={startQuickSleepTimer}
+                  onStop={stopQuickSleepTimer}
                 />
               ) : null}
 
@@ -2225,6 +2617,7 @@ export default function BuenasNochesApp() {
             </section>
           )}
 
+          <BottomAppNav options={bottomMenuOptions} activeSection={state.activeSection} onSelect={handleMainMenu} />
         </>
       )}
     </main>
@@ -2276,6 +2669,78 @@ function SectionNav({ options, activeSection, onSelect }) {
   );
 }
 
+function AppTopBar({
+  activeChild,
+  children,
+  strings,
+  onSelectChild,
+  onAddChild,
+  onOpenMessages,
+  onOpenSettings,
+}) {
+  return (
+    <header className="app-topbar">
+      <div className="child-select">
+        <select
+          value={activeChild?.id || ""}
+          onChange={(event) => event.target.value === "add" ? onAddChild() : onSelectChild(event.target.value)}
+          aria-label="Seleccionar niño"
+        >
+          {children.length ? (
+            children.map((child) => (
+              <option key={child.id} value={child.id}>
+                {child.name || "Niño"}
+              </option>
+            ))
+          ) : (
+            <option value="">{strings.sections.child}</option>
+          )}
+          <option value="add">+ Agregar niño</option>
+        </select>
+      </div>
+      <img className="app-topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
+      <div className="app-topbar-actions">
+        <button className="icon-button app-icon-button" type="button" onClick={onAddChild} aria-label="Agregar niño">
+          +
+        </button>
+        <button className="icon-button app-icon-button" type="button" onClick={onOpenMessages} aria-label="Mensajes">
+          ✉
+        </button>
+        <button className="icon-button app-icon-button" type="button" onClick={onOpenSettings} aria-label="Configuración">
+          ⚙
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function BottomAppNav({ options, activeSection, onSelect }) {
+  const icons = {
+    home: "⌂",
+    reports: "▥",
+    routine: "☾",
+    child: "☺",
+    videos: "▶",
+    purchase: "★",
+  };
+
+  return (
+    <nav className="bottom-app-nav" aria-label="Navegación principal">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          className={activeSection === option.id ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
+          onClick={() => onSelect(option.id)}
+        >
+          <span aria-hidden="true">{icons[option.id] || "•"}</span>
+          <small>{option.label}</small>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function AccountLookup({ strings, onToggle }) {
   return (
     <div className="account-lookup">
@@ -2283,6 +2748,44 @@ function AccountLookup({ strings, onToggle }) {
         {strings.alreadyHaveAccount}
       </button>
     </div>
+  );
+}
+
+function FreeAccountSetup({ strings, parentName, parentEmail, onChange, onSubmit, onAlreadyHaveAccount }) {
+  return (
+    <article className="card card--soft account-start-card">
+      <div className="card-header">
+        <span className="section-label">Buenas Noches</span>
+        <h2>{strings.accountSetupTitle}</h2>
+        <p className="muted">{strings.accountSetupCopy}</p>
+      </div>
+      <form className="stack" onSubmit={onSubmit}>
+        <label className="stack compact">
+          <span>{strings.parentName}</span>
+          <input
+            type="text"
+            value={parentName}
+            onChange={(event) => onChange("parentName", event.target.value)}
+            required
+          />
+        </label>
+        <label className="stack compact">
+          <span>{strings.parentEmail}</span>
+          <input
+            type="email"
+            value={parentEmail}
+            onChange={(event) => onChange("parentEmail", event.target.value)}
+            required
+          />
+        </label>
+        <button className="button button-primary" type="submit">
+          Crear mi cuenta gratis
+        </button>
+        <button className="link-button account-start-link" type="button" onClick={onAlreadyHaveAccount}>
+          {strings.alreadyHaveAccount}
+        </button>
+      </form>
+    </article>
   );
 }
 
@@ -2295,7 +2798,8 @@ function AccountLookupModal({ strings, email, status, message, onEmailChange, on
         </button>
         <div className="card-header">
           <span className="section-label">{strings.alreadyHaveAccount}</span>
-          <h2>{strings.verifyEmailTitle}</h2>
+          <h2>{strings.welcomeBackTitle}</h2>
+          <p className="muted">{strings.welcomeBackCopy}</p>
         </div>
         <div className="stack compact account-lookup__form">
           <label className="stack compact">
@@ -2393,6 +2897,155 @@ function ProfileIntroModal({ child, profileMap, language, onClose }) {
         <button className="button button-primary" type="button" onClick={onClose}>
           {language === "es" ? "Explorar la app" : "Explore the app"}
         </button>
+      </article>
+    </div>
+  );
+}
+
+function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine, onOpenSleep, onOpenWins }) {
+  return (
+    <section className="home-card-grid">
+      <button className="home-action-card" type="button" onClick={onOpenSleepWindow}>
+        <span className="home-card-icon">☾</span>
+        <strong>{strings.sleepWindow}</strong>
+        <small>{activeChild ? `Para ${activeChild.name}` : "Calcula el horario ideal"}</small>
+      </button>
+      <button className="home-action-card" type="button" onClick={onOpenRoutine}>
+        <span className="home-card-icon">◷</span>
+        <strong>{strings.sections.routine}</strong>
+        <small>Generar rutina para hoy</small>
+      </button>
+      <button className="home-action-card" type="button" onClick={onOpenSleep}>
+        <span className="home-card-icon">▥</span>
+        <strong>{strings.sleepTracker}</strong>
+        <small>Registrar cuánto tarda en dormir</small>
+      </button>
+      <button className="home-action-card" type="button" onClick={onOpenWins}>
+        <span className="home-card-icon">★</span>
+        <strong>{strings.publicWinsWall}</strong>
+        <small>Celebrar avances</small>
+      </button>
+    </section>
+  );
+}
+
+function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
+  if (!activeChild) {
+    return (
+      <article className="card card--soft">
+        <h2>{strings.sleepTracker}</h2>
+        <p className="muted">Primero crea el perfil de tu hijo para registrar sus noches.</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="card card--feature sleep-tracker-card">
+      <div className="card-header">
+        <span className="section-label">Sleep</span>
+        <h2>{strings.sleepTracker}</h2>
+      </div>
+      <p className="lead-copy">
+        Presiona iniciar cuando {activeChild.name} esté en cama. Presiona detener cuando se quede dormido.
+      </p>
+      <div className="sleep-tracker-display">
+        <span>{timer.running ? "Contando tiempo en cama" : "Listo para registrar"}</span>
+        <strong>{timer.startedAt || "--:--"}</strong>
+      </div>
+      <div className="inline-actions">
+        <button className="button button-primary" type="button" onClick={onStart} disabled={timer.running}>
+          Iniciar cuando esté en cama
+        </button>
+        <button className="button button-secondary" type="button" onClick={onStop} disabled={!timer.running}>
+          Detener cuando se duerma
+        </button>
+      </div>
+      <p className="muted">
+        Este registro aparecerá en Reportes en color azul porque no fue calculado desde una rutina guiada.
+      </p>
+    </article>
+  );
+}
+
+function SleepWindowModal({ strings, activeChild, onCalculated, onClose }) {
+  const [wakeTime, setWakeTime] = useState("");
+  const [napsCount, setNapsCount] = useState("0");
+  const [result, setResult] = useState(null);
+
+  if (!activeChild) return null;
+
+  function calculateWindow(event) {
+    event.preventDefault();
+    if (!wakeTime) return;
+    setResult(calculateSleepWindow({ birthday: activeChild.birthday, wakeTime, napsCount }));
+    onCalculated?.();
+  }
+
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label={strings.sleepWindow}>
+      <article className="profile-modal__panel card card--soft">
+        <button className="routine-modal__close" type="button" onClick={onClose} aria-label={strings.close}>
+          ×
+        </button>
+        <div className="card-header">
+          <span className="section-label">{strings.sleepWindow}</span>
+          <h2>{activeChild.name}</h2>
+          <p className="muted">{strings.sleepWindowIntro}</p>
+        </div>
+        <form className="stack" onSubmit={calculateWindow}>
+          <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, "es")} />
+          <label className="stack compact">
+            <span>{strings.wakeTime}</span>
+            <input type="time" value={wakeTime} onChange={(event) => setWakeTime(event.target.value)} required />
+          </label>
+          <label className="stack compact">
+            <span>{strings.napsCount}</span>
+            <select value={napsCount} onChange={(event) => setNapsCount(event.target.value)}>
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3+</option>
+            </select>
+          </label>
+          <button className="button button-primary" type="submit">
+            {strings.calculate}
+          </button>
+        </form>
+        {result ? (
+          <div className="result-banner result-banner--light">
+            <p>{strings.sleepWindowResult}</p>
+            {result.firstNap ? <Stat label={strings.firstNapWindow} value={result.firstNap} /> : null}
+            <Stat label={strings.nightSleepWindow} value={result.nightSleep} />
+          </div>
+        ) : null}
+      </article>
+    </div>
+  );
+}
+
+function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, onGoSleepWindow }) {
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Premium">
+      <article className="profile-modal__panel card card--soft premium-steps-card">
+        <span className="section-label">Premium</span>
+        <h2>3 pasos para generar tu rutina y dormir más rápido hoy</h2>
+        <button className={hasProfile ? "premium-step is-complete" : "premium-step"} type="button" onClick={onGoProfile}>
+          <strong>1. Determinar el perfil de sueño de tu hijo</strong>
+          <span>{hasProfile ? "Completado" : "Completar ahora"}</span>
+        </button>
+        <span className="premium-step-arrow">↓</span>
+        <button className={hasSleepWindow ? "premium-step is-complete" : "premium-step"} type="button" onClick={onGoSleepWindow}>
+          <strong>2. Calcular ventana de sueño hoy</strong>
+          <span>{hasSleepWindow ? "Completado" : "Completar ahora"}</span>
+        </button>
+        <span className="premium-step-arrow">↓</span>
+        <div className="premium-step is-locked">
+          <strong>3. Generar rutina</strong>
+          <span>Disponible solo para premium</span>
+        </div>
+        <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+          {strings.unlockPremium}
+        </a>
       </article>
     </div>
   );
@@ -2598,6 +3251,51 @@ function buildWeeklyProgressChart(logs, weekOffset = 0) {
   };
 }
 
+function NightSleepTimelineChart({ days, onEditDay }) {
+  const startMinute = timeToMinutes("16:00");
+  const endMinute = timeToMinutes("23:00");
+  const range = endMinute - startMinute;
+  const hourLabels = ["16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
+
+  function getBarStyle(day) {
+    if (!day.bedTime || !day.sleepTime) return {};
+    const bed = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.bedTime)));
+    const sleep = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.sleepTime)));
+    const top = ((bed - startMinute) / range) * 100;
+    const height = Math.max(3, ((sleep - bed) / range) * 100);
+    return {
+      top: `${top}%`,
+      height: `${height}%`,
+    };
+  }
+
+  return (
+    <div className="night-timeline-chart" aria-label="Tiempo en cama hasta quedarse dormido">
+      <div className="night-timeline-axis">
+        {hourLabels.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+      <div className="night-timeline-grid">
+        {days.map((day) => (
+          <div className="night-timeline-day" key={day.dateKey}>
+            <div className="night-timeline-track">
+              {day.bedTime && day.sleepTime ? (
+                <button className="night-timeline-bar" type="button" style={getBarStyle(day)} onClick={() => onEditDay?.(day.dateKey)}>
+                  <span>{day.bedTime} → {day.sleepTime}</span>
+                </button>
+              ) : (
+                <span className="night-timeline-empty" />
+              )}
+            </div>
+            <strong>{day.label}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HomeSection({
   activeChild,
   progressSummary,
@@ -2696,26 +3394,9 @@ function HomeSection({
             </div>
           </div>
           <div className="chart-legend" aria-label="Leyenda del gráfico">
-            <span><i className="legend-bar" /> Tiempo en cama hasta dormirse</span>
+            <span><i className="legend-bar" /> Hora en cama → hora dormido</span>
           </div>
-          <div className="sleep-latency-chart">
-            {weeklyChart.days.map((day) => (
-              <div className="sleep-latency-row" key={day.dateKey}>
-                <span className="sleep-date">{day.label}</span>
-                <span className="sleep-time">{day.bedTime || "--:--"}</span>
-                <div className="sleep-bar-track">
-                  {day.latency !== null ? (
-                    <button className="sleep-bar-fill sleep-bar-button" type="button" onClick={() => setEditingLogDate(day.dateKey)} style={{ width: `${Math.max(8, (day.latency / weeklyChart.maxLatency) * 100)}%` }}>
-                      <span>{day.latency} min · editar</span>
-                    </button>
-                  ) : (
-                    <span className="sleep-empty">Sin registro</span>
-                  )}
-                </div>
-                <span className="sleep-time">{day.sleepTime || "--:--"}</span>
-              </div>
-            ))}
-          </div>
+          <NightSleepTimelineChart days={weeklyChart.days} onEditDay={setEditingLogDate} />
           <div className="wakeups-chart">
             <div className="chart-legend" aria-label="Despertares nocturnos">
               <span><i className="legend-wake" /> Despertares nocturnos</span>
@@ -2942,6 +3623,7 @@ function RoutineSection({
   expandedSwapStep,
   onToggleSwapStep,
   onSubmitNightLog,
+  onSaveGuidedRoutine,
   safetyTriggered,
   savedLogDate,
 }) {
@@ -2952,6 +3634,8 @@ function RoutineSection({
   const hasPlayedEndToneRef = useRef(false);
   const ambientSoundRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
+  const untimedRoutinePhases = ["banarse_y_pijamas", "cepillarse_los_dientes", "a_la_cama", "dormir", "limite_claro"];
+  const isUntimedPlayerStep = playerStep ? untimedRoutinePhases.includes(playerStep.phaseKey) : false;
 
   useEffect(() => {
     if (!playerStep) return;
@@ -2960,7 +3644,7 @@ function RoutineSection({
   }, [playerStep?.id]);
 
   useEffect(() => {
-    if (!routinePlayerOpen || isPaused || !playerStep) return undefined;
+    if (!routinePlayerOpen || isPaused || !playerStep || isUntimedPlayerStep) return undefined;
     const timer = window.setInterval(() => {
       setSecondsLeft((current) => {
         if (current <= 1) {
@@ -2974,7 +3658,7 @@ function RoutineSection({
       });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [routinePlayerOpen, isPaused, playerStep, routineSession.soundMode]);
+  }, [routinePlayerOpen, isPaused, playerStep, isUntimedPlayerStep, routineSession.soundMode]);
 
   useEffect(() => {
     ambientSoundRef.current?.stop();
@@ -3239,8 +3923,29 @@ function RoutineSection({
                     {playerStep.selectedActivity?.displayName || playerStep.guidance?.title || "Preparar para dormir"}
                   </strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
-                  <strong className="routine-countdown">{formatTimer(secondsLeft)}</strong>
+                  {isUntimedPlayerStep ? (
+                    <strong className="routine-countdown routine-countdown--manual">Sin timer</strong>
+                  ) : (
+                    <strong className="routine-countdown">{formatTimer(secondsLeft)}</strong>
+                  )}
                 </div>
+                {playerStep.phaseKey === "dormir" ? (
+                  <div className="sleep-readiness-card sleep-readiness-card--blue">
+                    <strong>Tiempo en cama</strong>
+                    <p>
+                      La app empieza a contar desde que marcaste “A la cama”. Cuando tu hijo se duerma, toca el
+                      botón para registrar esta noche.
+                    </p>
+                    <div className="summary-grid">
+                      <Stat label={strings.bedTime} value={routineSession.inBedAt || "--:--"} />
+                      <Stat label={strings.sleepTime} value={routineSession.fellAsleepAt || "--:--"} />
+                    </div>
+                    <p className="muted">
+                      Si todavía necesita que mamá o papá estén cerca para dormirse, eso es normal. Primero buscamos
+                      que se duerma en 15 minutos o menos de forma consistente; después trabajamos la retirada gradual.
+                    </p>
+                  </div>
+                ) : null}
                 <div className="routine-media">
                   <span>
                     {playerStep.selectedActivity
@@ -3329,21 +4034,23 @@ function RoutineSection({
                     type="button"
                     onClick={() => {
                       if (routineStepIndex >= currentPlan.steps.length - 1) {
-                        onRoutineSessionChange({
+                        const sessionPatch = {
                           inBedAt: routineSession.inBedAt || getCurrentTimeValue(),
                           fellAsleepAt: routineSession.fellAsleepAt || getCurrentTimeValue(),
-                        });
-                        finishGuidedRoutine();
+                        };
+                        onRoutineSessionChange(sessionPatch);
+                        onSaveGuidedRoutine?.(sessionPatch);
+                        setRoutinePlayerOpen(false);
                         return;
                       }
                       playTransitionTone(routineSession.soundMode);
-                      if (playerStep.phaseKey === "cepillarse_los_dientes") {
+                      if (playerStep.phaseKey === "a_la_cama") {
                         onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
                       }
                       setRoutineStepIndex((index) => index + 1);
                     }}
                   >
-                    {routineStepIndex >= currentPlan.steps.length - 1 ? "Terminar" : "Siguiente parte"}
+                    {routineStepIndex >= currentPlan.steps.length - 1 ? "Mi hijo ya se durmió" : "Siguiente parte"}
                   </button>
                 </div>
               </div>
@@ -4231,16 +4938,16 @@ function AdminSection({ strings, language, onHome }) {
                       setSelectedChildId("");
                     }}
                   >
-                    <strong>{user.email || "Sin email"}</strong>
+                    <strong>{user.parentName || "Sin nombre"}</strong>
                     <span>
-                      {user.children.length} perfiles
+                      {user.email || "Sin email"} · {user.children.length} perfiles
                       {user.isPremium ? <em className="premium-badge">Premium</em> : null}
                     </span>
                   </button>
                 ))}
               </section>
               <section className="admin-list">
-                <h3>{selectedUser ? selectedUser.email : "Perfiles"}</h3>
+                <h3>{selectedUser ? `${selectedUser.parentName || "Usuario"} · ${selectedUser.email || "Sin email"}` : "Perfiles"}</h3>
                 {selectedUser ? (
                   selectedUser.children.map((child) => (
                     <button
@@ -4353,16 +5060,37 @@ function buildAdminUserGroups(data) {
       .map((purchase) => String(purchase.email || "").trim().toLowerCase())
   );
 
+  const parentNamesByEmail = new Map();
+  const rememberParentName = (email, name) => {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const cleanName = String(name || "").trim();
+    if (!normalizedEmail || !cleanName || parentNamesByEmail.has(normalizedEmail)) return;
+    parentNamesByEmail.set(normalizedEmail, cleanName);
+  };
+
+  (data.quizResults || []).forEach((result) => {
+    const metadata = Array.isArray(result.answers) ? {} : result.answers || {};
+    rememberParentName(result.parent_email, metadata.parentName);
+  });
+  (data.messages || []).forEach((message) => rememberParentName(message.parent_email, message.parent_name));
+  (data.reviews || []).forEach((review) => rememberParentName(review.parent_email, review.parent_name));
+
+  const makeUserGroup = (email) => {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    return {
+      email,
+      parentName: parentNamesByEmail.get(normalizedEmail) || "",
+      isPremium: premiumEmails.has(normalizedEmail),
+      children: [],
+      logsByChild: new Map(),
+      eventsByChild: new Map(),
+    };
+  };
+
   (data.children || []).forEach((child) => {
     const email = child.parent_email || "";
     if (!groups.has(email)) {
-      groups.set(email, {
-        email,
-        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
-        children: [],
-        logsByChild: new Map(),
-        eventsByChild: new Map(),
-      });
+      groups.set(email, makeUserGroup(email));
     }
     groups.get(email).children.push(child);
   });
@@ -4372,15 +5100,10 @@ function buildAdminUserGroups(data) {
     const metadata = Array.isArray(result.answers) ? {} : result.answers || {};
     const childId = result.child_id || result.id;
     if (!groups.has(email)) {
-      groups.set(email, {
-        email,
-        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
-        children: [],
-        logsByChild: new Map(),
-        eventsByChild: new Map(),
-      });
+      groups.set(email, makeUserGroup(email));
     }
     const user = groups.get(email);
+    if (!user.parentName && metadata.parentName) user.parentName = metadata.parentName;
     const alreadyExists = user.children.some((child) => child.id === childId || child.quiz_result_id === result.id);
     if (!alreadyExists) {
       user.children.push({
@@ -4406,13 +5129,7 @@ function buildAdminUserGroups(data) {
   (data.logs || []).forEach((log) => {
     const email = log.parent_email || "";
     if (!groups.has(email)) {
-      groups.set(email, {
-        email,
-        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
-        children: [],
-        logsByChild: new Map(),
-        eventsByChild: new Map(),
-      });
+      groups.set(email, makeUserGroup(email));
     }
     const user = groups.get(email);
     const childKey = log.child_id || user.children[0]?.id || "";
@@ -4423,13 +5140,7 @@ function buildAdminUserGroups(data) {
   (data.events || []).forEach((event) => {
     const email = event.parent_email || "";
     if (!groups.has(email)) {
-      groups.set(email, {
-        email,
-        isPremium: premiumEmails.has(String(email).trim().toLowerCase()),
-        children: [],
-        logsByChild: new Map(),
-        eventsByChild: new Map(),
-      });
+      groups.set(email, makeUserGroup(email));
     }
     const childKey = event.child_id || "";
     const user = groups.get(email);
