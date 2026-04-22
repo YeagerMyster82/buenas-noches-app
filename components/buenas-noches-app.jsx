@@ -91,7 +91,7 @@ const copy = {
     sleepWindowResult: "Según esta información, estos son sus mejores horarios:",
     firstNapWindow: "Primera siesta",
     nightSleepWindow: "Dormir de noche",
-    sleepTracker: "Sleep",
+    sleepTracker: "Sleep Timer",
     startSleepTimer: "Empezar timer",
     stopSleepTimer: "Se durmió",
     premiumDashboard: "Dashboard premium",
@@ -107,9 +107,9 @@ const copy = {
     gender: "Género",
     boy: "Niño",
     girl: "Niña",
-    parentName: "Tu primer nombre (de mamá o papá)",
+    parentName: "Primer nombre (de mamá o papá)",
     parentLastName: "Tu apellido (opcional)",
-    parentEmail: "Tu correo electrónico",
+    parentEmail: "Correo electrónico",
     parentSettings: "Datos de mamá o papá",
     saveAccountSettings: "Guardar datos",
     sleepNeed: "Sueño recomendado",
@@ -128,7 +128,7 @@ const copy = {
     tonightRoutine: "Rutina de esta noche",
     mapNight: "Mapear la noche de",
     wakeTime: "¿A qué hora se despertó hoy?",
-    targetBedtime: "¿A qué hora te gustaría que tu hijo duerma en las noches?",
+    targetBedtime: "¿A qué hora te gustaría que tu hijo esté dormido hoy?",
     dinnerTime: "¿A qué hora cenan hoy? (opcional)",
     dinnerShared: "Puedes usar la misma hora para todos tus hijos si cenan juntos.",
     prepareDuration: "¿Cuántos minutos suele tardar en prepararse para dormir? (baño, pijama, etc.)",
@@ -273,7 +273,7 @@ const copy = {
     sleepWindowResult: "Based on this information, these are their best windows:",
     firstNapWindow: "First nap",
     nightSleepWindow: "Night sleep",
-    sleepTracker: "Sleep",
+    sleepTracker: "Sleep Timer",
     startSleepTimer: "Start timer",
     stopSleepTimer: "Fell asleep",
     slotsFull: "All profiles used",
@@ -1689,6 +1689,19 @@ export default function BuenasNochesApp() {
           type: "routine_timing",
           routineEndTime,
         },
+        ...state.currentPlan.steps
+          .filter((step) => step.selectedActivity)
+          .map((step) => ({
+            stepId: step.id,
+            phaseKey: step.phaseKey,
+            stepLabel: step.label,
+            start: step.start,
+            end: step.end,
+            activityId: step.selectedActivityId,
+            activity: step.selectedActivity.displayName,
+            rating: 3,
+            disliked: false,
+          })),
       ],
     };
 
@@ -1865,6 +1878,9 @@ export default function BuenasNochesApp() {
         return {
           stepId: step.id,
           phaseKey: step.phaseKey,
+          stepLabel: step.label,
+          start: step.start,
+          end: step.end,
           activityId: step.selectedActivityId,
           activity: step.selectedActivity.displayName,
           rating: enjoyed ? 3 : 1,
@@ -2019,6 +2035,49 @@ export default function BuenasNochesApp() {
         setState((current) => ({ ...current, persistenceMessage: error.message || "No pude actualizar la noche." }));
       }
     }
+  }
+
+  function updateActivityEnjoyment(childId, logDate, rating, enjoyedValue) {
+    const child = state.children.find((entry) => entry.id === childId);
+    if (!child || !rating?.activityId) return;
+
+    const enjoyed = enjoyedValue !== "no";
+    const dislikedCounts = JSON.parse(JSON.stringify(child.dislikedCounts || {}));
+    if (!enjoyed) {
+      dislikedCounts[rating.phaseKey] = dislikedCounts[rating.phaseKey] || {};
+      dislikedCounts[rating.phaseKey][rating.activityId] = Math.max(1, dislikedCounts[rating.phaseKey][rating.activityId] || 0);
+    }
+
+    updateChild(childId, (currentChild) => {
+      const selectedActivities = { ...(currentChild.selectedActivities || {}) };
+      if (!enjoyed) {
+        Object.entries(selectedActivities).forEach(([stepId, activityId]) => {
+          if (activityId === rating.activityId || stepId === rating.stepId) {
+            delete selectedActivities[stepId];
+          }
+        });
+      }
+
+      return {
+      dislikedCounts,
+      selectedActivities,
+      logs: (currentChild.logs || []).map((log) => {
+        if (log.date !== logDate) return log;
+        return {
+          ...log,
+          ratings: (log.ratings || []).map((entry) =>
+            entry.stepId === rating.stepId
+              ? {
+                  ...entry,
+                  rating: enjoyed ? 3 : 1,
+                  disliked: !enjoyed,
+                }
+              : entry
+          ),
+        };
+      }),
+      };
+    });
   }
 
   async function updateNightWakingsForPrompt(event) {
@@ -2245,7 +2304,7 @@ export default function BuenasNochesApp() {
                   </select>
                 </label>
                 <label className="stack compact">
-                  <span>{strings.targetBedtime}</span>
+                  <span>{strings.sleepGoal}</span>
                   <input
                     type="time"
                     value={state.childDraft.sleepGoal}
@@ -2440,6 +2499,7 @@ export default function BuenasNochesApp() {
                 profileMap={profileMap}
                 parentName={state.parentName}
                 parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                mode={state.activeSection === "reports" ? "reports" : "child"}
                 onToggleChild={(childId) =>
                   setState((current) => ({
                     ...current,
@@ -2450,6 +2510,7 @@ export default function BuenasNochesApp() {
                 onCreateRoutine={(childId) => requestRoutine(childId)}
                 onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                 onUpdateLog={updateSavedNightLog}
+                onUpdateActivityEnjoyment={updateActivityEnjoyment}
                 onAddChild={startAddChild}
               />
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
@@ -2488,7 +2549,6 @@ export default function BuenasNochesApp() {
               language={state.language}
               parentName={state.parentName}
               parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
-              allowReview={false}
             />
           ) : state.activeSection === "contact" ? (
             <ContactSection
@@ -2582,7 +2642,7 @@ export default function BuenasNochesApp() {
                       </select>
                     </label>
                     <label className="stack compact">
-                      <span>{strings.targetBedtime}</span>
+                      <span>{strings.sleepGoal}</span>
                       <input
                         type="time"
                         value={state.childDraft.sleepGoal}
@@ -2725,6 +2785,7 @@ export default function BuenasNochesApp() {
                   profileMap={profileMap}
                   parentName={state.parentName}
                   parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                  mode="reports"
                   onToggleChild={(childId) =>
                     setState((current) => ({
                       ...current,
@@ -2737,6 +2798,7 @@ export default function BuenasNochesApp() {
                   }
                   onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                   onUpdateLog={updateSavedNightLog}
+                  onUpdateActivityEnjoyment={updateActivityEnjoyment}
                   onAddChild={startAddChild}
                 />
               ) : null}
@@ -2752,6 +2814,7 @@ export default function BuenasNochesApp() {
                   profileMap={profileMap}
                   parentName={state.parentName}
                   parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                  mode="child"
                   onToggleChild={(childId) =>
                     setState((current) => ({
                       ...current,
@@ -2762,6 +2825,7 @@ export default function BuenasNochesApp() {
                   onCreateRoutine={(childId) => requestRoutine(childId)}
                   onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
                   onUpdateLog={updateSavedNightLog}
+                  onUpdateActivityEnjoyment={updateActivityEnjoyment}
                   onAddChild={startAddChild}
                 />
               ) : null}
@@ -2865,7 +2929,6 @@ export default function BuenasNochesApp() {
                   language={state.language}
                   parentName={state.parentName}
                   parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
-                  allowReview={hasPremiumAccess}
                 />
               ) : null}
 
@@ -3029,7 +3092,6 @@ function FreeAccountSetup({ strings, parentName, parentEmail, onChange, onSubmit
       <div className="card-header">
         <span className="section-label">Buenas Noches</span>
         <h2>{strings.accountSetupTitle}</h2>
-        <p className="muted">{strings.accountSetupCopy}</p>
       </div>
       <form className="stack" onSubmit={onSubmit}>
         <label className="stack compact">
@@ -3256,14 +3318,9 @@ function ProfileIntroModal({ child, profileMap, language, onClose }) {
   );
 }
 
-function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine, onOpenSleep, onOpenTips, onOpenWins }) {
+function HomeQuickCards({ strings, onOpenRoutine, onOpenSleep, onOpenTips, onOpenWins }) {
   return (
     <section className="home-card-grid">
-      <button className="home-action-card" type="button" onClick={onOpenSleepWindow}>
-        <span className="home-card-icon">☾</span>
-        <strong>{strings.sleepWindow}</strong>
-        <small>{activeChild ? `Para ${activeChild.name}` : "Calcula el horario ideal"}</small>
-      </button>
       <button className="home-action-card" type="button" onClick={onOpenRoutine}>
         <span className="home-card-icon">◷</span>
         <strong>{strings.sections.routine}</strong>
@@ -3493,10 +3550,12 @@ function ChildHomeGrid({
   profileMap,
   parentName,
   parentEmail,
+  mode = "child",
   onToggleChild,
   onCreateRoutine,
   onEditProfile,
   onUpdateLog,
+  onUpdateActivityEnjoyment,
   onAddChild,
 }) {
   return (
@@ -3514,9 +3573,13 @@ function ChildHomeGrid({
                 profileMap={profileMap}
                 parentName={parentName}
                 parentEmail={parentEmail}
+                mode={mode}
                 onCreateRoutine={() => onCreateRoutine(child.id)}
                 onEditProfile={() => onEditProfile(child.id)}
                 onUpdateLog={(event, originalDate) => onUpdateLog(event, child.id, originalDate)}
+                onUpdateActivityEnjoyment={(logDate, rating, enjoyedValue) =>
+                  onUpdateActivityEnjoyment?.(child.id, logDate, rating, enjoyedValue)
+                }
                 onCollapse={() => onToggleChild(child.id)}
                 compact
               />
@@ -3713,10 +3776,10 @@ function buildWeeklyProgressChart(logs, weekOffset = 0, child = null) {
 }
 
 function NightSleepTimelineChart({ days, onEditDay }) {
-  const startMinute = timeToMinutes("11:00");
-  const endMinute = timeToMinutes("23:00");
+  const startMinute = timeToMinutes("00:00");
+  const endMinute = timeToMinutes("23:59");
   const range = endMinute - startMinute;
-  const hourLabels = ["23:00", "21:00", "19:00", "17:00", "15:00", "13:00", "11:00"];
+  const hourLabels = ["23:59", "20:00", "16:00", "12:00", "08:00", "04:00", "00:00"];
 
   function getSegmentStyle(startValue, endValue) {
     if (!startValue || !endValue) return {};
@@ -3780,7 +3843,9 @@ function HomeSection({
   onCreateRoutine,
   onEditProfile,
   onUpdateLog,
+  onUpdateActivityEnjoyment,
   onCollapse,
+  mode = "child",
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -3793,7 +3858,11 @@ function HomeSection({
   const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset, activeChild);
   const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
+  const profileDescription = profileMap[activeChild.primaryProfile]?.description || "";
   const editingLog = activeChild.logs?.find((log) => log.date === editingLogDate);
+  const isReportsMode = mode === "reports";
+  const lastLog = [...(activeChild.logs || [])].filter((log) => log.date).sort((left, right) => (left.date < right.date ? 1 : -1))[0] || null;
+  const lastActivityRatings = (lastLog?.ratings || []).filter((rating) => rating?.activityId && rating?.activity);
 
   async function submitReview(event) {
     event.preventDefault();
@@ -3839,22 +3908,57 @@ function HomeSection({
         <header className="dashboard-profile-header">
           <div className="dashboard-name-row">
             <h1>{activeChild.name}</h1>
-            <button className="icon-button dashboard-name-edit" type="button" onClick={onEditProfile} aria-label={`${strings.editProfile} ${activeChild.name}`}>
-              ✎
-            </button>
+            {!isReportsMode ? (
+              <button className="icon-button dashboard-name-edit" type="button" onClick={onEditProfile} aria-label={`${strings.editProfile} ${activeChild.name}`}>
+                ✎
+              </button>
+            ) : null}
           </div>
           <p>Perfil: {profileName}</p>
         </header>
         <div className="summary-grid">
-          <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
-          <Stat label={strings.gender} value={childGenderLabel(activeChild.gender, strings.age === "Age" ? "en" : "es")} />
-          <Stat label={strings.sleepNeed} value={getRecommendedSleepHours(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
-          <Stat label={strings.sleepGoal} value={activeChild.sleepGoal || "--:--"} />
-          <Stat label={strings.averageToSleep} value={`${progressSummary.averageLatency || 0} min`} />
-          <Stat label={strings.nightWakingsShort} value={`${progressSummary.averageNightWakings || 0}`} />
-          <Stat label={strings.consistency} value={`${progressSummary.bedtimeConsistency || 0}%`} />
+          {isReportsMode ? (
+            <>
+              <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
+              <Stat label="Última noche" value={lastLog?.date || "--"} />
+              <Stat label="A la cama" value={lastLog?.bedTime || "--:--"} />
+              <Stat label="Luces apagadas" value={lastLog?.routineEndTime || "--:--"} />
+              <Stat label="Tiempo para dormir" value={lastLog ? `${lastLog.latency || 0} min` : "--"} />
+            </>
+          ) : (
+            <>
+              <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
+              <Stat label={strings.gender} value={childGenderLabel(activeChild.gender, strings.age === "Age" ? "en" : "es")} />
+              <Stat label={strings.sleepNeed} value={getRecommendedSleepHours(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
+              <Stat label={strings.sleepGoal} value={activeChild.sleepGoal || "--:--"} />
+            </>
+          )}
         </div>
+        {!isReportsMode && profileDescription ? <p className="profile-description">{profileDescription}</p> : null}
 
+        {isReportsMode && lastActivityRatings.length ? (
+          <div className="activity-feedback-card">
+            <strong>¿Le gustaron estas actividades?</strong>
+            <p className="muted">Por defecto quedan como “sí”. Si marcas “no”, la app evita sugerirla automáticamente en la próxima rutina, pero seguirá disponible en el menú.</p>
+            {lastActivityRatings.map((rating) => (
+              <label className="stack compact" key={`${lastLog.date}-${rating.stepId}`}>
+                <span>
+                  {rating.stepLabel || rating.activity}
+                  {rating.start && rating.end ? ` · ${rating.start} - ${rating.end}` : ""}
+                </span>
+                <select
+                  value={rating.disliked ? "no" : "yes"}
+                  onChange={(event) => onUpdateActivityEnjoyment?.(lastLog.date, rating, event.target.value)}
+                >
+                  <option value="yes">Sí</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        ) : null}
+
+        {isReportsMode ? (
         <section className={weeklyChart.empty ? "chart-panel dashboard-chart chart-panel--empty" : "chart-panel dashboard-chart"}>
           <div className="chart-heading">
             <div>
@@ -3946,8 +4050,9 @@ function HomeSection({
             </form>
           ) : null}
         </section>
+        ) : null}
 
-        {progressMessage ? (
+        {isReportsMode && progressMessage ? (
           <div className={`progress-message progress-message--${progressMessage.type}`}>
             <p>{progressMessage.text}</p>
             {progressMessage.type === "review" ? (
@@ -4069,7 +4174,7 @@ function startAmbientSound(soundMode) {
     const gain = audioContext.createGain();
     oscillator.type = soundMode === "nature" ? "triangle" : "sine";
     oscillator.frequency.value = soundMode === "nature" ? 174 : 220;
-    gain.gain.setValueAtTime(0.018, audioContext.currentTime);
+    gain.gain.setValueAtTime(0.035, audioContext.currentTime);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
     if (audioContext.state === "suspended") {
@@ -4156,18 +4261,31 @@ function RoutineSection({
   }, [routinePlayerOpen, isPaused, playerStep, isUntimedPlayerStep, routineSession.soundMode]);
 
   useEffect(() => {
-    ambientSoundRef.current?.stop();
-    ambientSoundRef.current = null;
-    if (routinePlayerOpen && !isPaused) {
-      ambientSoundRef.current = startAmbientSound(routineSession.soundMode);
-    }
     return () => {
       ambientSoundRef.current?.stop();
       ambientSoundRef.current = null;
     };
-  }, [routinePlayerOpen, isPaused, routineSession.soundMode]);
+  }, []);
+
+  function stopAmbientSound() {
+    ambientSoundRef.current?.stop();
+    ambientSoundRef.current = null;
+  }
+
+  function restartAmbientSound(soundMode = routineSession.soundMode) {
+    stopAmbientSound();
+    ambientSoundRef.current = startAmbientSound(soundMode);
+  }
 
   if (!activeChild) return null;
+  const idealSleepWindow =
+    routineForm.wakeTime && activeChild.birthday
+      ? calculateSleepWindow({
+          birthday: activeChild.birthday,
+          wakeTime: routineForm.wakeTime,
+          napsCount: activeChild.takesNap === "yes" && routineForm.napTaken === "yes" ? "1" : "0",
+        }).nightSleep
+      : "";
   if (savedLogDate) {
     return (
       <article className="card card--feature routine-saved-card">
@@ -4192,6 +4310,7 @@ function RoutineSection({
     setRoutineStepIndex(0);
     setIsPaused(false);
     setRoutinePlayerOpen(true);
+    restartAmbientSound(routineSession.soundMode);
     onClosePreview();
   }
 
@@ -4199,6 +4318,7 @@ function RoutineSection({
     const inBedAt = routineSession.inBedAt || getCurrentTimeValue();
     onRoutineSessionChange({ inBedAt });
     setRoutinePlayerOpen(false);
+    stopAmbientSound();
   }
 
   function saveChildAsleep() {
@@ -4210,6 +4330,7 @@ function RoutineSection({
     onRoutineSessionChange(sessionPatch);
     onSaveGuidedRoutine?.(sessionPatch);
     setRoutinePlayerOpen(false);
+    stopAmbientSound();
   }
 
   return (
@@ -4229,6 +4350,13 @@ function RoutineSection({
             <span>{strings.wakeTime}</span>
             <input type="time" value={routineForm.wakeTime} onChange={(event) => onRoutineFieldChange("wakeTime", event.target.value)} required />
           </label>
+          {idealSleepWindow ? (
+            <div className="content-block content-block--light">
+              <strong>
+                Basado en la edad de {activeChild.name} y la hora a la que despertó, la hora ideal para dormir hoy es entre {idealSleepWindow}.
+              </strong>
+            </div>
+          ) : null}
           <label className="stack compact">
             <span>{strings.targetBedtime}</span>
             <input
@@ -4315,7 +4443,12 @@ function RoutineSection({
                   <span>{strings.soundMode}</span>
                   <select
                     value={routineSession.soundMode}
-                    onChange={(event) => onRoutineSessionChange({ soundMode: event.target.value })}
+                    onChange={(event) => {
+                      onRoutineSessionChange({ soundMode: event.target.value });
+                      if (routinePlayerOpen && !isPaused) {
+                        restartAmbientSound(event.target.value);
+                      }
+                    }}
                   >
                     <option value="transition">{strings.soundTransition}</option>
                     <option value="calm">{strings.soundCalm}</option>
@@ -4416,7 +4549,14 @@ function RoutineSection({
           {routinePlayerOpen && playerStep ? (
             <div className="routine-modal" role="dialog" aria-modal="true" aria-label="Rutina guiada">
               <div className="routine-modal__panel">
-                <button className="routine-modal__close" type="button" onClick={() => setRoutinePlayerOpen(false)}>
+                <button
+                  className="routine-modal__close"
+                  type="button"
+                  onClick={() => {
+                    setRoutinePlayerOpen(false);
+                    stopAmbientSound();
+                  }}
+                >
                   ×
                 </button>
                 <span className="section-label">
@@ -4513,36 +4653,47 @@ function RoutineSection({
                   </div>
                 ) : null}
                 {!isLastRoutineStep ? (
-                  <>
-                    <div className="inline-actions routine-compact-controls">
-                      <button className="button button-ghost" type="button" onClick={() => setIsPaused((paused) => !paused)} aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}>
-                        {isPaused ? "▶" : "⏸"}
-                      </button>
-                      <button
-                        className="button button-ghost"
-                        type="button"
-                        onClick={() => {
-                          hasPlayedEndToneRef.current = false;
-                          setSecondsLeft((current) => current + 120);
-                        }}
-                      >
-                        +2m
-                      </button>
-                    </div>
-                    <div className="inline-actions">
-                      <button
-                        className="button button-ghost"
-                        type="button"
-                        disabled={routineStepIndex === 0}
-                        onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
-                        aria-label="Anterior"
-                      >
-                        ←
-                      </button>
-                      <button
-                        className="button button-primary"
-                        type="button"
-                        onClick={() => {
+                  <div className="inline-actions routine-compact-controls routine-compact-controls--single">
+                    <button
+                      className="button button-ghost"
+                      type="button"
+                      disabled={routineStepIndex === 0}
+                      onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
+                      aria-label="Anterior"
+                    >
+                      ←
+                    </button>
+                    <button
+                      className="button button-ghost"
+                      type="button"
+                      onClick={() => {
+                        setIsPaused((paused) => {
+                          if (paused) {
+                            restartAmbientSound(routineSession.soundMode);
+                          } else {
+                            stopAmbientSound();
+                          }
+                          return !paused;
+                        });
+                      }}
+                      aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}
+                    >
+                      {isPaused ? "▶" : "⏸"}
+                    </button>
+                    <button
+                      className="button button-ghost"
+                      type="button"
+                      onClick={() => {
+                        hasPlayedEndToneRef.current = false;
+                        setSecondsLeft((current) => current + 120);
+                      }}
+                    >
+                      +2m
+                    </button>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      onClick={() => {
                           playTransitionTone(routineSession.soundMode);
                           if (playerStep.phaseKey === "a_la_cama") {
                             onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
@@ -4553,10 +4704,9 @@ function RoutineSection({
                           setRoutineStepIndex((index) => index + 1);
                         }}
                       >
-                        Siguiente parte
-                      </button>
-                    </div>
-                  </>
+                      Siguiente
+                    </button>
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -4949,8 +5099,8 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
       </div>
       <p className="lead-copy">
         {language === "es"
-          ? "¡Tu opinión nos importa! Cuéntanos cómo vamos."
-          : "Your opinion matters to us! Please let us know how we are doing."}
+          ? "Tu reseña nos ayuda muchísimo. Si quieres dejar 5 estrellas, eso nos ayuda a llegar a más familias; y si tienes sugerencias para mejorar la app, también nos ayuda."
+          : "Your review helps us so much. If you want to leave 5 stars, that helps us reach more families; and if you have suggestions to improve the app, that helps too."}
       </p>
 
       {allowReview ? (
