@@ -1733,6 +1733,32 @@ textarea {
   font-size: 1rem;
 }
 
+.routine-compact-controls--single {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr;
+  align-items: center;
+}
+
+.routine-compact-controls--single .button:last-child {
+  justify-self: stretch;
+}
+
+.profile-description {
+  margin: 6px 0 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  color: rgba(248, 243, 234, 0.86);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.activity-feedback-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .step-card,
 .rating-card,
 .avoid-card,
