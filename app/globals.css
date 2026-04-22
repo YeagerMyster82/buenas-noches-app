@@ -492,8 +492,6 @@ img {
   color: rgba(248, 243, 234, 0.78);
 }
 
-.child-card-photo,
-.dashboard-profile-photo,
 .profile-photo-preview,
 .review-wall-avatar {
   display: inline-grid;
@@ -506,15 +504,6 @@ img {
   box-shadow: inset 0 0 0 2px rgba(248, 243, 234, 0.38);
 }
 
-.child-card-photo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 8px;
-  font-size: 1.45rem;
-}
-
-.child-card-photo img,
-.dashboard-profile-photo img,
 .profile-photo-preview img,
 .review-wall-avatar img {
   width: 100%;
@@ -828,13 +817,6 @@ img {
   gap: 6px;
   padding: 10px 42px 2px;
   text-align: center;
-}
-
-.dashboard-profile-photo {
-  width: 82px;
-  height: 82px;
-  margin-bottom: 4px;
-  font-size: 2rem;
 }
 
 .dashboard-name-row {
