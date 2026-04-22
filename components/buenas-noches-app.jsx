@@ -24,6 +24,7 @@ const SALES_FUNNEL_URL = "https://buenasnoches.quirokids.com/buenas-noches-app-4
 const SUPPORT_WHATSAPP_URL = "https://wa.link/10n15d";
 const SUPPORT_EMAIL = "BuenasNochesApp@quirokids.com";
 const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
+const FREE_PROFILE_EXPIRY_MS = 14 * 24 * 60 * 60 * 1000;
 
 function isVerifiedPremiumState(state) {
   return (
@@ -780,6 +781,9 @@ function makeEmptyChild(childDraft) {
     name: childDraft.name.trim(),
     birthday: childDraft.birthday,
     gender: childDraft.gender || "boy",
+    photoUrl: childDraft.photoUrl || "",
+    createdAt: childDraft.createdAt || new Date().toISOString(),
+    isFreeProfile: childDraft.isFreeProfile ?? true,
     primaryProfile: "",
     secondaryProfile: "",
     answers: [],
@@ -811,9 +815,18 @@ function makeChildFromSavedQuiz(result) {
     secondaryProfile: result.secondary_profile || "",
     sleepGoal: metadata.sleepGoal || "",
     takesNap: metadata.takesNap || metadata.napTaken || "no",
+    photoUrl: metadata.photoUrl || "",
+    createdAt: result.created_at || metadata.createdAt || new Date().toISOString(),
+    isFreeProfile: metadata.isFreeProfile ?? true,
     answers: responses,
     isLegacyProfile: !childName || !childBirthday,
   };
+}
+
+function isExpiredFreeProfile(child, now = Date.now()) {
+  if (!child?.isFreeProfile) return false;
+  const createdAt = child.createdAt ? new Date(child.createdAt).getTime() : 0;
+  return Boolean(createdAt && now - createdAt >= FREE_PROFILE_EXPIRY_MS);
 }
 
 function collapseLegacySavedChildren(children) {
@@ -957,6 +970,29 @@ export default function BuenasNochesApp() {
   const sleepAreaResult = getSleepAreaResult(checkedCount);
 
   useEffect(() => {
+    if (hasPremiumAccess || !state.children.length) return;
+    const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (knownEmail && state.accessStatus !== "denied") return;
+    const remainingChildren = state.children.filter((child) => !isExpiredFreeProfile(child));
+    if (remainingChildren.length === state.children.length) return;
+
+    setState((current) => ({
+      ...current,
+      children: remainingChildren,
+      activeChildId: remainingChildren.some((child) => child.id === current.activeChildId)
+        ? current.activeChildId
+        : remainingChildren[0]?.id || "",
+      expandedChildId: remainingChildren.some((child) => child.id === current.expandedChildId)
+        ? current.expandedChildId
+        : "",
+      persistenceMessage:
+        current.language === "es"
+          ? "Los perfiles gratuitos expiran después de 14 días si no se desbloquea premium. Puedes crear otro perfil gratis cuando quieras."
+          : "Free profiles expire after 14 days if premium is not unlocked. You can create another free profile anytime.",
+    }));
+  }, [hasPremiumAccess, state.accessStatus, state.children, state.parentEmail, state.purchaseEmail, state.verifiedEmail]);
+
+  useEffect(() => {
     const createdAt = state.accountCreatedAt ? new Date(state.accountCreatedAt).getTime() : 0;
     const shouldSendBasicLead =
       state.parentProfileSaved &&
@@ -1047,7 +1083,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "new-child",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
@@ -1061,7 +1097,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
@@ -1345,6 +1381,8 @@ export default function BuenasNochesApp() {
       answers: state.answers,
       sleepGoal: normalizeChildSleepGoal(state.childDraft.sleepGoal),
       takesNap: state.childDraft.takesNap || "no",
+      createdAt: new Date().toISOString(),
+      isFreeProfile: !hasPremiumAccess,
     };
 
     setState((current) => ({
@@ -1354,7 +1392,7 @@ export default function BuenasNochesApp() {
       expandedChildId: child.id,
       activeSection: "home",
       onboardingMode: "",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
       parentName: parentName || current.parentName,
       parentEmail: parentEmail || current.parentEmail,
       parentProfileSaved: true,
@@ -1379,6 +1417,13 @@ export default function BuenasNochesApp() {
 
     const premiumCheck = await checkPremiumAccessForEmail(parentEmail || state.parentEmail, { silent: true });
     const isPremiumLead = premiumCheck?.hasAccess === true || (premiumCheck === null && hasPremiumAccess);
+    if (isPremiumLead) {
+      child.isFreeProfile = false;
+      setState((current) => ({
+        ...current,
+        children: current.children.map((entry) => (entry.id === child.id ? { ...entry, isFreeProfile: false } : entry)),
+      }));
+    }
 
     if (!isPremiumLead) {
       try {
@@ -1413,7 +1458,21 @@ export default function BuenasNochesApp() {
             parentName: parentName || state.parentName,
             sleepGoal: child.sleepGoal,
             takesNap: child.takesNap,
-            answers: child.answers,
+            photoUrl: child.photoUrl || "",
+            createdAt: child.createdAt,
+            isFreeProfile: child.isFreeProfile,
+            answers: {
+              responses: child.answers,
+              parentName: parentName || state.parentName,
+              childName: child.name,
+              childBirthday: child.birthday,
+              childGender: child.gender,
+              sleepGoal: child.sleepGoal,
+              takesNap: child.takesNap,
+              photoUrl: child.photoUrl || "",
+              createdAt: child.createdAt,
+              isFreeProfile: child.isFreeProfile,
+            },
             primaryProfile: child.primaryProfile,
             secondaryProfile: child.secondaryProfile || null,
           }),
@@ -1453,6 +1512,7 @@ export default function BuenasNochesApp() {
     const gender = String(formData.get("gender") || "boy");
     const sleepGoal = String(formData.get("sleepGoal") || "");
     const takesNap = String(formData.get("takesNap") || "no");
+    const photoUrl = String(formData.get("photoUrl") || "");
     if (!name || !birthday) return;
 
     updateChild(childId, () => ({
@@ -1461,6 +1521,7 @@ export default function BuenasNochesApp() {
       gender,
       sleepGoal,
       takesNap,
+      photoUrl,
     }));
 
     setState((current) => ({
@@ -1486,6 +1547,7 @@ export default function BuenasNochesApp() {
             childGender: gender,
             sleepGoal,
             takesNap,
+            photoUrl,
           }),
         });
       } catch {
@@ -3589,6 +3651,9 @@ function ChildHomeGrid({
                 className={activeChildId === child.id ? "child-card child-card--hero is-active" : "child-card child-card--hero"}
                 onClick={() => onToggleChild(child.id)}
               >
+                <span className="child-card-photo">
+                  {child.photoUrl ? <img src={child.photoUrl} alt="" /> : child.name?.slice(0, 1)}
+                </span>
                 <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                 <strong>{child.name}</strong>
                 <span>{formatAgeLabel(child.birthday, language)}</span>
@@ -3622,7 +3687,30 @@ function ChildHomeGrid({
 
 function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(activeChild?.photoUrl || "");
   if (!activeChild) return null;
+
+  function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 420;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context?.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setPhotoPreview(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      image.onerror = () => setPhotoPreview(String(reader.result || ""));
+      image.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="profile-modal" role="dialog" aria-modal="true" aria-label={`${strings.editProfile} ${activeChild.name}`}>
@@ -3637,6 +3725,21 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
           </h2>
         </div>
         <form className="stack" onSubmit={onSave}>
+          <div className="profile-photo-editor">
+            <div className="profile-photo-preview">
+              {photoPreview ? <img src={photoPreview} alt="" /> : <span>{activeChild.name?.slice(0, 1) || "?"}</span>}
+            </div>
+            <label className="stack compact">
+              <span>Foto</span>
+              <input type="file" accept="image/*" onChange={handlePhotoChange} />
+            </label>
+            {photoPreview ? (
+              <button className="button button-ghost" type="button" onClick={() => setPhotoPreview("")}>
+                Quitar foto
+              </button>
+            ) : null}
+            <input name="photoUrl" type="hidden" value={photoPreview} />
+          </div>
           <label className="stack compact">
             <span>{strings.childName}</span>
             <input name="childName" type="text" defaultValue={activeChild.name} required />
@@ -3906,6 +4009,9 @@ function HomeSection({
           </button>
         ) : null}
         <header className="dashboard-profile-header">
+          <div className="dashboard-profile-photo">
+            {activeChild.photoUrl ? <img src={activeChild.photoUrl} alt="" /> : <span>{activeChild.name?.slice(0, 1)}</span>}
+          </div>
           <div className="dashboard-name-row">
             <h1>{activeChild.name}</h1>
             {!isReportsMode ? (
@@ -5070,6 +5176,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
           parentName,
           email: parentEmail,
           childName: activeChild?.name || "",
+          photoUrl: activeChild?.photoUrl || "",
           rating,
           comment,
           improvementFeedback,
@@ -5084,7 +5191,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
       setRating(0);
       setStatus(payload.public ? strings.reviewSavedPublic : strings.reviewSavedPrivate);
       if (payload.public) {
-        setReviews((current) => [payload.review, ...current]);
+        setReviews((current) => [{ ...payload.review, photo_url: activeChild?.photoUrl || "" }, ...current]);
       }
     } catch (error) {
       setStatus(error.message || "No pude guardar la reseña.");
@@ -5176,13 +5283,22 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
         {reviews.length ? (
           reviews.map((review) => (
             <div className="review-wall-card" key={review.id}>
+              <div className="review-wall-person">
+                <span className="review-wall-avatar">
+                  {review.photo_url ? (
+                    <img src={review.photo_url} alt="" />
+                  ) : (
+                    (formatPublicParentName(review.parent_name) || "F").slice(0, 1)
+                  )}
+                </span>
+                <strong>
+                  {formatPublicParentName(review.parent_name) || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
+                </strong>
+              </div>
               <div className="star-line" aria-label={`${review.rating} estrellas`}>
                 {"★".repeat(review.rating)}
               </div>
               <p>{review.comment}</p>
-              <span>
-                {formatPublicParentName(review.parent_name) || (language === "es" ? "Familia Buenas Noches" : "Buenas Noches family")}
-              </span>
             </div>
           ))
         ) : (
@@ -5203,8 +5319,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
 function formatPublicParentName(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "";
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[1][0]}.`;
+  return parts[0];
 }
 
 function ContactSection({ strings, language, activeChild, parentName, parentEmail }) {
