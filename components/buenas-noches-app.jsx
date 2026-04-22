@@ -128,12 +128,12 @@ const copy = {
     tonightRoutine: "Rutina de esta noche",
     mapNight: "Mapear la noche de",
     wakeTime: "¿A qué hora se despertó hoy?",
-    targetBedtime: "¿A qué hora quieres que ya esté dormido?",
+    targetBedtime: "¿A qué hora te gustaría que tu hijo duerma en las noches?",
     dinnerTime: "¿A qué hora cenan hoy? (opcional)",
     dinnerShared: "Puedes usar la misma hora para todos tus hijos si cenan juntos.",
     prepareDuration: "¿Cuántos minutos suele tardar en prepararse para dormir? (baño, pijama, etc.)",
     prepareDurationHelp: "Usaremos este tiempo para calcular a qué hora deben empezar.",
-    napQuestion: "¿Durmió siesta?",
+    napQuestion: "¿Duerme siesta?",
     napWakeTime: "¿A qué hora se despertó de la siesta?",
     generateRoutine: "Generar rutina",
     createTonightRoutine: "Crear rutina para esta noche",
@@ -311,12 +311,12 @@ const copy = {
     tonightRoutine: "Tonight's routine",
     mapNight: "Map tonight for",
     wakeTime: "What time did they wake up today?",
-    targetBedtime: "What time do you want them asleep by?",
+    targetBedtime: "What time would you like your child to fall asleep at night?",
     dinnerTime: "What time is dinner tonight? (optional)",
     dinnerShared: "You can keep the same dinner time for all your children if they eat together.",
     prepareDuration: "How long does getting ready for bed take? (bath, pajamas, dim lights)",
     prepareDurationHelp: "We will use this to calculate when they should start.",
-    napQuestion: "Did they nap?",
+    napQuestion: "Do they nap?",
     napWakeTime: "What time did they wake from the nap?",
     generateRoutine: "Generate routine",
     createTonightRoutine: "Create tonight's routine",
@@ -543,6 +543,8 @@ const initialState = {
     name: "",
     birthday: "",
     gender: "boy",
+    sleepGoal: "",
+    takesNap: "no",
   },
   onboardingMode: "new-child",
   quizIndex: -1,
@@ -562,6 +564,7 @@ const initialState = {
   routineSession: {
     startedAt: "",
     inBedAt: "",
+    routineEndTime: "",
     fellAsleepAt: "",
     soundMode: "transition",
   },
@@ -576,6 +579,7 @@ const initialState = {
   quickSleepTimer: {
     startedAt: "",
     running: false,
+    type: "night",
   },
 };
 
@@ -604,6 +608,12 @@ function minutesToTime(value) {
   const hours = Math.floor(safeValue / 60);
   const minutes = safeValue % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function normalizeChildSleepGoal(value) {
+  const minutes = timeToMinutes(value);
+  // A sleep goal before noon is almost always a wake-up time entered in the wrong place.
+  return value && minutes >= 12 * 60 ? value : "";
 }
 
 function calculateSleepWindow({ birthday, wakeTime, napsCount }) {
@@ -747,6 +757,23 @@ function getRecommendedSleepHours(birthday, language = "es") {
   return language === "en" ? `${range} hours` : `${range} horas`;
 }
 
+function getRecommendedSleepMinimumHours(birthday) {
+  const age = calculateAgeFromBirthday(birthday);
+  if (age < 1) return 12;
+  if (age < 3) return 11;
+  if (age <= 5) return 10;
+  if (age <= 12) return 9;
+  return 8;
+}
+
+function calculateTotalSleepHours(sleepTime, wakeTime, napDuration = 0) {
+  if (!sleepTime || !wakeTime) return null;
+  let nightMinutes = timeToMinutes(wakeTime) - timeToMinutes(sleepTime);
+  if (nightMinutes <= 0) nightMinutes += 24 * 60;
+  const totalMinutes = nightMinutes + Number(napDuration || 0);
+  return Math.round((totalMinutes / 60) * 10) / 10;
+}
+
 function makeEmptyChild(childDraft) {
   return {
     id: generateId(),
@@ -762,6 +789,7 @@ function makeEmptyChild(childDraft) {
     dislikedCounts: {},
     sleepAreaChecks: {},
     sleepGoal: "",
+    takesNap: "no",
   };
 }
 
@@ -782,6 +810,7 @@ function makeChildFromSavedQuiz(result) {
     primaryProfile: result.primary_profile || "",
     secondaryProfile: result.secondary_profile || "",
     sleepGoal: metadata.sleepGoal || "",
+    takesNap: metadata.takesNap || metadata.napTaken || "no",
     answers: responses,
     isLegacyProfile: !childName || !childBirthday,
   };
@@ -795,6 +824,9 @@ function collapseLegacySavedChildren(children) {
 
 function makeLogsFromSavedData(logs = []) {
   return logs.map((log) => ({
+    ...(log.ratings || []).find((rating) => rating?.type === "nap_log") || {},
+    ...(log.ratings || []).find((rating) => rating?.type === "morning_report") || {},
+    ...(log.ratings || []).find((rating) => rating?.type === "routine_timing") || {},
     date: log.log_date,
     routineStartTime: log.routine_start_time || "",
     bedTime: log.in_bed_at,
@@ -976,6 +1008,16 @@ export default function BuenasNochesApp() {
     }
 
     if (value === "purchase") {
+      const nextState = {
+        ...state,
+        activeSection: "home",
+        premiumRoutineGateOpen: false,
+        routinePreviewOpen: false,
+        sleepWindowOpen: false,
+        accountLookupOpen: false,
+      };
+      window.localStorage.setItem(storageKey, JSON.stringify(nextState));
+      setState(nextState);
       window.location.href = SALES_FUNNEL_URL;
       return;
     }
@@ -1005,13 +1047,26 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "new-child",
-      childDraft: { name: "", birthday: "", gender: "boy" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
       quizResult: null,
       activeSection: "home",
       currentPlan: null,
+    }));
+  }
+
+  function closeAddChildFlow() {
+    setState((current) => ({
+      ...current,
+      onboardingMode: "",
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
+      quizIndex: -1,
+      answers: [],
+      tieCandidates: null,
+      quizResult: null,
+      activeSection: current.children.length ? "home" : "child",
     }));
   }
 
@@ -1026,6 +1081,21 @@ export default function BuenasNochesApp() {
     }
 
     setState((current) => ({ ...current, activeChildId: childId || current.activeChildId, activeSection: "routine" }));
+  }
+
+  function goToSalesFunnelFromRoutineGate(event) {
+    event?.preventDefault();
+    const nextState = {
+      ...state,
+      activeSection: "home",
+      premiumRoutineGateOpen: false,
+      routinePreviewOpen: false,
+      sleepWindowOpen: false,
+      accountLookupOpen: false,
+    };
+    window.localStorage.setItem(storageKey, JSON.stringify(nextState));
+    setState(nextState);
+    window.location.href = SALES_FUNNEL_URL;
   }
 
   function saveParentSettings(event) {
@@ -1273,7 +1343,8 @@ export default function BuenasNochesApp() {
       primaryProfile: state.quizResult.primary,
       secondaryProfile: state.quizResult.secondary || "",
       answers: state.answers,
-      sleepGoal: state.routineForm.targetBedtime || "",
+      sleepGoal: normalizeChildSleepGoal(state.childDraft.sleepGoal),
+      takesNap: state.childDraft.takesNap || "no",
     };
 
     setState((current) => ({
@@ -1283,7 +1354,7 @@ export default function BuenasNochesApp() {
       expandedChildId: child.id,
       activeSection: "home",
       onboardingMode: "",
-      childDraft: { name: "", birthday: "", gender: "boy" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       parentName: parentName || current.parentName,
       parentEmail: parentEmail || current.parentEmail,
       parentProfileSaved: true,
@@ -1341,6 +1412,7 @@ export default function BuenasNochesApp() {
             childGender: child.gender,
             parentName: parentName || state.parentName,
             sleepGoal: child.sleepGoal,
+            takesNap: child.takesNap,
             answers: child.answers,
             primaryProfile: child.primaryProfile,
             secondaryProfile: child.secondaryProfile || null,
@@ -1380,6 +1452,7 @@ export default function BuenasNochesApp() {
     const birthday = String(formData.get("birthday") || "");
     const gender = String(formData.get("gender") || "boy");
     const sleepGoal = String(formData.get("sleepGoal") || "");
+    const takesNap = String(formData.get("takesNap") || "no");
     if (!name || !birthday) return;
 
     updateChild(childId, () => ({
@@ -1387,6 +1460,7 @@ export default function BuenasNochesApp() {
       birthday,
       gender,
       sleepGoal,
+      takesNap,
     }));
 
     setState((current) => ({
@@ -1411,6 +1485,7 @@ export default function BuenasNochesApp() {
             childBirthday: birthday,
             childGender: gender,
             sleepGoal,
+            takesNap,
           }),
         });
       } catch {
@@ -1486,8 +1561,8 @@ export default function BuenasNochesApp() {
       targetBedtime: state.routineForm.targetBedtime,
       dinnerTime: state.routineForm.dinnerTime,
       prepareDuration: Number(state.routineForm.prepareDuration) || 25,
-      napTaken: state.routineForm.napTaken === "yes",
-      napWakeTime: state.routineForm.napWakeTime,
+      napTaken: activeChild.takesNap === "yes" && state.routineForm.napTaken === "yes",
+      napWakeTime: activeChild.takesNap === "yes" ? state.routineForm.napWakeTime : "",
       priorLogs: activeChild.logs,
       selectedActivities: activeChild.selectedActivities,
       dislikedCounts: activeChild.dislikedCounts,
@@ -1501,6 +1576,7 @@ export default function BuenasNochesApp() {
       routineSession: {
         startedAt: "",
         inBedAt: "",
+        routineEndTime: "",
         fellAsleepAt: "",
         soundMode: current.routineSession?.soundMode || "transition",
       },
@@ -1522,8 +1598,8 @@ export default function BuenasNochesApp() {
             childName: activeChild.name,
             wakeTime: plan.wakeTime,
             targetBedtime: plan.targetBedtime,
-            napTaken: state.routineForm.napTaken === "yes",
-            napWakeTime: state.routineForm.napWakeTime || null,
+            napTaken: activeChild.takesNap === "yes" && state.routineForm.napTaken === "yes",
+            napWakeTime: activeChild.takesNap === "yes" ? state.routineForm.napWakeTime || null : null,
             dinnerTime: plan.dinnerTime,
             routineStart: plan.routineStart,
             bedtime: plan.bedtime,
@@ -1563,8 +1639,8 @@ export default function BuenasNochesApp() {
         targetBedtime: current.routineForm.targetBedtime,
         dinnerTime: current.routineForm.dinnerTime,
         prepareDuration: Number(current.routineForm.prepareDuration) || 25,
-        napTaken: current.routineForm.napTaken === "yes",
-        napWakeTime: current.routineForm.napWakeTime,
+        napTaken: child.takesNap === "yes" && current.routineForm.napTaken === "yes",
+        napWakeTime: child.takesNap === "yes" ? current.routineForm.napWakeTime : "",
         priorLogs: child.logs,
         selectedActivities: nextSelectedActivities,
         dislikedCounts: child.dislikedCounts,
@@ -1597,16 +1673,23 @@ export default function BuenasNochesApp() {
 
     const session = { ...state.routineSession, ...sessionPatch };
     const bedTime = session.inBedAt || getCurrentTimeValue();
+    const routineEndTime = session.routineEndTime || bedTime;
     const sleepTime = session.fellAsleepAt || getCurrentTimeValue();
     const nextLog = {
       date: new Date().toISOString().slice(0, 10),
       routineStartTime: session.startedAt || state.currentPlan.routineStart || "",
       bedTime,
+      routineEndTime,
       sleepTime,
-      latency: calculateLatency(bedTime, sleepTime),
+      latency: calculateLatency(routineEndTime, sleepTime),
       nightWakings: "pending",
       notes: "Registrado desde la rutina guiada.",
-      ratings: [],
+      ratings: [
+        {
+          type: "routine_timing",
+          routineEndTime,
+        },
+      ],
     };
 
     const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
@@ -1661,12 +1744,13 @@ export default function BuenasNochesApp() {
     }
   }
 
-  function startQuickSleepTimer() {
+  function startQuickSleepTimer(type = "night") {
     setState((current) => ({
       ...current,
       quickSleepTimer: {
         startedAt: getCurrentTimeValue(),
         running: true,
+        type,
       },
     }));
   }
@@ -1674,17 +1758,48 @@ export default function BuenasNochesApp() {
   async function stopQuickSleepTimer() {
     if (!activeChild || !state.quickSleepTimer.startedAt) return;
     const sleepTime = getCurrentTimeValue();
-    const nextLog = {
-      date: new Date().toISOString().slice(0, 10),
-      routineStartTime: "",
-      bedTime: state.quickSleepTimer.startedAt,
-      sleepTime,
-      latency: calculateLatency(state.quickSleepTimer.startedAt, sleepTime),
-      nightWakings: "pending",
-      notes: "Registrado con el tracker rápido de sueño.",
-      ratings: [],
-      source: "quick_sleep_tracker",
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const existingLog = activeChild.logs.find((entry) => entry.date === dateKey);
+    const isNapLog = state.quickSleepTimer.type === "nap";
+    const napDuration = calculateLatency(state.quickSleepTimer.startedAt, sleepTime);
+    const existingRatings = existingLog?.ratings || [];
+    const napRating = {
+      type: "nap_log",
+      napStart: state.quickSleepTimer.startedAt,
+      napEnd: sleepTime,
+      napDuration,
     };
+    const nextLog = isNapLog
+      ? {
+          ...(existingLog || {}),
+          date: dateKey,
+          routineStartTime: existingLog?.routineStartTime || "",
+          bedTime: existingLog?.bedTime || "",
+          sleepTime: existingLog?.sleepTime || "",
+          latency: existingLog?.latency || 0,
+          nightWakings: existingLog?.nightWakings || "pending",
+          notes: existingLog?.notes || "Siesta registrada.",
+          napStart: state.quickSleepTimer.startedAt,
+          napEnd: sleepTime,
+          napDuration,
+          ratings: [...existingRatings.filter((rating) => rating?.type !== "nap_log"), napRating],
+          source: existingLog?.source || "quick_sleep_tracker",
+        }
+      : {
+          ...(existingLog || {}),
+          date: dateKey,
+          routineStartTime: existingLog?.routineStartTime || "",
+          bedTime: state.quickSleepTimer.startedAt,
+          sleepTime,
+          latency: calculateLatency(state.quickSleepTimer.startedAt, sleepTime),
+          nightWakings: existingLog?.nightWakings || "pending",
+          notes: existingLog?.notes || "Registrado con el tracker rápido de sueño.",
+          ratings: existingRatings,
+          napStart: existingLog?.napStart || "",
+          napEnd: existingLog?.napEnd || "",
+          napDuration: existingLog?.napDuration || 0,
+          source: "quick_sleep_tracker",
+        };
 
     const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
       left.date < right.date ? 1 : -1
@@ -1696,14 +1811,14 @@ export default function BuenasNochesApp() {
 
     setState((current) => ({
       ...current,
-      quickSleepTimer: { startedAt: "", running: false },
+      quickSleepTimer: { startedAt: "", running: false, type: "night" },
       activeSection: "reports",
       expandedChildId: activeChild.id,
-      persistenceMessage: "Sueño registrado exitosamente.",
+      persistenceMessage: isNapLog ? "Siesta registrada exitosamente." : "Sueño registrado exitosamente.",
     }));
 
     const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
-    if (email) {
+    if (email && !isNapLog) {
       try {
         await fetch("/api/member-data", {
           method: "POST",
@@ -1912,10 +2027,28 @@ export default function BuenasNochesApp() {
 
     const formData = new FormData(event.currentTarget);
     const nightWakings = String(formData.get("nightWakings") || "0");
+    const wakeTime = String(formData.get("wakeTime") || "");
     const logDate = state.wakingPromptLogDate;
 
     updateChild(activeChild.id, (child) => ({
-      logs: (child.logs || []).map((log) => (log.date === logDate ? { ...log, nightWakings } : log)),
+      logs: (child.logs || []).map((log) =>
+        log.date === logDate
+          ? {
+              ...log,
+              nightWakings,
+              wakeTime,
+              totalSleepHours: calculateTotalSleepHours(log.sleepTime, wakeTime, log.napDuration),
+              ratings: [
+                ...(log.ratings || []).filter((rating) => rating?.type !== "morning_report"),
+                {
+                  type: "morning_report",
+                  wakeTime,
+                  totalSleepHours: calculateTotalSleepHours(log.sleepTime, wakeTime, log.napDuration),
+                },
+              ],
+            }
+          : log
+      ),
     }));
 
     setState((current) => ({
@@ -1937,6 +2070,7 @@ export default function BuenasNochesApp() {
             childId: activeChild.id,
             logDate,
             nightWakings,
+            wakeTime,
           }),
         });
       } catch {
@@ -2006,6 +2140,7 @@ export default function BuenasNochesApp() {
           onGoProfile={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, activeSection: "child" }))}
           onGoSleepWindow={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false, sleepWindowOpen: true }))}
           onClose={() => setState((current) => ({ ...current, premiumRoutineGateOpen: false }))}
+          onPurchaseClick={goToSalesFunnelFromRoutineGate}
         />
       ) : null}
 
@@ -2048,6 +2183,11 @@ export default function BuenasNochesApp() {
           ) : state.activeSection !== "admin" && state.activeSection === "child" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <>
               <article className="card card--soft card--quiz">
+            {state.children.length > 0 ? (
+              <button className="routine-modal__close" type="button" onClick={closeAddChildFlow} aria-label={strings.close}>
+                ×
+              </button>
+            ) : null}
             <div className="card-header">
               <span className="section-label">{strings.newChild}</span>
               <h2>{strings.createProfileFirst}</h2>
@@ -2108,13 +2248,26 @@ export default function BuenasNochesApp() {
                   <span>{strings.targetBedtime}</span>
                   <input
                     type="time"
-                    value={state.routineForm.targetBedtime}
-                    onChange={(event) => updateRoutineField("targetBedtime", event.target.value)}
+                    value={state.childDraft.sleepGoal}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        childDraft: { ...current.childDraft, sleepGoal: event.target.value },
+                      }))
+                    }
                   />
                 </label>
                 <label className="stack compact">
                   <span>{strings.napQuestion}</span>
-                  <select value={state.routineForm.napTaken} onChange={(event) => updateRoutineField("napTaken", event.target.value)}>
+                  <select
+                    value={state.childDraft.takesNap}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        childDraft: { ...current.childDraft, takesNap: event.target.value },
+                      }))
+                    }
+                  >
                     <option value="no">{strings.no}</option>
                     <option value="yes">{strings.yes}</option>
                   </select>
@@ -2122,16 +2275,18 @@ export default function BuenasNochesApp() {
                 <button className="button button-primary" type="submit">
                   {strings.startQuiz}
                 </button>
-                <AccountLookup
-                  strings={strings}
-                  onToggle={() =>
-                    setState((current) => ({
-                      ...current,
-                      accountLookupOpen: true,
-                      accountLookupMessage: "",
-                    }))
-                  }
-                />
+                {state.children.length === 0 ? (
+                  <AccountLookup
+                    strings={strings}
+                    onToggle={() =>
+                      setState((current) => ({
+                        ...current,
+                        accountLookupOpen: true,
+                        accountLookupMessage: "",
+                      }))
+                    }
+                  />
+                ) : null}
               </form>
             ) : null}
 
@@ -2366,6 +2521,11 @@ export default function BuenasNochesApp() {
           {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
             <section className="app-panel">
               <article className="card card--soft card--quiz">
+                {state.children.length > 0 ? (
+                  <button className="routine-modal__close" type="button" onClick={closeAddChildFlow} aria-label={strings.close}>
+                    ×
+                  </button>
+                ) : null}
                 <div className="card-header">
                   <span className="section-label">Nuevo niño</span>
                   <h2>{strings.createProfileFirst}</h2>
@@ -2425,13 +2585,26 @@ export default function BuenasNochesApp() {
                       <span>{strings.targetBedtime}</span>
                       <input
                         type="time"
-                        value={state.routineForm.targetBedtime}
-                        onChange={(event) => updateRoutineField("targetBedtime", event.target.value)}
+                        value={state.childDraft.sleepGoal}
+                        onChange={(event) =>
+                          setState((current) => ({
+                            ...current,
+                            childDraft: { ...current.childDraft, sleepGoal: event.target.value },
+                          }))
+                        }
                       />
                     </label>
                     <label className="stack compact">
                       <span>{strings.napQuestion}</span>
-                      <select value={state.routineForm.napTaken} onChange={(event) => updateRoutineField("napTaken", event.target.value)}>
+                      <select
+                        value={state.childDraft.takesNap}
+                        onChange={(event) =>
+                          setState((current) => ({
+                            ...current,
+                            childDraft: { ...current.childDraft, takesNap: event.target.value },
+                          }))
+                        }
+                      >
                         <option value="no">{strings.no}</option>
                         <option value="yes">{strings.yes}</option>
                       </select>
@@ -2439,16 +2612,18 @@ export default function BuenasNochesApp() {
                     <button className="button button-primary" type="submit">
                       {strings.startQuiz}
                     </button>
-                    <AccountLookup
-                      strings={strings}
-                      onToggle={() =>
-                        setState((current) => ({
-                          ...current,
-                          accountLookupOpen: true,
-                          accountLookupMessage: "",
-                        }))
-                      }
-                    />
+                    {state.children.length === 0 ? (
+                      <AccountLookup
+                        strings={strings}
+                        onToggle={() =>
+                          setState((current) => ({
+                            ...current,
+                            accountLookupOpen: true,
+                            accountLookupMessage: "",
+                          }))
+                        }
+                      />
+                    ) : null}
                   </form>
                 ) : null}
 
@@ -2944,6 +3119,10 @@ function NightWakingPrompt({ strings, logDate, onSubmit, onClose }) {
         </div>
         <form className="stack" onSubmit={onSubmit}>
           <label className="stack compact">
+            <span>{strings.wakeTime}</span>
+            <input name="wakeTime" type="time" required />
+          </label>
+          <label className="stack compact">
             <span>{strings.nightWakings}</span>
             <select name="nightWakings" defaultValue="0">
               <option value="0">0</option>
@@ -3110,6 +3289,25 @@ function HomeQuickCards({ strings, activeChild, onOpenSleepWindow, onOpenRoutine
 }
 
 function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
+  const [now, setNow] = useState(Date.now());
+  const timerType = timer.type || "night";
+  const isNapMode = timerType === "nap";
+
+  useEffect(() => {
+    if (!timer.running) return undefined;
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [timer.running]);
+
+  function getElapsedSeconds() {
+    if (!timer.startedAt) return 0;
+    const [hours = 0, minutes = 0] = timer.startedAt.split(":").map(Number);
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    if (start.getTime() > now) start.setDate(start.getDate() - 1);
+    return Math.max(0, Math.floor((now - start.getTime()) / 1000));
+  }
+
   if (!activeChild) {
     return (
       <article className="card card--soft">
@@ -3120,28 +3318,49 @@ function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
   }
 
   return (
-    <article className="card card--feature sleep-tracker-card">
-      <div className="card-header">
-        <span className="section-label">Sleep</span>
-        <h2>{strings.sleepTracker}</h2>
+    <article className="sleep-timer-panel">
+      <header className="sleep-timer-topbar">
+        <span>{isNapMode ? "Registrar siesta" : "Registrar sueño"}</span>
+        <strong>{activeChild.name}</strong>
+      </header>
+      <div className="sleep-timer-row">
+        <span>{isNapMode ? "Inicio siesta" : "Inicio"}</span>
+        <strong>{timer.startedAt ? `Hoy, ${timer.startedAt}` : "--:--"}</strong>
       </div>
-      <p className="lead-copy">
-        Presiona iniciar cuando {activeChild.name} esté en cama. Presiona detener cuando se quede dormido.
-      </p>
-      <div className="sleep-tracker-display">
-        <span>{timer.running ? "Contando tiempo en cama" : "Listo para registrar"}</span>
-        <strong>{timer.startedAt || "--:--"}</strong>
+      <div className="sleep-timer-row">
+        <span>{isNapMode ? "Fin siesta" : "Se durmió"}</span>
+        <strong>{timer.running ? "En curso" : "--:--"}</strong>
       </div>
-      <div className="inline-actions">
-        <button className="icon-button sleep-log-icon-button" type="button" onClick={onStart} disabled={timer.running} aria-label="Iniciar timer">
-          ▶
+      <div className="sleep-timer-clock" aria-live="polite">
+        <strong>{formatElapsedTimer(getElapsedSeconds())}</strong>
+        <span>
+          <i>HORAS</i>
+          <i>MIN</i>
+          <i>SEG</i>
+        </span>
+      </div>
+      <div className="sleep-timer-actions">
+        <button
+          className="sleep-timer-orb"
+          type="button"
+          onClick={() => (timer.running ? onStop() : onStart("night"))}
+          aria-label={timer.running ? "Guardar sueño" : "Iniciar sueño"}
+        >
+          <span>{timer.running ? "Guardar" : "▶"}</span>
+          <strong>{timer.running ? "SAVE" : "START"}</strong>
         </button>
-        <button className="icon-button sleep-log-icon-button" type="button" onClick={onStop} disabled={!timer.running} aria-label="Detener timer">
-          ■
-        </button>
       </div>
+      {activeChild.takesNap === "yes" ? (
+        <div className="sleep-timer-secondary-actions">
+          <button className="button button-ghost" type="button" onClick={() => onStart("nap")} disabled={timer.running}>
+            Registrar siesta
+          </button>
+        </div>
+      ) : null}
       <p className="muted">
-        Este registro aparecerá en Reportes en color azul porque no fue calculado desde una rutina guiada.
+        {isNapMode
+          ? "La siesta se guardará en el mismo día que el sueño nocturno."
+          : "Presiona iniciar cuando esté en cama y guardar cuando se quede dormido."}
       </p>
     </article>
   );
@@ -3177,15 +3396,16 @@ function ParentSettingsSection({ strings, parentName, parentLastName, parentEmai
 
 function SleepWindowModal({ strings, activeChild, onCalculated, onClose }) {
   const [wakeTime, setWakeTime] = useState("");
-  const [napsCount, setNapsCount] = useState("0");
+  const [napsCount, setNapsCount] = useState(activeChild?.takesNap === "yes" ? "1" : "0");
   const [result, setResult] = useState(null);
+  const takesNap = activeChild?.takesNap === "yes";
 
   if (!activeChild) return null;
 
   function calculateWindow(event) {
     event.preventDefault();
     if (!wakeTime) return;
-    setResult(calculateSleepWindow({ birthday: activeChild.birthday, wakeTime, napsCount }));
+    setResult(calculateSleepWindow({ birthday: activeChild.birthday, wakeTime, napsCount: takesNap ? napsCount : "0" }));
     onCalculated?.();
   }
 
@@ -3206,15 +3426,16 @@ function SleepWindowModal({ strings, activeChild, onCalculated, onClose }) {
             <span>{strings.wakeTime}</span>
             <input type="time" value={wakeTime} onChange={(event) => setWakeTime(event.target.value)} required />
           </label>
-          <label className="stack compact">
-            <span>{strings.napsCount}</span>
-            <select value={napsCount} onChange={(event) => setNapsCount(event.target.value)}>
-              <option value="0">0</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3+</option>
-            </select>
-          </label>
+          {takesNap ? (
+            <label className="stack compact">
+              <span>{strings.napsCount}</span>
+              <select value={napsCount} onChange={(event) => setNapsCount(event.target.value)}>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3+</option>
+              </select>
+            </label>
+          ) : null}
           <button className="button button-primary" type="submit">
             {strings.calculate}
           </button>
@@ -3231,7 +3452,7 @@ function SleepWindowModal({ strings, activeChild, onCalculated, onClose }) {
   );
 }
 
-function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, onGoSleepWindow, onClose }) {
+function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, onGoSleepWindow, onClose, onPurchaseClick }) {
   return (
     <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Premium">
       <article className="profile-modal__panel card card--soft premium-steps-card">
@@ -3254,7 +3475,7 @@ function PremiumRoutineGate({ strings, hasProfile, hasSleepWindow, onGoProfile, 
           <strong>3. Generar rutina</strong>
           <span>Disponible solo para premium</span>
         </div>
-        <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
+        <a className="button button-primary button-link" href={SALES_FUNNEL_URL} onClick={onPurchaseClick}>
           {strings.unlockPremium}
         </a>
       </article>
@@ -3309,6 +3530,9 @@ function ChildHomeGrid({
                 <strong>{child.name}</strong>
                 <span>{formatAgeLabel(child.birthday, language)}</span>
                 <span>{childGenderLabel(child.gender, language)}</span>
+                <span>
+                  {strings.sleepGoal}: {child.sleepGoal || "--:--"}
+                </span>
                 <small>
                   {summary.averageLatency
                     ? `${summary.averageLatency} min promedio`
@@ -3368,6 +3592,13 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
           <label className="stack compact">
             <span>{strings.sleepGoal}</span>
             <input name="sleepGoal" type="time" defaultValue={activeChild.sleepGoal || ""} />
+          </label>
+          <label className="stack compact">
+            <span>{strings.napQuestion}</span>
+            <select name="takesNap" defaultValue={activeChild.takesNap || "no"}>
+              <option value="no">{strings.no}</option>
+              <option value="yes">{strings.yes}</option>
+            </select>
           </label>
           <div className="inline-actions">
             <button className="button button-primary" type="submit">
@@ -3438,22 +3669,34 @@ function getSleepProgressMessage(logs, strings) {
   return null;
 }
 
-function buildWeeklyProgressChart(logs, weekOffset = 0) {
+function buildWeeklyProgressChart(logs, weekOffset = 0, child = null) {
   const today = new Date();
   const sortedLogs = [...(logs || [])].filter((log) => log.date).sort((left, right) => (left.date > right.date ? 1 : -1));
   const firstLogDate = sortedLogs[0]?.date ? new Date(`${sortedLogs[0].date}T00:00:00`) : today;
+  const minimumSleepHours = child?.birthday ? getRecommendedSleepMinimumHours(child.birthday) : 9;
   const startDate = addDateDays(firstLogDate, weekOffset * 7);
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = addDateDays(startDate, index);
     const dateKey = getDateKey(date);
     const log = logs.find((entry) => entry.date === dateKey);
+    const totalSleepHours =
+      Number.isFinite(Number(log?.totalSleepHours)) && Number(log?.totalSleepHours) > 0
+        ? Number(log.totalSleepHours)
+        : calculateTotalSleepHours(log?.sleepTime, log?.wakeTime, log?.napDuration);
     return {
       dateKey,
       label: date.toLocaleDateString("es", { month: "numeric", day: "numeric" }),
       bedTime: log?.bedTime || "",
+      routineEndTime: log?.routineEndTime || "",
       sleepTime: log?.sleepTime || "",
       latency: log ? Number(log.latency || 0) : null,
       wakings: log ? normalizeNightWakings(log.nightWakings) : 0,
+      wakeTime: log?.wakeTime || "",
+      napStart: log?.napStart || "",
+      napEnd: log?.napEnd || "",
+      napDuration: Number(log?.napDuration || 0),
+      totalSleepHours,
+      meetsMinimumSleep: totalSleepHours !== null && totalSleepHours >= minimumSleepHours,
     };
   });
 
@@ -3475,12 +3718,12 @@ function NightSleepTimelineChart({ days, onEditDay }) {
   const range = endMinute - startMinute;
   const hourLabels = ["23:00", "21:00", "19:00", "17:00", "15:00", "13:00", "11:00"];
 
-  function getBarStyle(day) {
-    if (!day.bedTime || !day.sleepTime) return {};
-    const bed = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.bedTime)));
-    const sleep = Math.max(startMinute, Math.min(endMinute, timeToMinutes(day.sleepTime)));
-    const top = 100 - ((Math.max(bed, sleep) - startMinute) / range) * 100;
-    const height = Math.max(3, (Math.abs(sleep - bed) / range) * 100);
+  function getSegmentStyle(startValue, endValue) {
+    if (!startValue || !endValue) return {};
+    const start = Math.max(startMinute, Math.min(endMinute, timeToMinutes(startValue)));
+    const end = Math.max(startMinute, Math.min(endMinute, timeToMinutes(endValue)));
+    const top = 100 - ((Math.max(start, end) - startMinute) / range) * 100;
+    const height = Math.max(3, (Math.abs(end - start) / range) * 100);
     return {
       top: `${top}%`,
       height: `${height}%`,
@@ -3499,14 +3742,27 @@ function NightSleepTimelineChart({ days, onEditDay }) {
           <div className="night-timeline-day" key={day.dateKey}>
             <div className="night-timeline-track">
               {day.bedTime && day.sleepTime ? (
-                <button className="night-timeline-bar" type="button" style={getBarStyle(day)} onClick={() => onEditDay?.(day.dateKey)}>
-                  <span>{day.bedTime} → {day.sleepTime}</span>
+                <button className="night-timeline-bar-stack" type="button" onClick={() => onEditDay?.(day.dateKey)}>
+                  {day.routineEndTime ? (
+                    <span
+                      className="night-timeline-segment night-timeline-segment--routine"
+                      style={getSegmentStyle(day.bedTime, day.routineEndTime)}
+                    />
+                  ) : null}
+                  <span
+                    className="night-timeline-segment night-timeline-segment--sleep"
+                    style={getSegmentStyle(day.routineEndTime || day.bedTime, day.sleepTime)}
+                  />
+                  <span className="sr-only">{day.bedTime} → {day.routineEndTime || day.bedTime} → {day.sleepTime}</span>
                 </button>
               ) : (
                 <span className="night-timeline-empty" />
               )}
             </div>
             <strong>{day.label}</strong>
+            <span className={day.totalSleepHours === null ? "sleep-hours-badge" : day.meetsMinimumSleep ? "sleep-hours-badge is-good" : "sleep-hours-badge is-low"}>
+              {day.totalSleepHours === null ? "--h" : `${day.totalSleepHours}h`}
+            </span>
           </div>
         ))}
       </div>
@@ -3534,7 +3790,7 @@ function HomeSection({
   const [reviewStatus, setReviewStatus] = useState("");
   const [editingLogDate, setEditingLogDate] = useState("");
   if (!activeChild) return null;
-  const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset);
+  const weeklyChart = buildWeeklyProgressChart(activeChild.logs || [], weekOffset, activeChild);
   const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
   const editingLog = activeChild.logs?.find((log) => log.date === editingLogDate);
@@ -3739,10 +3995,6 @@ function HomeSection({
             ) : null}
           </div>
         ) : null}
-
-        <button className="button button-primary dashboard-routine-button" type="button" onClick={onCreateRoutine}>
-          {strings.createTonightRoutine}
-        </button>
       </article>
     </div>
   );
@@ -3764,25 +4016,37 @@ function formatTimer(seconds) {
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+function formatElapsedTimer(seconds) {
+  const safeSeconds = Math.max(0, seconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")} : ${String(minutes).padStart(2, "0")} : ${String(remainingSeconds).padStart(2, "0")}`;
+}
+
 function playTransitionTone(soundMode) {
   if (soundMode === "silent") return;
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContext();
-    const startTone = () => {
+    const playBellNote = (frequency, startOffset) => {
       const oscillator = audioContext.createOscillator();
       const gain = audioContext.createGain();
-      oscillator.type = soundMode === "nature" ? "triangle" : "sine";
-      oscillator.frequency.setValueAtTime(soundMode === "nature" ? 880 : 660, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(soundMode === "nature" ? 1320 : 520, audioContext.currentTime + 0.18);
-      oscillator.frequency.exponentialRampToValueAtTime(soundMode === "nature" ? 940 : 740, audioContext.currentTime + 0.36);
-      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.42);
+      const startAt = audioContext.currentTime + startOffset;
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, startAt);
+      oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.96, startAt + 0.65);
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(soundMode === "nature" ? 0.09 : 0.12, startAt + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.9);
       oscillator.connect(gain);
       gain.connect(audioContext.destination);
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.45);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + 0.95);
+    };
+    const startTone = () => {
+      playBellNote(784, 0);
+      playBellNote(1046.5, 0.08);
     };
 
     if (audioContext.state === "suspended") {
@@ -3855,7 +4119,17 @@ function RoutineSection({
   const hasPlayedEndToneRef = useRef(false);
   const ambientSoundRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
-  const untimedRoutinePhases = ["banarse_y_pijamas", "cepillarse_los_dientes", "a_la_cama", "dormir", "limite_claro"];
+  const isLastRoutineStep = currentPlan?.steps ? routineStepIndex >= currentPlan.steps.length - 1 : false;
+  const untimedRoutinePhases = [
+    "banarse_y_pijamas",
+    "bano_tibio",
+    "ponerse_pijama",
+    "cepillarse_los_dientes",
+    "ir_al_bano",
+    "a_la_cama",
+    "dormir",
+    "limite_claro",
+  ];
   const isUntimedPlayerStep = playerStep ? untimedRoutinePhases.includes(playerStep.phaseKey) : false;
 
   useEffect(() => {
@@ -3927,6 +4201,17 @@ function RoutineSection({
     setRoutinePlayerOpen(false);
   }
 
+  function saveChildAsleep() {
+    const sessionPatch = {
+      inBedAt: routineSession.inBedAt || getCurrentTimeValue(),
+      routineEndTime: routineSession.routineEndTime || getCurrentTimeValue(),
+      fellAsleepAt: routineSession.fellAsleepAt || getCurrentTimeValue(),
+    };
+    onRoutineSessionChange(sessionPatch);
+    onSaveGuidedRoutine?.(sessionPatch);
+    setRoutinePlayerOpen(false);
+  }
+
   return (
     <div className="dashboard-grid">
       <article className="card card--soft">
@@ -3971,14 +4256,16 @@ function RoutineSection({
             />
             <small className="field-help">{strings.prepareDurationHelp}</small>
           </label>
-          <label className="stack compact">
-            <span>{strings.napQuestion}</span>
-            <select value={routineForm.napTaken} onChange={(event) => onRoutineFieldChange("napTaken", event.target.value)}>
-              <option value="no">{strings.no}</option>
-              <option value="yes">{strings.yes}</option>
-            </select>
-          </label>
-          {routineForm.napTaken === "yes" ? (
+          {activeChild.takesNap === "yes" ? (
+            <label className="stack compact">
+              <span>{strings.napQuestion}</span>
+              <select value={routineForm.napTaken} onChange={(event) => onRoutineFieldChange("napTaken", event.target.value)}>
+                <option value="no">{strings.no}</option>
+                <option value="yes">{strings.yes}</option>
+              </select>
+            </label>
+          ) : null}
+          {activeChild.takesNap === "yes" && routineForm.napTaken === "yes" ? (
             <label className="stack compact">
               <span>{strings.napWakeTime}</span>
               <input
@@ -4159,7 +4446,13 @@ function RoutineSection({
                     </p>
                     <div className="summary-grid">
                       <Stat label={strings.bedTime} value={routineSession.inBedAt || "--:--"} />
-                      <Stat label={strings.sleepTime} value={routineSession.fellAsleepAt || "--:--"} />
+                      <div className="stat-card sleep-save-stat">
+                        <span>{strings.sleepTime}</span>
+                        <strong>{routineSession.fellAsleepAt || "--:--"}</strong>
+                        <button className="button button-primary" type="button" onClick={saveChildAsleep}>
+                          Mi hijo ya se durmió
+                        </button>
+                      </div>
                     </div>
                     <p className="muted">
                       Si todavía necesita que mamá o papá estén cerca para dormirse, eso es normal. Primero buscamos
@@ -4167,15 +4460,8 @@ function RoutineSection({
                     </p>
                   </div>
                 ) : null}
-                <div className="routine-media">
-                  <span>
-                    {playerStep.selectedActivity
-                      ? "Aquí podremos mostrar el video o foto de esta actividad."
-                      : "Esta parte puede quedar como lista simple sin video."}
-                  </span>
-                </div>
-                <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p>
-                {playerStep.selectedActivity ? (
+                {playerStep.phaseKey !== "dormir" ? <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p> : null}
+                {playerStep.phaseKey !== "dormir" && playerStep.selectedActivity ? (
                   <label className="stack compact">
                     <span>{strings.changeActivity}</span>
                     <select value={playerStep.selectedActivityId} onChange={(event) => onChangeActivity(playerStep.id, event.target.value)}>
@@ -4187,7 +4473,7 @@ function RoutineSection({
                     </select>
                   </label>
                 ) : null}
-                {playerStep.preparationItems?.length ? (
+                {playerStep.phaseKey !== "dormir" && playerStep.preparationItems?.length ? (
                   <ul className="mini-list">
                     {playerStep.preparationItems.map((item) => (
                       <li key={item.id}>
@@ -4196,7 +4482,7 @@ function RoutineSection({
                     ))}
                   </ul>
                 ) : null}
-                {playerStep.guidance?.examples?.length ? (
+                {playerStep.phaseKey !== "dormir" && playerStep.guidance?.examples?.length ? (
                   <ul className="mini-list">
                     {playerStep.guidance.examples.map((example) => (
                       <li key={example}>{example}</li>
@@ -4226,54 +4512,52 @@ function RoutineSection({
                     <p className="muted">Si ya está listo… no hagas más.</p>
                   </div>
                 ) : null}
-                <div className="inline-actions">
-                  <button className="button button-ghost" type="button" onClick={() => setIsPaused((paused) => !paused)}>
-                    {isPaused ? strings.resumeRoutine : strings.pauseRoutine}
-                  </button>
-                  <button
-                    className="button button-ghost"
-                    type="button"
-                    onClick={() => {
-                      hasPlayedEndToneRef.current = false;
-                      setSecondsLeft((current) => current + 120);
-                    }}
-                  >
-                    {strings.extendActivity}
-                  </button>
-                </div>
-                <div className="inline-actions">
-                  <button
-                    className="button button-ghost"
-                    type="button"
-                    disabled={routineStepIndex === 0}
-                    onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    className="button button-primary"
-                    type="button"
-                    onClick={() => {
-                      if (routineStepIndex >= currentPlan.steps.length - 1) {
-                        const sessionPatch = {
-                          inBedAt: routineSession.inBedAt || getCurrentTimeValue(),
-                          fellAsleepAt: routineSession.fellAsleepAt || getCurrentTimeValue(),
-                        };
-                        onRoutineSessionChange(sessionPatch);
-                        onSaveGuidedRoutine?.(sessionPatch);
-                        setRoutinePlayerOpen(false);
-                        return;
-                      }
-                      playTransitionTone(routineSession.soundMode);
-                      if (playerStep.phaseKey === "a_la_cama") {
-                        onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
-                      }
-                      setRoutineStepIndex((index) => index + 1);
-                    }}
-                  >
-                    {routineStepIndex >= currentPlan.steps.length - 1 ? "Mi hijo ya se durmió" : "Siguiente parte"}
-                  </button>
-                </div>
+                {!isLastRoutineStep ? (
+                  <>
+                    <div className="inline-actions routine-compact-controls">
+                      <button className="button button-ghost" type="button" onClick={() => setIsPaused((paused) => !paused)} aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}>
+                        {isPaused ? "▶" : "⏸"}
+                      </button>
+                      <button
+                        className="button button-ghost"
+                        type="button"
+                        onClick={() => {
+                          hasPlayedEndToneRef.current = false;
+                          setSecondsLeft((current) => current + 120);
+                        }}
+                      >
+                        +2m
+                      </button>
+                    </div>
+                    <div className="inline-actions">
+                      <button
+                        className="button button-ghost"
+                        type="button"
+                        disabled={routineStepIndex === 0}
+                        onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
+                        aria-label="Anterior"
+                      >
+                        ←
+                      </button>
+                      <button
+                        className="button button-primary"
+                        type="button"
+                        onClick={() => {
+                          playTransitionTone(routineSession.soundMode);
+                          if (playerStep.phaseKey === "a_la_cama") {
+                            onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
+                          }
+                          if (currentPlan.steps[routineStepIndex + 1]?.phaseKey === "dormir") {
+                            onRoutineSessionChange({ routineEndTime: routineSession.routineEndTime || getCurrentTimeValue() });
+                          }
+                          setRoutineStepIndex((index) => index + 1);
+                        }}
+                      >
+                        Siguiente parte
+                      </button>
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
           ) : null}
