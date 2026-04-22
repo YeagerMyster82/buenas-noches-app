@@ -528,6 +528,7 @@ const initialState = {
   parentName: "",
   parentLastName: "",
   parentEmail: "",
+  parentPhotoUrl: "",
   parentProfileSaved: false,
   accountCreatedAt: "",
   freeLeadBasicSent: false,
@@ -781,7 +782,6 @@ function makeEmptyChild(childDraft) {
     name: childDraft.name.trim(),
     birthday: childDraft.birthday,
     gender: childDraft.gender || "boy",
-    photoUrl: childDraft.photoUrl || "",
     createdAt: childDraft.createdAt || new Date().toISOString(),
     isFreeProfile: childDraft.isFreeProfile ?? true,
     primaryProfile: "",
@@ -815,7 +815,6 @@ function makeChildFromSavedQuiz(result) {
     secondaryProfile: result.secondary_profile || "",
     sleepGoal: metadata.sleepGoal || "",
     takesNap: metadata.takesNap || metadata.napTaken || "no",
-    photoUrl: metadata.photoUrl || "",
     createdAt: result.created_at || metadata.createdAt || new Date().toISOString(),
     isFreeProfile: metadata.isFreeProfile ?? true,
     answers: responses,
@@ -824,7 +823,7 @@ function makeChildFromSavedQuiz(result) {
 }
 
 function isExpiredFreeProfile(child, now = Date.now()) {
-  if (!child?.isFreeProfile) return false;
+  if (child?.isFreeProfile === false) return false;
   const createdAt = child.createdAt ? new Date(child.createdAt).getTime() : 0;
   return Boolean(createdAt && now - createdAt >= FREE_PROFILE_EXPIRY_MS);
 }
@@ -1083,7 +1082,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "new-child",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
@@ -1097,7 +1096,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       onboardingMode: "",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       quizIndex: -1,
       answers: [],
       tieCandidates: null,
@@ -1392,7 +1391,7 @@ export default function BuenasNochesApp() {
       expandedChildId: child.id,
       activeSection: "home",
       onboardingMode: "",
-      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", photoUrl: "" },
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       parentName: parentName || current.parentName,
       parentEmail: parentEmail || current.parentEmail,
       parentProfileSaved: true,
@@ -1458,7 +1457,6 @@ export default function BuenasNochesApp() {
             parentName: parentName || state.parentName,
             sleepGoal: child.sleepGoal,
             takesNap: child.takesNap,
-            photoUrl: child.photoUrl || "",
             createdAt: child.createdAt,
             isFreeProfile: child.isFreeProfile,
             answers: {
@@ -1469,7 +1467,6 @@ export default function BuenasNochesApp() {
               childGender: child.gender,
               sleepGoal: child.sleepGoal,
               takesNap: child.takesNap,
-              photoUrl: child.photoUrl || "",
               createdAt: child.createdAt,
               isFreeProfile: child.isFreeProfile,
             },
@@ -1512,7 +1509,6 @@ export default function BuenasNochesApp() {
     const gender = String(formData.get("gender") || "boy");
     const sleepGoal = String(formData.get("sleepGoal") || "");
     const takesNap = String(formData.get("takesNap") || "no");
-    const photoUrl = String(formData.get("photoUrl") || "");
     if (!name || !birthday) return;
 
     updateChild(childId, () => ({
@@ -1521,7 +1517,6 @@ export default function BuenasNochesApp() {
       gender,
       sleepGoal,
       takesNap,
-      photoUrl,
     }));
 
     setState((current) => ({
@@ -1547,7 +1542,6 @@ export default function BuenasNochesApp() {
             childGender: gender,
             sleepGoal,
             takesNap,
-            photoUrl,
           }),
         });
       } catch {
@@ -2591,6 +2585,7 @@ export default function BuenasNochesApp() {
               parentName={state.parentName}
               parentLastName={state.parentLastName}
               parentEmail={state.parentEmail}
+              parentPhotoUrl={state.parentPhotoUrl}
               onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
               onSave={saveParentSettings}
             />
@@ -2611,6 +2606,7 @@ export default function BuenasNochesApp() {
               language={state.language}
               parentName={state.parentName}
               parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+              parentPhotoUrl={state.parentPhotoUrl}
             />
           ) : state.activeSection === "contact" ? (
             <ContactSection
@@ -2942,6 +2938,7 @@ export default function BuenasNochesApp() {
                   parentName={state.parentName}
                   parentLastName={state.parentLastName}
                   parentEmail={state.parentEmail}
+                  parentPhotoUrl={state.parentPhotoUrl}
                   onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
                   onSave={saveParentSettings}
                 />
@@ -2991,6 +2988,7 @@ export default function BuenasNochesApp() {
                   language={state.language}
                   parentName={state.parentName}
                   parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+                  parentPhotoUrl={state.parentPhotoUrl}
                 />
               ) : null}
 
@@ -3485,7 +3483,29 @@ function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
   );
 }
 
-function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, onChange, onSave }) {
+function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, parentPhotoUrl, onChange, onSave }) {
+  function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 420;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context?.drawImage(image, 0, 0, canvas.width, canvas.height);
+        onChange("parentPhotoUrl", canvas.toDataURL("image/jpeg", 0.78));
+      };
+      image.onerror = () => onChange("parentPhotoUrl", String(reader.result || ""));
+      image.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <article className="card card--feature parent-settings-card">
       <div className="card-header">
@@ -3493,6 +3513,20 @@ function ParentSettingsSection({ strings, parentName, parentLastName, parentEmai
         <h2>{strings.parentSettings}</h2>
       </div>
       <form className="stack" onSubmit={onSave}>
+        <div className="profile-photo-editor">
+          <div className="profile-photo-preview">
+            {parentPhotoUrl ? <img src={parentPhotoUrl} alt="" /> : <span>{parentName?.slice(0, 1) || "?"}</span>}
+          </div>
+          <label className="stack compact">
+            <span>Foto para el muro de logros</span>
+            <input type="file" accept="image/*" onChange={handlePhotoChange} />
+          </label>
+          {parentPhotoUrl ? (
+            <button className="button button-ghost" type="button" onClick={() => onChange("parentPhotoUrl", "")}>
+              Quitar foto
+            </button>
+          ) : null}
+        </div>
         <label className="stack compact">
           <span>{strings.parentName}</span>
           <input type="text" value={parentName} onChange={(event) => onChange("parentName", event.target.value)} required />
@@ -3649,11 +3683,8 @@ function ChildHomeGrid({
               <button
                 type="button"
                 className={activeChildId === child.id ? "child-card child-card--hero is-active" : "child-card child-card--hero"}
-                onClick={() => onToggleChild(child.id)}
-              >
-                <span className="child-card-photo">
-                  {child.photoUrl ? <img src={child.photoUrl} alt="" /> : child.name?.slice(0, 1)}
-                </span>
+              onClick={() => onToggleChild(child.id)}
+            >
                 <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                 <strong>{child.name}</strong>
                 <span>{formatAgeLabel(child.birthday, language)}</span>
@@ -3687,30 +3718,7 @@ function ChildHomeGrid({
 
 function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(activeChild?.photoUrl || "");
   if (!activeChild) return null;
-
-  function handlePhotoChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const image = new Image();
-      image.onload = () => {
-        const maxSize = 420;
-        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-        const context = canvas.getContext("2d");
-        context?.drawImage(image, 0, 0, canvas.width, canvas.height);
-        setPhotoPreview(canvas.toDataURL("image/jpeg", 0.78));
-      };
-      image.onerror = () => setPhotoPreview(String(reader.result || ""));
-      image.src = String(reader.result || "");
-    };
-    reader.readAsDataURL(file);
-  }
 
   return (
     <div className="profile-modal" role="dialog" aria-modal="true" aria-label={`${strings.editProfile} ${activeChild.name}`}>
@@ -3725,21 +3733,6 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
           </h2>
         </div>
         <form className="stack" onSubmit={onSave}>
-          <div className="profile-photo-editor">
-            <div className="profile-photo-preview">
-              {photoPreview ? <img src={photoPreview} alt="" /> : <span>{activeChild.name?.slice(0, 1) || "?"}</span>}
-            </div>
-            <label className="stack compact">
-              <span>Foto</span>
-              <input type="file" accept="image/*" onChange={handlePhotoChange} />
-            </label>
-            {photoPreview ? (
-              <button className="button button-ghost" type="button" onClick={() => setPhotoPreview("")}>
-                Quitar foto
-              </button>
-            ) : null}
-            <input name="photoUrl" type="hidden" value={photoPreview} />
-          </div>
           <label className="stack compact">
             <span>{strings.childName}</span>
             <input name="childName" type="text" defaultValue={activeChild.name} required />
@@ -4009,9 +4002,6 @@ function HomeSection({
           </button>
         ) : null}
         <header className="dashboard-profile-header">
-          <div className="dashboard-profile-photo">
-            {activeChild.photoUrl ? <img src={activeChild.photoUrl} alt="" /> : <span>{activeChild.name?.slice(0, 1)}</span>}
-          </div>
           <div className="dashboard-name-row">
             <h1>{activeChild.name}</h1>
             {!isReportsMode ? (
@@ -5138,7 +5128,7 @@ function AvoidSection({ strings, language, onBack }) {
   );
 }
 
-function WinsSection({ activeChild, strings, language, parentName, parentEmail, allowReview = true }) {
+function WinsSection({ activeChild, strings, language, parentName, parentEmail, parentPhotoUrl, allowReview = true }) {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -5176,7 +5166,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
           parentName,
           email: parentEmail,
           childName: activeChild?.name || "",
-          photoUrl: activeChild?.photoUrl || "",
+          photoUrl: parentPhotoUrl || "",
           rating,
           comment,
           improvementFeedback,
@@ -5191,7 +5181,7 @@ function WinsSection({ activeChild, strings, language, parentName, parentEmail, 
       setRating(0);
       setStatus(payload.public ? strings.reviewSavedPublic : strings.reviewSavedPrivate);
       if (payload.public) {
-        setReviews((current) => [{ ...payload.review, photo_url: activeChild?.photoUrl || "" }, ...current]);
+        setReviews((current) => [{ ...payload.review, photo_url: parentPhotoUrl || "" }, ...current]);
       }
     } catch (error) {
       setStatus(error.message || "No pude guardar la reseña.");
