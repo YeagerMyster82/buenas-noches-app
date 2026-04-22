@@ -17,6 +17,7 @@ export async function POST(request) {
       rating: payload.rating,
       comment: payload.comment,
       improvementFeedback: payload.improvementFeedback,
+      photoUrl: payload.photoUrl,
     });
 
     try {

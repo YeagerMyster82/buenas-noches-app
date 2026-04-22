@@ -38,6 +38,9 @@ export async function POST(request) {
       parentName: payload.parentName || "",
       sleepGoal: payload.sleepGoal || "",
       takesNap: payload.takesNap || "no",
+      photoUrl: payload.photoUrl || "",
+      createdAt: payload.createdAt || "",
+      isFreeProfile: payload.isFreeProfile ?? true,
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
@@ -54,6 +57,7 @@ export async function POST(request) {
       childGender: payload.childGender || "boy",
       sleepGoal: payload.sleepGoal || "",
       takesNap: payload.takesNap || "no",
+      photoUrl: payload.photoUrl || "",
     });
     return Response.json({ ok: true, result });
   }
