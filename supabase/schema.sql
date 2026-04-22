@@ -101,6 +101,7 @@ create table if not exists app_reviews (
   parent_email text,
   parent_name text,
   child_name text,
+  photo_url text,
   rating integer not null check (rating between 1 and 5),
   comment text,
   improvement_feedback text,
@@ -108,6 +109,9 @@ create table if not exists app_reviews (
   needs_follow_up boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table app_reviews
+  add column if not exists photo_url text;
 
 create index if not exists support_messages_created_at_idx
   on support_messages (created_at desc);
