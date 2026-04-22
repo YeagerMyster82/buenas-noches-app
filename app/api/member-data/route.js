@@ -37,6 +37,7 @@ export async function POST(request) {
       childGender: payload.childGender || "boy",
       parentName: payload.parentName || "",
       sleepGoal: payload.sleepGoal || "",
+      takesNap: payload.takesNap || "no",
       answers: payload.answers || [],
       primaryProfile: payload.primaryProfile,
       secondaryProfile: payload.secondaryProfile || null,
@@ -52,6 +53,7 @@ export async function POST(request) {
       childBirthday: payload.childBirthday || "",
       childGender: payload.childGender || "boy",
       sleepGoal: payload.sleepGoal || "",
+      takesNap: payload.takesNap || "no",
     });
     return Response.json({ ok: true, result });
   }
@@ -101,6 +103,7 @@ export async function POST(request) {
       childId: payload.childId,
       logDate: payload.logDate,
       nightWakings: payload.nightWakings || "0",
+      wakeTime: payload.wakeTime || "",
     });
     return Response.json({ ok: true, result });
   }
