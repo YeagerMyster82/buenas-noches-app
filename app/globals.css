@@ -466,10 +466,46 @@ img {
   position: relative;
   min-height: 190px;
   align-content: end;
+  overflow: hidden;
   background:
     radial-gradient(circle at 88% 12%, rgba(169, 216, 221, 0.28), transparent 28%),
     linear-gradient(145deg, rgba(31, 48, 68, 0.98), rgba(66, 91, 119, 0.96));
   color: #f8f3ea;
+}
+
+.profile-animal {
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.profile-animal--card {
+  position: absolute;
+  right: -8px;
+  bottom: -14px;
+  width: min(42%, 150px);
+  max-height: 86%;
+  opacity: 0.94;
+  filter: drop-shadow(0 20px 24px rgba(12, 22, 34, 0.22));
+}
+
+.child-card--hero > :not(.profile-animal):not(.expand-cue) {
+  position: relative;
+  z-index: 1;
+  max-width: 68%;
+}
+
+.child-card.child-card--hero strong {
+  font-size: clamp(1.5rem, 8vw, 2.7rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: #fff8ef;
+}
+
+.child-card-meta {
+  display: grid;
+  gap: 3px;
 }
 
 .expand-cue {
@@ -817,6 +853,13 @@ img {
   gap: 6px;
   padding: 10px 42px 2px;
   text-align: center;
+}
+
+.profile-animal--dashboard {
+  width: min(36vw, 150px);
+  max-height: 150px;
+  margin-bottom: -4px;
+  filter: drop-shadow(0 18px 28px rgba(12, 22, 34, 0.2));
 }
 
 .dashboard-name-row {
