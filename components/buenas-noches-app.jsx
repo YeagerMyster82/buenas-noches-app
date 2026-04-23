@@ -27,23 +27,23 @@ const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
 const FREE_PROFILE_EXPIRY_MS = 14 * 24 * 60 * 60 * 1000;
 const profileAvatarMap = {
   EL_INAGOTABLE: {
-    src: "/brand/profile-avatars/incansable-bunny.png",
+    src: "/brand/profile-avatars/Fondo%20de%20Conejo%20eliminado.png",
     alt: "Conejo de Buenas Noches",
   },
   EL_DESVELADO: {
-    src: "/brand/profile-avatars/vigilante-owl.png",
+    src: "/brand/profile-avatars/Fondo%20de%20Buho%20eliminado.png",
     alt: "Búho de Buenas Noches",
   },
   EL_NEGOCIADOR: {
-    src: "/brand/profile-avatars/negociador-fox.png",
+    src: "/brand/profile-avatars/Fondo%20de%20Zorro%20eliminado.png",
     alt: "Zorro de Buenas Noches",
   },
   EL_BERRINCHE: {
-    src: "/brand/profile-avatars/volcan-bear.png",
+    src: "/brand/profile-avatars/Fondo%20de%20Oso%20eliminado.png",
     alt: "Oso de Buenas Noches",
   },
   EL_SONAMBULO: {
-    src: "/brand/profile-avatars/explorador-cat.png",
+    src: "/brand/profile-avatars/Fondo%20de%20Gato%20eliminado.png",
     alt: "Gato de Buenas Noches",
   },
 };
