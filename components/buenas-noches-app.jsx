@@ -25,6 +25,32 @@ const SUPPORT_WHATSAPP_URL = "https://wa.link/10n15d";
 const SUPPORT_EMAIL = "BuenasNochesApp@quirokids.com";
 const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
 const FREE_PROFILE_EXPIRY_MS = 14 * 24 * 60 * 60 * 1000;
+const profileAvatarMap = {
+  EL_INAGOTABLE: {
+    src: "/brand/profile-avatars/incansable-bunny.png",
+    alt: "Conejo de Buenas Noches",
+  },
+  EL_DESVELADO: {
+    src: "/brand/profile-avatars/vigilante-owl.png",
+    alt: "Búho de Buenas Noches",
+  },
+  EL_NEGOCIADOR: {
+    src: "/brand/profile-avatars/negociador-fox.png",
+    alt: "Zorro de Buenas Noches",
+  },
+  EL_BERRINCHE: {
+    src: "/brand/profile-avatars/volcan-bear.png",
+    alt: "Oso de Buenas Noches",
+  },
+  EL_SONAMBULO: {
+    src: "/brand/profile-avatars/explorador-cat.png",
+    alt: "Gato de Buenas Noches",
+  },
+};
+
+function getProfileAvatar(profileCode) {
+  return profileAvatarMap[profileCode] || null;
+}
 
 function isVerifiedPremiumState(state) {
   return (
@@ -3279,8 +3305,8 @@ function getProfilePopupCopy(child, profileName) {
   };
 
   const copyByProfile = {
-    "El Inagotable": {
-      title: `${name} tiene el perfil de sueño: El Inagotable`,
+    "El Incansable": {
+      title: `${name} tiene el perfil de sueño: El Incansable`,
       paragraphs: [
         `A ${name} le cuesta apagar. No es terquedad, no es que no quiera dormir. Su sistema nervioso genuinamente no sabe cómo hacer la transición de la activación al descanso sin ayuda.`,
         `Por eso las noches se ven así: está ${tired} pero no para. Cuanto más ${article} intentas, más se activa. Y tú llevas horas intentando que se calme mientras sientes que estás haciendo algo mal, aunque no sabes exactamente qué.`,
@@ -3289,8 +3315,8 @@ function getProfilePopupCopy(child, profileName) {
       ],
       ...sharedCta,
     },
-    "El Desvelado": {
-      title: `${name} tiene el perfil de sueño: El Desvelado`,
+    "El Vigilante Nocturno": {
+      title: `${name} tiene el perfil de sueño: El Vigilante Nocturno`,
       paragraphs: [
         `${name} se ve ${tired}. Tú sabes que está ${tired}. ${pronoun === "él" ? "Él" : "Ella"} probablemente también lo sabe. Y aun así, el sueño no llega.`,
         `No es que no quiera dormir. Es que su sistema nervioso está atrapado en un estado de alerta que no puede soltar solo. El cuerpo dice “descansa” pero algo más profundo dice “todavía no es seguro.”`,
@@ -3311,8 +3337,8 @@ function getProfilePopupCopy(child, profileName) {
       ],
       ...sharedCta,
     },
-    "El Berrinche": {
-      title: `${name} tiene el perfil de sueño: El Berrinche`,
+    "El Volcán Emocional": {
+      title: `${name} tiene el perfil de sueño: El Volcán Emocional`,
       paragraphs: [
         `La hora de dormir desata algo. Llanto, rabietas, resistencia intensa, a veces sin razón aparente. Y cuanto más intentas ${calm}, más escala.`,
         `No es manipulación. No es mala conducta. Es un sistema nervioso con demasiada activación acumulada que no tiene manera de descargarse, y la hora de dormir es cuando ese límite explota.`,
@@ -3322,8 +3348,8 @@ function getProfilePopupCopy(child, profileName) {
       ],
       ...sharedCta,
     },
-    "El Sonámbulo": {
-      title: `${name} tiene el perfil de sueño: El Sonámbulo`,
+    "El Explorador Nocturno": {
+      title: `${name} tiene el perfil de sueño: El Explorador Nocturno`,
       paragraphs: [
         `Se duerme fácil. Demasiado fácil a veces, en el sofá, en el coche, en cualquier lugar menos en su cama a la hora correcta. Y luego se despierta en mitad de la noche, o muy temprano, o simplemente no descansa aunque haya dormido las horas.`,
         `El sueño de ${name} parece ligero. Interrumpido. Como si nunca terminara de llegar a un descanso profundo.`,
@@ -3659,6 +3685,7 @@ function ChildHomeGrid({
       {children.map((child) => {
         const summary = buildProgressSummary(child.logs);
         const isExpanded = expandedChildId === child.id;
+        const avatar = getProfileAvatar(child.primaryProfile);
         return (
           <div key={child.id} className={isExpanded ? "child-profile-shell is-expanded" : "child-profile-shell"}>
             {isExpanded ? (
@@ -3683,15 +3710,20 @@ function ChildHomeGrid({
               <button
                 type="button"
                 className={activeChildId === child.id ? "child-card child-card--hero is-active" : "child-card child-card--hero"}
-              onClick={() => onToggleChild(child.id)}
-            >
+                onClick={() => onToggleChild(child.id)}
+              >
+                {avatar ? (
+                  <img className="profile-animal profile-animal--card" src={avatar.src} alt={avatar.alt} />
+                ) : null}
                 <span className="section-label">{profileMap[child.primaryProfile]?.name || "Sin perfil"}</span>
                 <strong>{child.name}</strong>
-                <span>{formatAgeLabel(child.birthday, language)}</span>
-                <span>{childGenderLabel(child.gender, language)}</span>
-                <span>
-                  {strings.sleepGoal}: {child.sleepGoal || "--:--"}
-                </span>
+                <div className="child-card-meta">
+                  <span>{formatAgeLabel(child.birthday, language)}</span>
+                  <span>{childGenderLabel(child.gender, language)}</span>
+                  <span>
+                    {strings.sleepGoal}: {child.sleepGoal || "--:--"}
+                  </span>
+                </div>
                 <small>
                   {summary.averageLatency
                     ? `${summary.averageLatency} min promedio`
@@ -3955,6 +3987,7 @@ function HomeSection({
   const progressMessage = getSleepProgressMessage(activeChild.logs || [], strings);
   const profileName = profileMap[activeChild.primaryProfile]?.name || "Sin perfil";
   const profileDescription = profileMap[activeChild.primaryProfile]?.description || "";
+  const avatar = getProfileAvatar(activeChild.primaryProfile);
   const editingLog = activeChild.logs?.find((log) => log.date === editingLogDate);
   const isReportsMode = mode === "reports";
   const lastLog = [...(activeChild.logs || [])].filter((log) => log.date).sort((left, right) => (left.date < right.date ? 1 : -1))[0] || null;
@@ -4002,6 +4035,9 @@ function HomeSection({
           </button>
         ) : null}
         <header className="dashboard-profile-header">
+          {avatar ? (
+            <img className="profile-animal profile-animal--dashboard" src={avatar.src} alt={avatar.alt} />
+          ) : null}
           <div className="dashboard-name-row">
             <h1>{activeChild.name}</h1>
             {!isReportsMode ? (
