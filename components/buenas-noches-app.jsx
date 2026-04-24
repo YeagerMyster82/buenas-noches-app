@@ -48,23 +48,15 @@ function toYouTubeEmbedUrl(url) {
 const routineMusicTracks = {
   calm: {
     label: "Música 1",
-    youtubeUrl: "https://youtu.be/DV7fXRbW810?si=qqbdSEUj77JBJ8e7",
-    embedUrl: toYouTubeEmbedUrl("https://youtu.be/DV7fXRbW810?si=qqbdSEUj77JBJ8e7"),
+    audioUrl: "https://player.mediadelivery.net/play/640174/942dad41-06cb-4aef-8e10-1a97619b3bc2",
   },
   nature: {
     label: "Música 2",
-    youtubeUrl: "https://youtu.be/4owTdwvbyNA?si=bSSts6EoCjf89Fkd",
-    embedUrl: toYouTubeEmbedUrl("https://youtu.be/4owTdwvbyNA?si=bSSts6EoCjf89Fkd"),
+    audioUrl: "https://player.mediadelivery.net/play/640174/b98b4bfe-87b5-4682-9687-d1e5080c754f",
   },
   track3: {
     label: "Música 3",
-    youtubeUrl: "https://youtu.be/zgEmUUmuh7Q?si=rsanFAOjn4H5HOtw",
-    embedUrl: toYouTubeEmbedUrl("https://youtu.be/zgEmUUmuh7Q?si=rsanFAOjn4H5HOtw"),
-  },
-  track4: {
-    label: "Música 4",
-    youtubeUrl: "https://www.youtube.com/watch?v=I_FpVaV1pHc",
-    embedUrl: toYouTubeEmbedUrl("https://www.youtube.com/watch?v=I_FpVaV1pHc"),
+    audioUrl: "https://player.mediadelivery.net/play/640174/306bc86b-b6c1-4dcd-8097-44cf87351538",
   },
 };
 
@@ -128,6 +120,14 @@ const routineVideoResources = {
   pesadilla: {
     title: "Si tiene pesadilla",
     embedUrl: "https://player.mediadelivery.net/embed/640174/739af802-75e4-4c76-9df7-a06d6142d739?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  sistema_nervioso: {
+    title: "Sistema nervioso y sueño",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/ce4fdb77-61eb-49fd-ba3f-69a13790051d?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  perfiles_sueno: {
+    title: "Los 5 perfiles y por qué no logran dormir",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/8d254f44-f6c1-48db-9abf-cb988338763d?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
   },
 };
 
@@ -199,7 +199,10 @@ const activityVideoLibrary = [
   routineVideoResources.pesadilla,
 ];
 
+const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno];
+
 const educationVideoLibrary = [
+  routineVideoResources.sistema_nervioso,
   routineVideoResources.berrinches_coregulacion,
   routineVideoResources.pesadilla,
 ];
@@ -381,7 +384,6 @@ const copy = {
     soundCalm: "Música 1",
     soundNature: "Música 2",
     soundTrackThree: "Música 3",
-    soundTrackFour: "Música 4",
     markInBed: "Ya está en cama",
     fellAsleepNow: "Se durmió ahora",
     routineStartTime: "Hora de inicio de rutina",
@@ -566,7 +568,6 @@ const copy = {
     soundCalm: "Music 1",
     soundNature: "Music 2",
     soundTrackThree: "Music 3",
-    soundTrackFour: "Music 4",
     markInBed: "They are in bed",
     fellAsleepNow: "They fell asleep now",
     routineStartTime: "Routine start time",
@@ -4460,7 +4461,24 @@ function playTransitionTone(soundMode) {
 }
 
 function startAmbientSound(soundMode) {
-  return null;
+  if (!soundMode || soundMode === "silent" || soundMode === "transition") return null;
+  const track = routineMusicTracks[soundMode];
+  if (!track?.audioUrl) return null;
+
+  try {
+    const audio = new Audio(track.audioUrl);
+    audio.loop = true;
+    audio.volume = 0.34;
+    audio.play().catch(() => undefined);
+    return {
+      stop() {
+        audio.pause();
+        audio.currentTime = 0;
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 function RoutineSection({
@@ -4724,16 +4742,13 @@ function RoutineSection({
                     <option value="calm">{strings.soundCalm}</option>
                     <option value="nature">{strings.soundNature}</option>
                     <option value="track3">{strings.soundTrackThree}</option>
-                    <option value="track4">{strings.soundTrackFour}</option>
                     <option value="silent">{strings.soundSilent}</option>
                   </select>
                 </label>
                 {activeMusicTrack ? (
                   <div className="music-track-preview">
                     <strong>{activeMusicTrack.label}</strong>
-                    <a className="button button-ghost button-link" href={activeMusicTrack.youtubeUrl} target="_blank" rel="noreferrer">
-                      Abrir música
-                    </a>
+                    <span>Se reproducirá dentro de la rutina.</span>
                   </div>
                 ) : null}
                 <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
@@ -5033,17 +5048,7 @@ function RoutineSection({
                 {activeMusicTrack && !isPaused ? (
                   <div className="music-embed-card">
                     <strong>{activeMusicTrack.label}</strong>
-                    <div className="embedded-video embedded-video--music">
-                      <iframe
-                        src={activeMusicTrack.embedUrl}
-                        title={activeMusicTrack.label}
-                        allow="autoplay; encrypted-media; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                    <a className="button button-ghost button-link" href={activeMusicTrack.youtubeUrl} target="_blank" rel="noreferrer">
-                      Abrir en YouTube
-                    </a>
+                    <span>Reproduciendo audio en segundo plano.</span>
                   </div>
                 ) : null}
               </div>
@@ -5191,6 +5196,32 @@ function VideoSection({ activeChild, strings, locked = false }) {
           ? "Puedes ver toda la biblioteca disponible. Los videos completos se desbloquean con premium."
           : "Aquí tienes todos los videos cargados hasta ahora, organizados por educación y actividades."}
       </p>
+
+      <div className="video-library-section">
+        <div className="card-header">
+          <span className="section-label">Perfiles</span>
+          <h3>Acceso gratis</h3>
+        </div>
+        <div className="video-library-grid">
+          {freeProfileVideoLibrary.map((video) => (
+            <div key={`profiles-${video.title}`} className="video-library-card">
+              <div className="video-library-card__header">
+                <BrandIcon type="child" />
+                <strong>{video.title}</strong>
+              </div>
+              <div className="embedded-video">
+                <iframe
+                  src={video.embedUrl}
+                  title={video.title}
+                  loading="lazy"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="video-library-section">
         <div className="card-header">
