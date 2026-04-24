@@ -25,6 +25,185 @@ const SUPPORT_WHATSAPP_URL = "https://wa.link/10n15d";
 const SUPPORT_EMAIL = "BuenasNochesApp@quirokids.com";
 const AMAZON_STORE_URL = "https://www.amazon.com/shop/quirokids";
 const FREE_PROFILE_EXPIRY_MS = 14 * 24 * 60 * 60 * 1000;
+const TRANSITION_SOUND_URL = "/audio/transition-bell.mp3";
+
+function toYouTubeEmbedUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtu.be")) {
+      const videoId = parsed.pathname.replace("/", "");
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    }
+    const videoId = parsed.searchParams.get("v");
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+    }
+  } catch {
+    return url;
+  }
+
+  return url;
+}
+
+const routineMusicTracks = {
+  calm: {
+    label: "Música 1",
+    youtubeUrl: "https://youtu.be/DV7fXRbW810?si=qqbdSEUj77JBJ8e7",
+    embedUrl: toYouTubeEmbedUrl("https://youtu.be/DV7fXRbW810?si=qqbdSEUj77JBJ8e7"),
+  },
+  nature: {
+    label: "Música 2",
+    youtubeUrl: "https://youtu.be/4owTdwvbyNA?si=bSSts6EoCjf89Fkd",
+    embedUrl: toYouTubeEmbedUrl("https://youtu.be/4owTdwvbyNA?si=bSSts6EoCjf89Fkd"),
+  },
+  track3: {
+    label: "Música 3",
+    youtubeUrl: "https://youtu.be/zgEmUUmuh7Q?si=rsanFAOjn4H5HOtw",
+    embedUrl: toYouTubeEmbedUrl("https://youtu.be/zgEmUUmuh7Q?si=rsanFAOjn4H5HOtw"),
+  },
+  track4: {
+    label: "Música 4",
+    youtubeUrl: "https://www.youtube.com/watch?v=I_FpVaV1pHc",
+    embedUrl: toYouTubeEmbedUrl("https://www.youtube.com/watch?v=I_FpVaV1pHc"),
+  },
+};
+
+const routineVideoResources = {
+  descarga: {
+    title: "Descarga",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/24082507-a357-46d1-8d8d-fe2c9bc7becd?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  activacion_ligera: {
+    title: "Activación ligera",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/cfaffd3e-15ea-48f5-acfa-ae49f6cabde1?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  conexion: {
+    title: "Conexión",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/f4699082-c82e-42ba-9fda-70b6de648b17?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  berrinches_coregulacion: {
+    title: "Berrinches / coregulación",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/4df00984-616e-49c5-8606-49d95c8df1bf?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  compresiones_articulares: {
+    title: "Compresiones articulares",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/9b2d2cc7-2121-4890-b5b5-e6faa5b54ac9?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  presion_profunda: {
+    title: "Presión profunda",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/39b6780f-ea8d-4506-922e-0e58aa5bdcac?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  mecerse_presion: {
+    title: "Mecerse + presión profunda",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/c5890def-ca84-4a0f-9865-eb2a3da7faac?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  gargaras_tarareo_mmm: {
+    title: "Gárgaras / tarareo / sonido mmm",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/a2076f69-4634-473c-bde3-dc7e36dc2647?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  ponerse_de_cabeza: {
+    title: "Ponerse de cabeza",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/eb07e87f-74e8-41f3-8bd7-ee1a0b5352db?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  respiracion_conejo: {
+    title: "Respiración de conejo",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/3073b08a-8154-42eb-a46d-7e2ea0fd69e0?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  oler_la_flor: {
+    title: "Oler la flor",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/edfdd25c-33da-42ab-a7f2-b8ba566d7b82?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  movimientos_oculares: {
+    title: "Movimientos oculares",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/74d90717-a573-4782-bd96-3a59e5ea5d95?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  frase_final: {
+    title: "La frase final",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/6f05fc06-0479-45e4-a60b-ba15d2f2ca30?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  audios_cortos: {
+    title: "Audios cortos",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/ec5a4b10-ddca-47d8-b359-b1acad6cfc39?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+  pesadilla: {
+    title: "Si tiene pesadilla",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/739af802-75e4-4c76-9df7-a06d6142d739?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
+};
+
+function getRoutineVideosForStep(step, profileCode) {
+  if (!step) return [];
+
+  if (step.phaseKey === "mover") {
+    if (profileCode === "EL_INAGOTABLE") return [routineVideoResources.descarga];
+    if (profileCode === "EL_DESVELADO") return [routineVideoResources.activacion_ligera];
+  }
+
+  if (step.phaseKey === "conectar") {
+    return [routineVideoResources.conexion];
+  }
+
+  if (step.phaseKey === "gargaras_tarareo_mmm") {
+    return [routineVideoResources.gargaras_tarareo_mmm, routineVideoResources.ponerse_de_cabeza];
+  }
+
+  if (step.phaseKey === "dormir") {
+    return [routineVideoResources.frase_final];
+  }
+
+  const activityId = step.selectedActivityId;
+  if (!activityId) return [];
+
+  if (["presion_cuento", "presion_cancion", "presion_susurro", "presion_contar", "sandwich_almohadas", "rodillo_almohada", "peluche_pesado"].includes(activityId)) {
+    return [routineVideoResources.presion_profunda, routineVideoResources.compresiones_articulares];
+  }
+
+  if (["mecer_tararear", "mecerse_abrazados", "mecerse_suave"].includes(activityId)) {
+    return [routineVideoResources.mecerse_presion];
+  }
+
+  if (activityId === "ojos_soplar_respirar") {
+    return [routineVideoResources.movimientos_oculares, routineVideoResources.oler_la_flor, routineVideoResources.respiracion_conejo];
+  }
+
+  if (["respiracion_abdominal", "exhalacion_larga", "respirar_juntos"].includes(activityId)) {
+    return [routineVideoResources.oler_la_flor, routineVideoResources.respiracion_conejo];
+  }
+
+  if (["audio_calmado", "historia_corta_repetitiva", "historia_corta_opcional"].includes(activityId)) {
+    return [routineVideoResources.audios_cortos];
+  }
+
+  if (["contacto_y_ritmo", "tarareo_suave", "respirar_juntos", "voz_suave"].includes(activityId)) {
+    return [routineVideoResources.berrinches_coregulacion];
+  }
+
+  return [];
+}
+
+const activityVideoLibrary = [
+  routineVideoResources.descarga,
+  routineVideoResources.activacion_ligera,
+  routineVideoResources.conexion,
+  routineVideoResources.berrinches_coregulacion,
+  routineVideoResources.compresiones_articulares,
+  routineVideoResources.presion_profunda,
+  routineVideoResources.mecerse_presion,
+  routineVideoResources.gargaras_tarareo_mmm,
+  routineVideoResources.ponerse_de_cabeza,
+  routineVideoResources.respiracion_conejo,
+  routineVideoResources.oler_la_flor,
+  routineVideoResources.movimientos_oculares,
+  routineVideoResources.frase_final,
+  routineVideoResources.audios_cortos,
+  routineVideoResources.pesadilla,
+];
+
+const educationVideoLibrary = [
+  routineVideoResources.berrinches_coregulacion,
+  routineVideoResources.pesadilla,
+];
+
 const profileAvatarMap = {
   EL_INAGOTABLE: {
     src: "/brand/profile-avatars/Fondo%20de%20Conejo%20eliminado.png",
@@ -198,9 +377,11 @@ const copy = {
     transitionSound: "Sonido de transición",
     soundMode: "Modo de sonido",
     soundSilent: "Silencio",
-    soundTransition: "Solo transición",
-    soundCalm: "Música tranquila",
-    soundNature: "Sonidos de naturaleza",
+    soundTransition: "Campana",
+    soundCalm: "Música 1",
+    soundNature: "Música 2",
+    soundTrackThree: "Música 3",
+    soundTrackFour: "Música 4",
     markInBed: "Ya está en cama",
     fellAsleepNow: "Se durmió ahora",
     routineStartTime: "Hora de inicio de rutina",
@@ -381,9 +562,11 @@ const copy = {
     transitionSound: "Transition sound",
     soundMode: "Sound mode",
     soundSilent: "Silent",
-    soundTransition: "Transition only",
-    soundCalm: "Calming music",
-    soundNature: "Nature sounds",
+    soundTransition: "Bell only",
+    soundCalm: "Music 1",
+    soundNature: "Music 2",
+    soundTrackThree: "Music 3",
+    soundTrackFour: "Music 4",
     markInBed: "They are in bed",
     fellAsleepNow: "They fell asleep now",
     routineStartTime: "Routine start time",
@@ -3137,12 +3320,12 @@ function AppTopBar({
 
 function BottomAppNav({ options, activeSection, onSelect }) {
   const icons = {
-    home: "⌂",
-    reports: "▥",
-    routine: "☾",
-    child: "☺",
-    videos: "▶",
-    purchase: "★",
+    home: { type: "image", src: "/ui-icons/home-black.png", alt: "Inicio" },
+    reports: { type: "image", src: "/ui-icons/reporte.png", alt: "Reportes" },
+    routine: { type: "text", value: "☾" },
+    child: { type: "image", src: "/ui-icons/kid-black.png", alt: "Niño" },
+    videos: { type: "image", src: "/ui-icons/camara.png", alt: "Video" },
+    purchase: { type: "text", value: "★" },
   };
 
   return (
@@ -3154,7 +3337,11 @@ function BottomAppNav({ options, activeSection, onSelect }) {
           className={activeSection === option.id ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
           onClick={() => onSelect(option.id)}
         >
-          <span aria-hidden="true">{icons[option.id] || "•"}</span>
+          {icons[option.id]?.type === "image" ? (
+            <img className="bottom-app-nav__icon-image" src={icons[option.id].src} alt="" aria-hidden="true" />
+          ) : (
+            <span aria-hidden="true">{icons[option.id]?.value || "•"}</span>
+          )}
           <small>{option.label}</small>
         </button>
       ))}
@@ -4264,68 +4451,16 @@ function formatElapsedTimer(seconds) {
 function playTransitionTone(soundMode) {
   if (soundMode === "silent") return;
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioContext = new AudioContext();
-    const playBellNote = (frequency, startOffset) => {
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      const startAt = audioContext.currentTime + startOffset;
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, startAt);
-      oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.96, startAt + 0.65);
-      gain.gain.setValueAtTime(0.0001, startAt);
-      gain.gain.exponentialRampToValueAtTime(soundMode === "nature" ? 0.09 : 0.12, startAt + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.9);
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.start(startAt);
-      oscillator.stop(startAt + 0.95);
-    };
-    const startTone = () => {
-      playBellNote(784, 0);
-      playBellNote(1046.5, 0.08);
-    };
-
-    if (audioContext.state === "suspended") {
-      audioContext.resume().then(startTone).catch(() => undefined);
-      return;
-    }
-
-    startTone();
+    const audio = new Audio(TRANSITION_SOUND_URL);
+    audio.volume = 0.32;
+    audio.play().catch(() => undefined);
   } catch {
     // Browsers may block audio until interaction; the routine still works silently.
   }
 }
 
 function startAmbientSound(soundMode) {
-  if (!["calm", "nature"].includes(soundMode)) return null;
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioContext = new AudioContext();
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = soundMode === "nature" ? "triangle" : "sine";
-    oscillator.frequency.value = soundMode === "nature" ? 174 : 220;
-    gain.gain.setValueAtTime(0.035, audioContext.currentTime);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    if (audioContext.state === "suspended") {
-      audioContext.resume().catch(() => undefined);
-    }
-    oscillator.start();
-    return {
-      stop() {
-        try {
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
-          oscillator.stop(audioContext.currentTime + 0.3);
-        } catch {
-          // The browser may already have stopped the audio context.
-        }
-      },
-    };
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 function RoutineSection({
@@ -4353,9 +4488,12 @@ function RoutineSection({
   const [routineStepIndex, setRoutineStepIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [videoModal, setVideoModal] = useState(null);
   const hasPlayedEndToneRef = useRef(false);
   const ambientSoundRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
+  const playerStepVideos = getRoutineVideosForStep(playerStep, currentPlan?.profile);
+  const activeMusicTrack = routineMusicTracks[routineSession.soundMode] || null;
   const isLastRoutineStep = currentPlan?.steps ? routineStepIndex >= currentPlan.steps.length - 1 : false;
   const untimedRoutinePhases = [
     "banarse_y_pijamas",
@@ -4585,9 +4723,19 @@ function RoutineSection({
                     <option value="transition">{strings.soundTransition}</option>
                     <option value="calm">{strings.soundCalm}</option>
                     <option value="nature">{strings.soundNature}</option>
+                    <option value="track3">{strings.soundTrackThree}</option>
+                    <option value="track4">{strings.soundTrackFour}</option>
                     <option value="silent">{strings.soundSilent}</option>
                   </select>
                 </label>
+                {activeMusicTrack ? (
+                  <div className="music-track-preview">
+                    <strong>{activeMusicTrack.label}</strong>
+                    <a className="button button-ghost button-link" href={activeMusicTrack.youtubeUrl} target="_blank" rel="noreferrer">
+                      Abrir música
+                    </a>
+                  </div>
+                ) : null}
                 <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
                   {strings.beginRoutine}
                 </button>
@@ -4646,6 +4794,20 @@ function RoutineSection({
                         <span>{step.selectedActivity.shortLabel}</span>
                         <p>{step.selectedActivity.instructions}</p>
                       </div>
+                      {getRoutineVideosForStep(step, currentPlan.profile).length ? (
+                        <div className="video-resource-row">
+                          {getRoutineVideosForStep(step, currentPlan.profile).map((video) => (
+                            <button
+                              key={`${step.id}-${video.title}`}
+                              className="button button-ghost"
+                              type="button"
+                              onClick={() => setVideoModal(video)}
+                            >
+                              Video: {video.title}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                       <button className="button button-ghost" type="button" onClick={() => onToggleSwapStep(step.id)}>
                         {strings.changeActivity}
                       </button>
@@ -4673,6 +4835,20 @@ function RoutineSection({
                       </ul>
                     </div>
                   )}
+                  {!step.selectedActivity && getRoutineVideosForStep(step, currentPlan.profile).length ? (
+                    <div className="video-resource-row">
+                      {getRoutineVideosForStep(step, currentPlan.profile).map((video) => (
+                        <button
+                          key={`${step.id}-${video.title}`}
+                          className="button button-ghost"
+                          type="button"
+                          onClick={() => setVideoModal(video)}
+                        >
+                          Video: {video.title}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -4733,6 +4909,20 @@ function RoutineSection({
                   </div>
                 ) : null}
                 {playerStep.phaseKey !== "dormir" ? <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p> : null}
+                {playerStepVideos.length ? (
+                  <div className="video-resource-row">
+                    {playerStepVideos.map((video) => (
+                      <button
+                        key={`${playerStep.id}-${video.title}`}
+                        className="button button-ghost"
+                        type="button"
+                        onClick={() => setVideoModal(video)}
+                      >
+                        Video: {video.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {playerStep.phaseKey !== "dormir" && playerStep.selectedActivity ? (
                   <label className="stack compact">
                     <span>{strings.changeActivity}</span>
@@ -4840,7 +5030,43 @@ function RoutineSection({
                     </button>
                   </div>
                 ) : null}
+                {activeMusicTrack && !isPaused ? (
+                  <div className="music-embed-card">
+                    <strong>{activeMusicTrack.label}</strong>
+                    <div className="embedded-video embedded-video--music">
+                      <iframe
+                        src={activeMusicTrack.embedUrl}
+                        title={activeMusicTrack.label}
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <a className="button button-ghost button-link" href={activeMusicTrack.youtubeUrl} target="_blank" rel="noreferrer">
+                      Abrir en YouTube
+                    </a>
+                  </div>
+                ) : null}
               </div>
+            </div>
+          ) : null}
+
+          {videoModal ? (
+            <div className="profile-modal" role="dialog" aria-modal="true" aria-label={videoModal.title}>
+              <article className="profile-modal__panel card card--soft">
+                <button className="routine-modal__close" type="button" onClick={() => setVideoModal(null)} aria-label="Cerrar">
+                  ×
+                </button>
+                <span className="section-label">Video</span>
+                <h2>{videoModal.title}</h2>
+                <div className="embedded-video">
+                  <iframe
+                    src={videoModal.embedUrl}
+                    title={videoModal.title}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </article>
             </div>
           ) : null}
 
@@ -4953,11 +5179,6 @@ function RoutineSection({
 
 function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
-  const videoCards = [
-    { title: "Perfiles", subtitle: "Acceso gratis", icon: "child", locked: false },
-    { title: strings.education, subtitle: locked ? "Premium 🔒" : "Espacio listo para embed", icon: "books", locked },
-    { title: "NeuroHacks", subtitle: locked ? "Premium 🔒" : "Actividades por rutina", icon: "brain", locked },
-  ];
 
   return (
     <article className="card card--feature">
@@ -4967,18 +5188,70 @@ function VideoSection({ activeChild, strings, locked = false }) {
       </div>
       <p className="lead-copy">
         {locked
-          ? "La biblioteca completa se desbloquea con premium. Puedes ver las categorías que estarán disponibles."
-          : "Aquí vamos a mostrar los videos embebidos cuando subas los links."}
+          ? "Puedes ver toda la biblioteca disponible. Los videos completos se desbloquean con premium."
+          : "Aquí tienes todos los videos cargados hasta ahora, organizados por educación y actividades."}
       </p>
-      <div className="video-grid">
-        {videoCards.map((video) => (
-          <div key={video.title} className={video.locked ? "video-card tip-card tip-card--locked" : "video-card tip-card"}>
-            <BrandIcon type={video.icon} />
-            <strong>{video.title}</strong>
-            <span>{video.subtitle}</span>
-          </div>
-        ))}
+
+      <div className="video-library-section">
+        <div className="card-header">
+          <span className="section-label">{strings.education}</span>
+          <h3>Videos educativos</h3>
+        </div>
+        <div className="video-library-grid">
+          {educationVideoLibrary.map((video) => (
+            <div key={`education-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
+              <div className="video-library-card__header">
+                <BrandIcon type="books" />
+                <strong>{video.title}</strong>
+              </div>
+              {locked ? (
+                <p>Disponible con premium 🔒</p>
+              ) : (
+                <div className="embedded-video">
+                  <iframe
+                    src={video.embedUrl}
+                    title={video.title}
+                    loading="lazy"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
+
+      <div className="video-library-section">
+        <div className="card-header">
+          <span className="section-label">NeuroHacks</span>
+          <h3>Actividades</h3>
+        </div>
+        <div className="video-library-grid">
+          {activityVideoLibrary.map((video) => (
+            <div key={`activity-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
+              <div className="video-library-card__header">
+                <BrandIcon type="brain" />
+                <strong>{video.title}</strong>
+              </div>
+              {locked ? (
+                <p>Disponible con premium 🔒</p>
+              ) : (
+                <div className="embedded-video">
+                  <iframe
+                    src={video.embedUrl}
+                    title={video.title}
+                    loading="lazy"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {locked ? (
         <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
           {strings.unlockPremium}
