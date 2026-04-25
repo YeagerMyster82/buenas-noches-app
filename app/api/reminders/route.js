@@ -8,7 +8,7 @@ const reminderCopy = {
   },
   night_wakings: {
     title: "Buenas Noches",
-    body: "¿Tu hijo se despertó anoche? Regístralo para ver mejor su progreso.",
+    body: "Registra despertares nocturnos y la hora en que se despertó hoy para mantener su progreso al día.",
     url: "/?section=home",
   },
 };
