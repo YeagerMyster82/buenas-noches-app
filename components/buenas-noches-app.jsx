@@ -3321,54 +3321,13 @@ function AppTopBar({
 
 function BottomAppNav({ options, activeSection, onSelect }) {
   const icons = {
-    home: { type: "svg", svg: "home" },
-    reports: { type: "svg", svg: "reports" },
-    routine: { type: "text", value: "☾" },
-    child: { type: "svg", svg: "child" },
-    videos: { type: "svg", svg: "video" },
-    purchase: { type: "text", value: "★" },
+    home: { type: "image", src: "/ui-icons/icon-home.png", alt: "Inicio" },
+    reports: { type: "image", src: "/ui-icons/icon-reporte.png", alt: "Reportes" },
+    routine: { type: "image", src: "/ui-icons/icon-rutina.png", alt: "Rutina" },
+    child: { type: "image", src: "/ui-icons/icon-child.png", alt: "Niño" },
+    videos: { type: "image", src: "/ui-icons/icon-video.png", alt: "Video" },
+    purchase: { type: "text", value: "⭐️", className: "bottom-app-nav__purchase-star" },
   };
-
-  function renderSvgIcon(name) {
-    if (name === "home") {
-      return (
-        <svg className="bottom-app-nav__svg" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 11.5 12 5l8 6.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M7 10.5V19h10v-8.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    }
-
-    if (name === "reports") {
-      return (
-        <svg className="bottom-app-nav__svg" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="5" y="5" width="3" height="14" rx="1.2" fill="currentColor" />
-          <rect x="10.5" y="8" width="3" height="11" rx="1.2" fill="currentColor" />
-          <rect x="16" y="3.5" width="3" height="15.5" rx="1.2" fill="currentColor" />
-        </svg>
-      );
-    }
-
-    if (name === "child") {
-      return (
-        <svg className="bottom-app-nav__svg" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="2.1" />
-          <path d="M7.2 18.5c.9-2.5 2.5-3.8 4.8-3.8s3.9 1.3 4.8 3.8" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-        </svg>
-      );
-    }
-
-    if (name === "video") {
-      return (
-        <svg className="bottom-app-nav__svg" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4" y="6.5" width="11.5" height="11" rx="2.2" fill="none" stroke="currentColor" strokeWidth="2.1" />
-          <path d="M15.5 10.2 20 7.8v8.4l-4.5-2.4" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    }
-
-    return <span aria-hidden="true">•</span>;
-  }
 
   return (
     <nav className="bottom-app-nav" aria-label="Navegación principal">
@@ -3379,10 +3338,12 @@ function BottomAppNav({ options, activeSection, onSelect }) {
           className={activeSection === option.id ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
           onClick={() => onSelect(option.id)}
         >
-          {icons[option.id]?.type === "svg" ? (
-            renderSvgIcon(icons[option.id].svg)
+          {icons[option.id]?.type === "image" ? (
+            <img className="bottom-app-nav__icon-image" src={icons[option.id].src} alt="" aria-hidden="true" />
           ) : (
-            <span aria-hidden="true">{icons[option.id]?.value || "•"}</span>
+            <span className={icons[option.id]?.className || ""} aria-hidden="true">
+              {icons[option.id]?.value || "•"}
+            </span>
           )}
           <small>{option.label}</small>
         </button>
