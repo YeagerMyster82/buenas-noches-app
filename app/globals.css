@@ -149,6 +149,12 @@ img {
   line-height: 1;
 }
 
+.bottom-app-nav__svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .bottom-app-nav__icon-image {
   width: 20px;
   height: 20px;
