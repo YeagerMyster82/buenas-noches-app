@@ -133,6 +133,10 @@ const routineVideoResources = {
     title: "Cómo agregar la app a tu pantalla de inicio",
     embedUrl: "https://player.mediadelivery.net/embed/640174/e7b6c36f-b38b-43bd-9654-e74ea7a4e79c?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
   },
+  como_usar_app: {
+    title: "Cómo usar el app",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/19cc5e2a-13cf-4fcf-94fd-a9a8ef3f30f6?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
 };
 
 function getRoutineVideosForStep(step, profileCode) {
@@ -207,6 +211,7 @@ const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno, routineVi
 
 const educationVideoLibrary = [
   routineVideoResources.sistema_nervioso,
+  routineVideoResources.como_usar_app,
   routineVideoResources.berrinches_coregulacion,
   routineVideoResources.pesadilla,
 ];
@@ -326,7 +331,7 @@ const copy = {
     parentSettings: "Datos de mamá o papá",
     saveAccountSettings: "Guardar datos",
     sleepNeed: "Sueño recomendado",
-    sleepGoal: "Meta de sueño",
+    sleepGoal: "¿A qué hora te gustaría que tu hijo duerma cada noche?",
     seeChildProfile: "Ver el perfil de mi hijo",
     freeAccountTitle: "¡Ya identificamos el perfil de tu hijo!",
     freeAccountCopy: "Crea tu cuenta gratis para ver el resultado y guardar su perfil de sueño para siempre.",
@@ -510,7 +515,7 @@ const copy = {
     parentSettings: "Parent settings",
     saveAccountSettings: "Save settings",
     sleepNeed: "Recommended sleep",
-    sleepGoal: "Sleep goal",
+    sleepGoal: "What time would you like your child to go to sleep nightly?",
     seeChildProfile: "See my child's profile",
     freeAccountTitle: "We identified your child's sleep profile!",
     freeAccountCopy: "Create your free account to see the result and save their sleep profile forever.",
