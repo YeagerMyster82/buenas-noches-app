@@ -155,6 +155,10 @@ img {
   display: block;
 }
 
+.bottom-app-nav__purchase-star {
+  font-size: 1.08rem;
+}
+
 .bottom-app-nav__icon-image {
   width: 20px;
   height: 20px;
