@@ -129,6 +129,10 @@ const routineVideoResources = {
     title: "Los 5 perfiles y por qué no logran dormir",
     embedUrl: "https://player.mediadelivery.net/embed/640174/8d254f44-f6c1-48db-9abf-cb988338763d?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
   },
+  homescreen: {
+    title: "Cómo agregar la app a tu pantalla de inicio",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/e7b6c36f-b38b-43bd-9654-e74ea7a4e79c?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+  },
 };
 
 function getRoutineVideosForStep(step, profileCode) {
@@ -199,7 +203,7 @@ const activityVideoLibrary = [
   routineVideoResources.pesadilla,
 ];
 
-const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno];
+const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno, routineVideoResources.homescreen];
 
 const educationVideoLibrary = [
   routineVideoResources.sistema_nervioso,
