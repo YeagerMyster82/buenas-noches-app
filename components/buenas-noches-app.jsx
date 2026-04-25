@@ -991,6 +991,25 @@ function calculateTotalSleepHours(sleepTime, wakeTime, napDuration = 0) {
   return Math.round((totalMinutes / 60) * 10) / 10;
 }
 
+function calculateSleepDebt(totalSleepHours, birthday) {
+  if (totalSleepHours === null || !birthday) return 0;
+  return Math.max(0, getRecommendedSleepMinimumHours(birthday) - Number(totalSleepHours || 0));
+}
+
+function formatSleepDebt(hours, language = "es") {
+  if (!hours || hours <= 0) return language === "en" ? "On target" : "Al día";
+  const totalMinutes = Math.round(hours * 60);
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (wholeHours && minutes) {
+    return language === "en" ? `${wholeHours}h ${minutes}m` : `${wholeHours} h ${minutes} min`;
+  }
+  if (wholeHours) {
+    return language === "en" ? `${wholeHours}h` : `${wholeHours} h`;
+  }
+  return language === "en" ? `${minutes}m` : `${minutes} min`;
+}
+
 function makeEmptyChild(childDraft) {
   return {
     id: generateId(),
@@ -2258,15 +2277,25 @@ export default function BuenasNochesApp() {
     if (!child) return;
 
     const formData = new FormData(event.currentTarget);
+    const existingLog = child.logs.find((log) => log.date === originalDate) || {};
+    const bedTime = String(formData.get("bedTime") || "");
+    const sleepTime = String(formData.get("sleepTime") || "");
+    const wakeTime = String(formData.get("wakeTime") || existingLog.wakeTime || "");
     const updatedLog = {
       date: String(formData.get("date") || originalDate),
       routineStartTime: String(formData.get("routineStartTime") || ""),
-      bedTime: String(formData.get("bedTime") || ""),
-      sleepTime: String(formData.get("sleepTime") || ""),
-      latency: calculateLatency(String(formData.get("bedTime") || ""), String(formData.get("sleepTime") || "")),
+      routineEndTime: String(formData.get("routineEndTime") || existingLog.routineEndTime || ""),
+      bedTime,
+      sleepTime,
+      wakeTime,
+      latency: calculateLatency(bedTime, sleepTime),
       nightWakings: String(formData.get("nightWakings") || "0"),
       notes: String(formData.get("notes") || ""),
-      ratings: child.logs.find((log) => log.date === originalDate)?.ratings || [],
+      napStart: existingLog.napStart || "",
+      napEnd: existingLog.napEnd || "",
+      napDuration: Number(existingLog.napDuration || 0),
+      totalSleepHours: calculateTotalSleepHours(sleepTime, wakeTime, existingLog.napDuration),
+      ratings: existingLog.ratings || [],
     };
 
     updateChild(childId, (currentChild) => ({
@@ -2289,8 +2318,10 @@ export default function BuenasNochesApp() {
             childId,
             logDate: updatedLog.date,
             routineStartTime: updatedLog.routineStartTime,
+            lightsOutAt: updatedLog.routineEndTime,
             inBedAt: updatedLog.bedTime,
             fellAsleepAt: updatedLog.sleepTime,
+            wakeTime: updatedLog.wakeTime,
             sleepLatencyMinutes: updatedLog.latency,
             nightWakings: updatedLog.nightWakings,
             notes: updatedLog.notes,
@@ -4069,6 +4100,7 @@ function buildWeeklyProgressChart(logs, weekOffset = 0, child = null) {
       Number.isFinite(Number(log?.totalSleepHours)) && Number(log?.totalSleepHours) > 0
         ? Number(log.totalSleepHours)
         : calculateTotalSleepHours(log?.sleepTime, log?.wakeTime, log?.napDuration);
+    const sleepDebt = calculateSleepDebt(totalSleepHours, child?.birthday);
     return {
       dateKey,
       label: date.toLocaleDateString("es", { month: "numeric", day: "numeric" }),
@@ -4082,17 +4114,17 @@ function buildWeeklyProgressChart(logs, weekOffset = 0, child = null) {
       napEnd: log?.napEnd || "",
       napDuration: Number(log?.napDuration || 0),
       totalSleepHours,
+      sleepDebt,
       meetsMinimumSleep: totalSleepHours !== null && totalSleepHours >= minimumSleepHours,
     };
   });
 
   const maxLatency = Math.max(45, ...days.map((day) => day.latency || 0));
-  const maxWakings = Math.max(3, ...days.map((day) => day.wakings || 0));
 
   return {
     days,
     maxLatency,
-    maxWakings,
+    minimumSleepHours,
     empty: !logs.length,
     canGoForward: weekOffset < Math.max(0, Math.ceil((today - firstLogDate) / (7 * 24 * 60 * 60 * 1000))),
   };
@@ -4187,6 +4219,11 @@ function HomeSection({
   const isReportsMode = mode === "reports";
   const lastLog = [...(activeChild.logs || [])].filter((log) => log.date).sort((left, right) => (left.date < right.date ? 1 : -1))[0] || null;
   const lastActivityRatings = (lastLog?.ratings || []).filter((rating) => rating?.activityId && rating?.activity);
+  const lastNightHours =
+    Number.isFinite(Number(lastLog?.totalSleepHours)) && Number(lastLog?.totalSleepHours) > 0
+      ? Number(lastLog.totalSleepHours)
+      : calculateTotalSleepHours(lastLog?.sleepTime, lastLog?.wakeTime, lastLog?.napDuration);
+  const lastNightDebt = calculateSleepDebt(lastNightHours, activeChild.birthday);
 
   async function submitReview(event) {
     event.preventDefault();
@@ -4305,21 +4342,15 @@ function HomeSection({
             <span><i className="legend-bar" /> Hora en cama → hora dormido</span>
           </div>
           <NightSleepTimelineChart days={weeklyChart.days} onEditDay={setEditingLogDate} />
-          <div className="wakeups-chart">
-            <div className="chart-legend" aria-label="Despertares nocturnos">
-              <span><i className="legend-wake" /> Despertares nocturnos</span>
-            </div>
-            <div className="wakeups-bars">
-              {weeklyChart.days.map((day) => (
-                <div className="wakeups-day" key={`wake-${day.dateKey}`}>
-                  <div className="wakeups-track">
-                    <div className="wakeups-fill" style={{ height: `${Math.max(6, (day.wakings / weeklyChart.maxWakings) * 100)}%` }} />
-                  </div>
-                  <strong>{day.wakings}</strong>
-                  <span>{day.label}</span>
-                </div>
-              ))}
-            </div>
+          <div className="night-metrics-grid">
+            {weeklyChart.days.map((day) => (
+              <article className="night-metric-card" key={`metrics-${day.dateKey}`}>
+                <strong>{day.label}</strong>
+                <span>Horas de sueño: {day.totalSleepHours === null ? "--" : `${day.totalSleepHours} h`}</span>
+                <span>Despertares: {day.wakings}</span>
+                <span>Deuda de sueño: {formatSleepDebt(day.sleepDebt, "es")}</span>
+              </article>
+            ))}
           </div>
           {weeklyChart.empty ? (
             <p className="muted">
@@ -4327,6 +4358,13 @@ function HomeSection({
                 ? "Your saved nights will fill this graph."
                 : "Tus noches guardadas van a llenar este gráfico."}
             </p>
+          ) : null}
+          {lastLog ? (
+            <div className="night-summary-grid">
+              <Stat label="Horas de sueño" value={lastNightHours === null ? "--" : `${lastNightHours} h`} />
+              <Stat label="Despertares" value={String(normalizeNightWakings(lastLog.nightWakings))} />
+              <Stat label="Deuda de sueño" value={formatSleepDebt(lastNightDebt, "es")} />
+            </div>
           ) : null}
           {editingLog ? (
             <form
@@ -4346,12 +4384,20 @@ function HomeSection({
                 <input name="routineStartTime" type="time" defaultValue={editingLog.routineStartTime || ""} />
               </label>
               <label className="stack compact">
+                <span>Luces apagadas</span>
+                <input name="routineEndTime" type="time" defaultValue={editingLog.routineEndTime || ""} />
+              </label>
+              <label className="stack compact">
                 <span>{strings.bedTime}</span>
                 <input name="bedTime" type="time" defaultValue={editingLog.bedTime} required />
               </label>
               <label className="stack compact">
                 <span>{strings.sleepTime}</span>
                 <input name="sleepTime" type="time" defaultValue={editingLog.sleepTime} required />
+              </label>
+              <label className="stack compact">
+                <span>Hora de despertar</span>
+                <input name="wakeTime" type="time" defaultValue={editingLog.wakeTime || ""} />
               </label>
               <label className="stack compact">
                 <span>{strings.nightWakings}</span>
@@ -5157,7 +5203,7 @@ function RoutineSection({
                 </button>
                 <span className="section-label">Video</span>
                 <h2>{videoModal.title}</h2>
-                <div className="embedded-video">
+                <div className="embedded-video embedded-video--portrait">
                   <iframe
                     src={videoModal.embedUrl}
                     title={videoModal.title}
