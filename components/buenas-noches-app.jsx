@@ -3598,12 +3598,12 @@ function HomeQuickCards({ strings, onOpenRoutine, onOpenSleep, onOpenTips, onOpe
   return (
     <section className="home-card-grid">
       <button className="home-action-card" type="button" onClick={onOpenRoutine}>
-        <span className="home-card-icon">◷</span>
+        <span className="home-card-icon">☾</span>
         <strong>{strings.sections.routine}</strong>
         <small>Generar rutina para hoy</small>
       </button>
       <button className="home-action-card" type="button" onClick={onOpenSleep}>
-        <span className="home-card-icon">▥</span>
+        <span className="home-card-icon">◷</span>
         <strong>{strings.sleepTracker}</strong>
         <small>Registrar cuánto tarda en dormir</small>
       </button>
