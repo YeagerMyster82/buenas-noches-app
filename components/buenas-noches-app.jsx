@@ -1729,6 +1729,7 @@ export default function BuenasNochesApp() {
             ? current.children.map((entry) => (entry.id === child.id ? { ...entry, id: savedChildId } : entry))
             : current.children,
           activeChildId: savedChildId || current.activeChildId,
+          profileIntroChildId: savedChildId || current.profileIntroChildId,
           persistenceMessage: "Perfil guardado. Ya puedes entrar al dashboard de tu hijo.",
         }));
       } catch {
@@ -2457,7 +2458,7 @@ export default function BuenasNochesApp() {
     <main className="shell app-shell">
       {state.profileIntroChildId ? (
         <ProfileIntroModal
-          child={state.children.find((child) => child.id === state.profileIntroChildId)}
+          child={state.children.find((child) => child.id === state.profileIntroChildId) || activeChild}
           profileMap={profileMap}
           strings={strings}
           language={state.language}
@@ -5333,6 +5334,9 @@ function RoutineSection({
 
 function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
+  const [activeTab, setActiveTab] = useState("education");
+  const educationCount = freeProfileVideoLibrary.length + educationVideoLibrary.length;
+  const neuroCount = activityVideoLibrary.length;
 
   return (
     <article className="card card--feature">
@@ -5346,47 +5350,40 @@ function VideoSection({ activeChild, strings, locked = false }) {
           : "Aquí tienes todos los videos cargados hasta ahora, organizados por educación y actividades."}
       </p>
 
-      <div className="video-library-section">
-        <div className="card-header">
-          <span className="section-label">Perfiles</span>
-          <h3>Acceso gratis</h3>
-        </div>
-        <div className="video-library-grid">
-          {freeProfileVideoLibrary.map((video) => (
-            <div key={`profiles-${video.title}`} className="video-library-card">
-              <div className="video-library-card__header">
-                <BrandIcon type="child" />
-                <strong>{video.title}</strong>
-              </div>
-              <div className="embedded-video">
-                <iframe
-                  src={video.embedUrl}
-                  title={video.title}
-                  loading="lazy"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="video-library-tabs" role="tablist" aria-label="Secciones de video">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "education"}
+          className={activeTab === "education" ? "section-tab is-active" : "section-tab"}
+          onClick={() => setActiveTab("education")}
+        >
+          {strings.education} ({educationCount})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "neurohacks"}
+          className={activeTab === "neurohacks" ? "section-tab is-active" : "section-tab"}
+          onClick={() => setActiveTab("neurohacks")}
+        >
+          NeuroHacks ({neuroCount}) {locked ? "🔒" : ""}
+        </button>
       </div>
 
-      <div className="video-library-section">
-        <div className="card-header">
-          <span className="section-label">{strings.education}</span>
-          <h3>Videos educativos</h3>
-        </div>
-        <div className="video-library-grid">
-          {educationVideoLibrary.map((video) => (
-            <div key={`education-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
-              <div className="video-library-card__header">
-                <BrandIcon type="books" />
-                <strong>{video.title}</strong>
-              </div>
-              {locked ? (
-                <p>Disponible con premium 🔒</p>
-              ) : (
+      {activeTab === "education" ? (
+        <div className="video-library-section">
+          <div className="card-header">
+            <span className="section-label">{strings.education}</span>
+            <h3>Videos educativos</h3>
+          </div>
+          <div className="video-library-grid">
+            {freeProfileVideoLibrary.map((video) => (
+              <div key={`profiles-${video.title}`} className="video-library-card">
+                <div className="video-library-card__header">
+                  <BrandIcon type="child" />
+                  <strong>{video.title}</strong>
+                </div>
                 <div className="embedded-video">
                   <iframe
                     src={video.embedUrl}
@@ -5396,41 +5393,62 @@ function VideoSection({ activeChild, strings, locked = false }) {
                     allowFullScreen
                   />
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="video-library-section">
-        <div className="card-header">
-          <span className="section-label">NeuroHacks</span>
-          <h3>Actividades</h3>
-        </div>
-        <div className="video-library-grid">
-          {activityVideoLibrary.map((video) => (
-            <div key={`activity-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
-              <div className="video-library-card__header">
-                <BrandIcon type="brain" />
-                <strong>{video.title}</strong>
               </div>
-              {locked ? (
-                <p>Disponible con premium 🔒</p>
-              ) : (
-                <div className="embedded-video">
-                  <iframe
-                    src={video.embedUrl}
-                    title={video.title}
-                    loading="lazy"
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen
-                  />
+            ))}
+            {educationVideoLibrary.map((video) => (
+              <div key={`education-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
+                <div className="video-library-card__header">
+                  <BrandIcon type="books" />
+                  <strong>{video.title}</strong>
                 </div>
-              )}
-            </div>
-          ))}
+                {locked ? (
+                  <p>Disponible con premium 🔒</p>
+                ) : (
+                  <div className="embedded-video">
+                    <iframe
+                      src={video.embedUrl}
+                      title={video.title}
+                      loading="lazy"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="video-library-section">
+          <div className="card-header">
+            <span className="section-label">NeuroHacks</span>
+            <h3>{locked ? "Disponible con premium" : "Actividades"}</h3>
+          </div>
+          <div className="video-library-grid">
+            {activityVideoLibrary.map((video, index) => (
+              <div key={`activity-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
+                <div className="video-library-card__header">
+                  <BrandIcon type="brain" />
+                  <strong>{locked ? `NeuroHack ${index + 1}` : video.title}</strong>
+                </div>
+                {locked ? (
+                  <p>Desbloquéalo con premium 🔒</p>
+                ) : (
+                  <div className="embedded-video">
+                    <iframe
+                      src={video.embedUrl}
+                      title={video.title}
+                      loading="lazy"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {locked ? (
         <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
