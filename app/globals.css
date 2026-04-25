@@ -706,6 +706,22 @@ img {
   color: rgba(255, 248, 241, 0.74);
 }
 
+.child-card.child-card--hero {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(169, 216, 221, 0.28), transparent 28%),
+    linear-gradient(145deg, rgba(31, 48, 68, 0.98), rgba(66, 91, 119, 0.96));
+  color: #f8f3ea;
+}
+
+.child-card.child-card--hero strong {
+  color: #fff8ef;
+}
+
+.child-card.child-card--hero span,
+.child-card.child-card--hero small {
+  color: rgba(248, 243, 234, 0.8);
+}
+
 .child-card--ghost {
   border: 1.5px dashed rgba(31, 48, 68, 0.18);
 }
@@ -1376,6 +1392,10 @@ img {
 
 .profile-intro-card {
   max-width: 680px;
+}
+
+.profile-intro-card h2 {
+  color: #fff8ef;
 }
 
 .profile-video-placeholder {
@@ -2263,6 +2283,16 @@ textarea {
 .video-library-card p {
   margin: 0;
   color: rgba(248, 243, 234, 0.84);
+}
+
+.video-library-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.video-library-tabs .section-tab {
+  min-height: 44px;
 }
 
 .embedded-video {
