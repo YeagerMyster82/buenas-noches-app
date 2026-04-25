@@ -126,7 +126,7 @@ img {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
   gap: 6px;
-  padding: 8px;
+  padding: 10px;
   border-radius: 26px;
   background: rgba(255, 251, 246, 0.94);
   box-shadow: 0 20px 60px rgba(23, 34, 51, 0.2);
@@ -134,40 +134,41 @@ img {
 }
 
 .bottom-app-nav__item {
-  min-height: 54px;
+  min-height: 68px;
   display: grid;
   place-items: center;
-  gap: 2px;
+  gap: 6px;
   border-radius: 18px;
   background: transparent;
   color: var(--night-soft);
   font-weight: 900;
+  padding: 8px 4px;
 }
 
 .bottom-app-nav__item span {
-  font-size: 1.1rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 
 .bottom-app-nav__svg {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   display: block;
 }
 
 .bottom-app-nav__purchase-star {
-  font-size: 1.08rem;
+  font-size: 1.45rem;
 }
 
 .bottom-app-nav__icon-image {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   filter: brightness(0) saturate(100%);
 }
 
 .bottom-app-nav__item small {
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   line-height: 1;
 }
 
@@ -1622,6 +1623,7 @@ img {
 .stack {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .compact {
@@ -1789,12 +1791,20 @@ input,
 select,
 textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 50px;
   padding: 14px 16px;
   border: 1px solid rgba(31, 48, 68, 0.1);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.88);
   color: var(--ink);
+}
+
+label.stack,
+form.stack,
+.card {
+  min-width: 0;
 }
 
 textarea {
@@ -2264,10 +2274,47 @@ textarea {
   aspect-ratio: 16 / 9;
 }
 
+.embedded-video--portrait {
+  width: min(100%, 360px);
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  min-height: 430px;
+}
+
 .embedded-video iframe {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.night-summary-grid,
+.night-metrics-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.night-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.night-metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+}
+
+.night-metric-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(248, 243, 234, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(248, 243, 234, 0.08);
+  color: rgba(248, 243, 234, 0.82);
+  font-size: 0.78rem;
+}
+
+.night-metric-card strong {
+  color: var(--moon);
+  font-size: 0.82rem;
 }
 
 .music-track-preview,
