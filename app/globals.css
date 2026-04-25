@@ -2255,6 +2255,11 @@ textarea {
   margin-top: 20px;
 }
 
+.video-library-block {
+  display: grid;
+  gap: 14px;
+}
+
 .video-library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -2283,6 +2288,26 @@ textarea {
 .video-library-card p {
   margin: 0;
   color: rgba(248, 243, 234, 0.84);
+}
+
+.video-library-card--locked {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.video-library-placeholder {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(248, 243, 234, 0.08), rgba(248, 243, 234, 0.03)),
+    rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.video-library-lock {
+  font-size: 1.35rem;
 }
 
 .video-library-tabs {
