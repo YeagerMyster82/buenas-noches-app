@@ -371,7 +371,7 @@ const copy = {
     consistency: "Consistencia",
     noLogsYet: "Todavía no has guardado noches. Apenas registres una, aquí vas a ver su progreso.",
     videoLibrary: "Biblioteca de videos",
-    readyForBunny: "Lista para conectar con Bunny",
+    readyForBunny: "Videos para acompañarte",
     sleepArea: "Área de sueño",
     quickChecklist: "Checklist rápido",
     avoidBeforeBed: "Antes de dormir",
@@ -555,7 +555,7 @@ const copy = {
     consistency: "Consistency",
     noLogsYet: "You have not saved any nights yet. As soon as you log one, their progress will show here.",
     videoLibrary: "Video library",
-    readyForBunny: "Ready to connect to Bunny",
+    readyForBunny: "Videos to support you",
     sleepArea: "Sleep space",
     quickChecklist: "Quick checklist",
     avoidBeforeBed: "Before bed",
@@ -793,7 +793,6 @@ const initialState = {
   editingChildId: "",
   savedLogDate: "",
   wakingPromptLogDate: "",
-  profileIntroChildId: "",
   sleepWindowOpen: false,
   sleepWindowCompleted: false,
   premiumRoutineGateOpen: false,
@@ -1642,7 +1641,6 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
-      profileIntroChildId: child.id,
     }));
 
     const leadPayload = {
@@ -1729,7 +1727,6 @@ export default function BuenasNochesApp() {
             ? current.children.map((entry) => (entry.id === child.id ? { ...entry, id: savedChildId } : entry))
             : current.children,
           activeChildId: savedChildId || current.activeChildId,
-          profileIntroChildId: savedChildId || current.profileIntroChildId,
           persistenceMessage: "Perfil guardado. Ya puedes entrar al dashboard de tu hijo.",
         }));
       } catch {
@@ -2456,16 +2453,6 @@ export default function BuenasNochesApp() {
 
   return (
     <main className="shell app-shell">
-      {state.profileIntroChildId ? (
-        <ProfileIntroModal
-          child={state.children.find((child) => child.id === state.profileIntroChildId) || activeChild}
-          profileMap={profileMap}
-          strings={strings}
-          language={state.language}
-          onClose={() => setState((current) => ({ ...current, profileIntroChildId: "" }))}
-        />
-      ) : null}
-
       {editingChild ? (
         <EditProfileModal
           activeChild={editingChild}
@@ -5346,8 +5333,8 @@ function VideoSection({ activeChild, strings, locked = false }) {
       </div>
       <p className="lead-copy">
         {locked
-          ? "Puedes ver toda la biblioteca disponible. Los videos completos se desbloquean con premium."
-          : "Aquí tienes todos los videos cargados hasta ahora, organizados por educación y actividades."}
+          ? "Explora los videos gratis y descubre lo que se desbloquea dentro de premium."
+          : "Aquí tienes la biblioteca completa, separada entre educación y NeuroHacks."}
       </p>
 
       <div className="video-library-tabs" role="tablist" aria-label="Secciones de video">
@@ -5373,37 +5360,18 @@ function VideoSection({ activeChild, strings, locked = false }) {
 
       {activeTab === "education" ? (
         <div className="video-library-section">
-          <div className="card-header">
-            <span className="section-label">{strings.education}</span>
-            <h3>Videos educativos</h3>
-          </div>
-          <div className="video-library-grid">
-            {freeProfileVideoLibrary.map((video) => (
-              <div key={`profiles-${video.title}`} className="video-library-card">
-                <div className="video-library-card__header">
-                  <BrandIcon type="child" />
-                  <strong>{video.title}</strong>
-                </div>
-                <div className="embedded-video">
-                  <iframe
-                    src={video.embedUrl}
-                    title={video.title}
-                    loading="lazy"
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-            ))}
-            {educationVideoLibrary.map((video) => (
-              <div key={`education-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
-                <div className="video-library-card__header">
-                  <BrandIcon type="books" />
-                  <strong>{video.title}</strong>
-                </div>
-                {locked ? (
-                  <p>Disponible con premium 🔒</p>
-                ) : (
+          <div className="video-library-block">
+            <div className="card-header">
+              <span className="section-label">Gratis</span>
+              <h3>Videos abiertos</h3>
+            </div>
+            <div className="video-library-grid">
+              {freeProfileVideoLibrary.map((video) => (
+                <div key={`profiles-${video.title}`} className="video-library-card">
+                  <div className="video-library-card__header">
+                    <BrandIcon type="child" />
+                    <strong>{video.title}</strong>
+                  </div>
                   <div className="embedded-video">
                     <iframe
                       src={video.embedUrl}
@@ -5413,9 +5381,42 @@ function VideoSection({ activeChild, strings, locked = false }) {
                       allowFullScreen
                     />
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="video-library-block">
+            <div className="card-header">
+              <span className="section-label">Premium</span>
+              <h3>Educación</h3>
+            </div>
+            <div className="video-library-grid">
+              {educationVideoLibrary.map((video, index) => (
+                <div key={`education-${video.title}`} className={locked ? "video-library-card video-library-card--locked" : "video-library-card"}>
+                  <div className="video-library-card__header">
+                    <BrandIcon type="books" />
+                    <strong>{locked ? `Video premium ${index + 1}` : video.title}</strong>
+                  </div>
+                  {locked ? (
+                    <div className="video-library-placeholder">
+                      <span className="video-library-lock">🔒</span>
+                      <p>Disponible con premium</p>
+                    </div>
+                  ) : (
+                    <div className="embedded-video">
+                      <iframe
+                        src={video.embedUrl}
+                        title={video.title}
+                        loading="lazy"
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
@@ -5426,13 +5427,16 @@ function VideoSection({ activeChild, strings, locked = false }) {
           </div>
           <div className="video-library-grid">
             {activityVideoLibrary.map((video, index) => (
-              <div key={`activity-${video.title}`} className={locked ? "video-library-card tip-card tip-card--locked" : "video-library-card"}>
+              <div key={`activity-${video.title}`} className={locked ? "video-library-card video-library-card--locked" : "video-library-card"}>
                 <div className="video-library-card__header">
                   <BrandIcon type="brain" />
                   <strong>{locked ? `NeuroHack ${index + 1}` : video.title}</strong>
                 </div>
                 {locked ? (
-                  <p>Desbloquéalo con premium 🔒</p>
+                  <div className="video-library-placeholder">
+                    <span className="video-library-lock">🔒</span>
+                    <p>Desbloquéalo con premium</p>
+                  </div>
                 ) : (
                   <div className="embedded-video">
                     <iframe
