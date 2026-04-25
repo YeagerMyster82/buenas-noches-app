@@ -4512,10 +4512,15 @@ function RoutineSection({
   const [routinePlayerOpen, setRoutinePlayerOpen] = useState(false);
   const [routineStepIndex, setRoutineStepIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(0);
   const [videoModal, setVideoModal] = useState(null);
+  const [stepStartedAt, setStepStartedAt] = useState(0);
+  const [pausedAt, setPausedAt] = useState(0);
+  const [pausedTotalMs, setPausedTotalMs] = useState(0);
+  const [extendedSeconds, setExtendedSeconds] = useState(0);
+  const [timerNow, setTimerNow] = useState(() => Date.now());
   const hasPlayedEndToneRef = useRef(false);
   const ambientSoundRef = useRef(null);
+  const wakeLockRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
   const playerStepVideos = getRoutineVideosForStep(playerStep, currentPlan?.profile);
   const activeMusicTrack = routineMusicTracks[routineSession.soundMode] || null;
@@ -4531,36 +4536,99 @@ function RoutineSection({
     "limite_claro",
   ];
   const isUntimedPlayerStep = playerStep ? untimedRoutinePhases.includes(playerStep.phaseKey) : false;
+  const stepDurationSeconds = playerStep ? getStepDurationSeconds(playerStep) + extendedSeconds : 0;
+  const livePausedMs = isPaused && pausedAt ? Math.max(0, timerNow - pausedAt) : 0;
+  const elapsedSeconds =
+    routinePlayerOpen && playerStep && stepStartedAt
+      ? Math.max(0, Math.floor((timerNow - stepStartedAt - pausedTotalMs - livePausedMs) / 1000))
+      : 0;
+  const secondsLeft = playerStep ? Math.max(0, stepDurationSeconds - elapsedSeconds) : 0;
 
   useEffect(() => {
     if (!playerStep) return;
-    setSecondsLeft(getStepDurationSeconds(playerStep));
+    setStepStartedAt(Date.now());
+    setPausedAt(0);
+    setPausedTotalMs(0);
+    setExtendedSeconds(0);
     hasPlayedEndToneRef.current = false;
   }, [playerStep?.id]);
 
   useEffect(() => {
-    if (!routinePlayerOpen || isPaused || !playerStep || isUntimedPlayerStep) return undefined;
+    if (!routinePlayerOpen || !playerStep || isUntimedPlayerStep) return undefined;
     const timer = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          if (!hasPlayedEndToneRef.current) {
-            playTransitionTone(routineSession.soundMode);
-            hasPlayedEndToneRef.current = true;
-          }
-          return 0;
-        }
-        return current - 1;
-      });
+      setTimerNow(Date.now());
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [routinePlayerOpen, isPaused, playerStep, isUntimedPlayerStep, routineSession.soundMode]);
+  }, [routinePlayerOpen, playerStep, isUntimedPlayerStep]);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      setTimerNow(Date.now());
+    }
+
+    function handleFocus() {
+      setTimerNow(Date.now());
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!routinePlayerOpen || isPaused || !playerStep || isUntimedPlayerStep) return;
+    if (secondsLeft <= 0 && !hasPlayedEndToneRef.current) {
+      playTransitionTone(routineSession.soundMode);
+      hasPlayedEndToneRef.current = true;
+    }
+  }, [routinePlayerOpen, isPaused, playerStep, isUntimedPlayerStep, secondsLeft, routineSession.soundMode]);
 
   useEffect(() => {
     return () => {
       ambientSoundRef.current?.stop();
       ambientSoundRef.current = null;
+      wakeLockRef.current?.release?.().catch?.(() => undefined);
+      wakeLockRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncWakeLock() {
+      const wakeLockApi = navigator?.wakeLock;
+      if (!wakeLockApi?.request) return;
+
+      if (routinePlayerOpen && !isPaused) {
+        try {
+          if (!wakeLockRef.current) {
+            wakeLockRef.current = await wakeLockApi.request("screen");
+            if (cancelled) {
+              await wakeLockRef.current?.release?.();
+              wakeLockRef.current = null;
+            }
+          }
+        } catch {
+          wakeLockRef.current = null;
+        }
+      } else if (wakeLockRef.current) {
+        try {
+          await wakeLockRef.current.release();
+        } catch {
+          // ignore release failures
+        }
+        wakeLockRef.current = null;
+      }
+    }
+
+    syncWakeLock();
+    return () => {
+      cancelled = true;
+    };
+  }, [routinePlayerOpen, isPaused]);
 
   function stopAmbientSound() {
     ambientSoundRef.current?.stop();
@@ -4604,6 +4672,11 @@ function RoutineSection({
     onRoutineSessionChange({ startedAt });
     setRoutineStepIndex(0);
     setIsPaused(false);
+    setPausedAt(0);
+    setPausedTotalMs(0);
+    setExtendedSeconds(0);
+    setStepStartedAt(Date.now());
+    setTimerNow(Date.now());
     setRoutinePlayerOpen(true);
     restartAmbientSound(routineSession.soundMode);
     onClosePreview();
@@ -4613,6 +4686,7 @@ function RoutineSection({
     const inBedAt = routineSession.inBedAt || getCurrentTimeValue();
     onRoutineSessionChange({ inBedAt });
     setRoutinePlayerOpen(false);
+    setPausedAt(0);
     stopAmbientSound();
   }
 
@@ -4625,6 +4699,7 @@ function RoutineSection({
     onRoutineSessionChange(sessionPatch);
     onSaveGuidedRoutine?.(sessionPatch);
     setRoutinePlayerOpen(false);
+    setPausedAt(0);
     stopAmbientSound();
   }
 
@@ -5013,10 +5088,15 @@ function RoutineSection({
                       onClick={() => {
                         setIsPaused((paused) => {
                           if (paused) {
+                            const resumedAt = Date.now();
+                            setPausedTotalMs((current) => current + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
+                            setPausedAt(0);
                             restartAmbientSound(routineSession.soundMode);
                           } else {
+                            setPausedAt(Date.now());
                             stopAmbientSound();
                           }
+                          setTimerNow(Date.now());
                           return !paused;
                         });
                       }}
@@ -5029,7 +5109,8 @@ function RoutineSection({
                       type="button"
                       onClick={() => {
                         hasPlayedEndToneRef.current = false;
-                        setSecondsLeft((current) => current + 120);
+                        setExtendedSeconds((current) => current + 120);
+                        setTimerNow(Date.now());
                       }}
                     >
                       +2m
@@ -5045,6 +5126,12 @@ function RoutineSection({
                           if (currentPlan.steps[routineStepIndex + 1]?.phaseKey === "dormir") {
                             onRoutineSessionChange({ routineEndTime: routineSession.routineEndTime || getCurrentTimeValue() });
                           }
+                          setStepStartedAt(Date.now());
+                          setPausedAt(0);
+                          setPausedTotalMs(0);
+                          setExtendedSeconds(0);
+                          setTimerNow(Date.now());
+                          setIsPaused(false);
                           setRoutineStepIndex((index) => index + 1);
                         }}
                       >
