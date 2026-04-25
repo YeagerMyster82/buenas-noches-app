@@ -838,11 +838,16 @@ function calculateSleepWindow({ birthday, wakeTime, napsCount }) {
         ageYears < 3 ? 330 :
           ageYears < 5 ? 720 :
             750;
-  const nightAwakeMinutes = napCount > 0 && ageYears <= 5 ? 390 : awakeMinutes;
+  const [nightAwakeMin, nightAwakeMax] =
+    ageYears < 2 ? [600, 660] :
+      ageYears < 3 ? [660, 720] :
+        ageYears < 5 ? (napCount > 0 ? [690, 750] : [720, 780]) :
+          ageYears < 8 ? [720, 780] :
+            [750, 810];
   const firstNapStart = wakeMinutes + Math.min(awakeMinutes, ageYears < 3 ? awakeMinutes : 330);
   const firstNapEnd = firstNapStart + 30;
-  const bedtimeStart = Math.max(timeToMinutes("18:30"), Math.min(timeToMinutes("21:00"), wakeMinutes + nightAwakeMinutes - 30));
-  const bedtimeEnd = Math.max(timeToMinutes("19:00"), Math.min(timeToMinutes("21:30"), bedtimeStart + 30));
+  const bedtimeStart = Math.max(timeToMinutes("17:30"), Math.min(timeToMinutes("21:00"), wakeMinutes + nightAwakeMin));
+  const bedtimeEnd = Math.max(bedtimeStart + 30, Math.min(timeToMinutes("21:30"), wakeMinutes + nightAwakeMax));
 
   return {
     ageYears,
