@@ -4878,15 +4878,24 @@ function RoutineSection({
                   <Stat label="En cama" value={currentPlan.bedtime} />
                   <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
                 </div>
+                <div className="result-strip result-strip--ok">
+                  <strong>Vista completa de la rutina</strong>
+                  <span>Desliza para revisar todos los pasos antes de comenzar.</span>
+                </div>
                 <div className="stack compact">
-                  {currentPlan.steps.slice(0, 4).map((step) => (
+                  {currentPlan.steps.map((step, index) => (
                     <div className="routine-preview-step" key={step.id}>
-                      <strong>{step.label}</strong>
+                      <strong>
+                        {index + 1}. {step.label}
+                      </strong>
                       <span>
                         {step.selectedActivity?.displayName ||
                           step.guidance?.title ||
                           step.preparationItems?.map((item) => item.displayName).join(", ")}
                       </span>
+                      <small>
+                        {step.start} - {step.end}
+                      </small>
                     </div>
                   ))}
                 </div>
