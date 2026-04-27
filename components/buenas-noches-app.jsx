@@ -1095,6 +1095,7 @@ function makeLogsFromSavedData(logs = []) {
 export default function BuenasNochesApp() {
   const [state, setState] = useState(initialState);
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
+  const lastPremiumRefreshAttemptRef = useRef(0);
   const [adminVisible, setAdminVisible] = useState(false);
 
   useEffect(() => {
@@ -1178,6 +1179,43 @@ export default function BuenasNochesApp() {
     setAutoVerifyAttempted(true);
     checkPremiumAccessForEmail(knownEmail, { silent: true });
   }, [autoVerifyAttempted, state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus]);
+
+  useEffect(() => {
+    function maybeRefreshPremiumAccess() {
+      const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+      if (!knownEmail || isVerifiedPremiumState(state) || state.accessStatus === "loading") return;
+      if (document.visibilityState && document.visibilityState !== "visible") return;
+
+      const now = Date.now();
+      if (now - lastPremiumRefreshAttemptRef.current < 5000) return;
+      lastPremiumRefreshAttemptRef.current = now;
+      checkPremiumAccessForEmail(knownEmail, { silent: true });
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        maybeRefreshPremiumAccess();
+      }
+    }
+
+    function handleFocus() {
+      maybeRefreshPremiumAccess();
+    }
+
+    function handlePageShow() {
+      maybeRefreshPremiumAccess();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus, state.premiumAccess]);
 
   const childSlots = useMemo(() => getChildSlots(state.premiumAccess), [state.premiumAccess]);
   const strings = copy[state.language] || copy.es;
