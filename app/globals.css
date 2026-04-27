@@ -2544,6 +2544,12 @@ textarea {
   font-size: 0.92rem;
 }
 
+.routine-preview-step small {
+  color: rgba(31, 48, 68, 0.52);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .routine-media {
   min-height: 190px;
   display: grid;
