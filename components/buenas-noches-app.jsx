@@ -6144,6 +6144,7 @@ function AdminSection({ strings, language, onHome }) {
   }
 
   const userGroups = data ? buildAdminUserGroups(data) : [];
+  const userMix = data ? buildAdminUserMix(data) : { freeCount: 0, premiumCount: 0, total: 0, premiumPercent: 0 };
   const selectedUser = userGroups.find((user) => user.email === selectedUserEmail) || null;
   const selectedChild = selectedUser?.children.find((child) => child.id === selectedChildId) || null;
 
@@ -6202,7 +6203,31 @@ function AdminSection({ strings, language, onHome }) {
           </div>
 
           {adminTab === "users" ? (
-            <div className="admin-split">
+            <div className="admin-users-stack">
+              <section className="admin-mix-card">
+                <div>
+                  <span className="section-label">Hoy</span>
+                  <h3>Usuarios del app desde hoy</h3>
+                  <p className="muted">Excluye compras que parecen pertenecer al curso.</p>
+                </div>
+                <div
+                  className="admin-mix-chart"
+                  style={{
+                    background: `conic-gradient(var(--moon) 0 ${userMix.premiumPercent}%, rgba(169, 216, 221, 0.92) ${userMix.premiumPercent}% 100%)`,
+                  }}
+                  aria-label={`Premium ${userMix.premiumCount}, gratis ${userMix.freeCount}`}
+                >
+                  <div className="admin-mix-chart__center">
+                    <strong>{userMix.total}</strong>
+                    <span>usuarios</span>
+                  </div>
+                </div>
+                <div className="admin-mix-legend">
+                  <span><i className="admin-mix-dot admin-mix-dot--premium" /> Premium: {userMix.premiumCount}</span>
+                  <span><i className="admin-mix-dot admin-mix-dot--free" /> Gratis: {userMix.freeCount}</span>
+                </div>
+              </section>
+              <div className="admin-split">
               <section className="admin-list">
                 <h3>{strings.users}</h3>
                 {userGroups.map((user) => (
@@ -6270,6 +6295,7 @@ function AdminSection({ strings, language, onHome }) {
                   <p className="muted">Selecciona un perfil para ver actividad.</p>
                 )}
               </section>
+              </div>
             </div>
           ) : null}
 
@@ -6333,7 +6359,11 @@ function buildAdminUserGroups(data) {
   const groups = new Map();
   const premiumEmails = new Set(
     (data.purchases || [])
-      .filter((purchase) => purchase.premium_unlocked || String(purchase.purchase_status || "").toLowerCase() === "paid")
+      .filter(
+        (purchase) =>
+          isAppPurchase(purchase.product_id) &&
+          (purchase.premium_unlocked || String(purchase.purchase_status || "").toLowerCase() === "paid")
+      )
       .map((purchase) => String(purchase.email || "").trim().toLowerCase())
   );
 
@@ -6430,6 +6460,58 @@ function buildAdminUserGroups(data) {
       if (left.isPremium !== right.isPremium) return left.isPremium ? -1 : 1;
       return left.email.localeCompare(right.email);
     });
+}
+
+function buildAdminUserMix(data) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const seenEmails = new Set();
+
+  (data.children || []).forEach((child) => {
+    if (!child?.parent_email || !child?.created_at) return;
+    if (new Date(child.created_at) >= todayStart) {
+      seenEmails.add(String(child.parent_email).trim().toLowerCase());
+    }
+  });
+
+  (data.quizResults || []).forEach((result) => {
+    if (!result?.parent_email || !result?.created_at) return;
+    if (new Date(result.created_at) >= todayStart) {
+      seenEmails.add(String(result.parent_email).trim().toLowerCase());
+    }
+  });
+
+  const premiumEmails = new Set(
+    (data.purchases || [])
+      .filter(
+        (purchase) =>
+          purchase?.created_at &&
+          new Date(purchase.created_at) >= todayStart &&
+          (purchase.premium_unlocked || String(purchase.purchase_status || "").toLowerCase() === "paid")
+      )
+      .map((purchase) => String(purchase.email || "").trim().toLowerCase())
+  );
+
+  let premiumCount = 0;
+  let freeCount = 0;
+  seenEmails.forEach((email) => {
+    if (premiumEmails.has(email)) premiumCount += 1;
+    else freeCount += 1;
+  });
+
+  const total = premiumCount + freeCount;
+  return {
+    premiumCount,
+    freeCount,
+    total,
+    premiumPercent: total ? Math.round((premiumCount / total) * 100) : 0,
+  };
+}
+
+function isAppPurchase(productId) {
+  const value = String(productId || "").trim().toLowerCase();
+  if (!value) return false;
+  return value.includes("buenas") || value.includes("noches") || value.includes("424830") || value.includes("app");
 }
 
 function AdminList({ title, items, renderItem }) {
