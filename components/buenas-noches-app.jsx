@@ -319,7 +319,8 @@ const copy = {
     enterApp: "Entrar a mi app",
     verifying: "Verificando...",
     newChild: "Nuevo niño",
-    createProfileFirst: "Creamos su perfil primero",
+    createProfileFirst: "Las noches difíciles tienen una explicación.",
+    createProfileIntro: "Responde estas 10 preguntas y descubre cuál de los 5 perfiles de sueño tiene tu hijo, y exactamente cómo ayudarlo a descansar.",
     childName: "Nombre del niño",
     birthday: "Fecha de nacimiento",
     gender: "Género",
@@ -338,7 +339,7 @@ const copy = {
     freeAccountMemory: "Así la app recuerda a tu hijo cada vez que la abres.",
     freeAccountNoSpam: "Sin spam. Solo lo que necesitas para ayudar a tu hijo a dormir mejor.",
     previousQuestion: "Pregunta anterior",
-    startQuiz: "Empezar quiz",
+    startQuiz: "Descubre su perfil",
     question: "Pregunta",
     of: "de",
     childFitsProfile: "encaja principalmente en el perfil:",
@@ -503,7 +504,8 @@ const copy = {
     enterApp: "Purchase premium",
     verifying: "Verifying...",
     newChild: "New child",
-    createProfileFirst: "Let's create their profile first",
+    createProfileFirst: "Difficult nights have an explanation.",
+    createProfileIntro: "Answer these 10 questions to discover which of the 5 sleep profiles your child has, and exactly how to help them rest.",
     childName: "Child's name",
     birthday: "Birthday",
     gender: "Gender",
@@ -522,7 +524,7 @@ const copy = {
     freeAccountMemory: "That way the app remembers your child every time you open it.",
     freeAccountNoSpam: "No spam. Only what you need to help your child sleep better.",
     previousQuestion: "Previous question",
-    startQuiz: "Start quiz",
+    startQuiz: "Discover their profile",
     question: "Question",
     of: "of",
     childFitsProfile: "fits mainly into this profile:",
@@ -2590,9 +2592,7 @@ export default function BuenasNochesApp() {
             {state.quizIndex === -1 && !state.quizResult && !state.revealedResult ? (
               <form className="stack" onSubmit={beginQuiz}>
                 <p className="lead-copy">
-                  {state.language === "es"
-                    ? "Puedes usar esta parte gratis para descubrir el perfil de sueño de tu hijo. Después, si quieres, desbloqueas el dashboard completo."
-                    : "You can use this part for free to discover your child's sleep profile. Then, if you want, you can unlock the full dashboard."}
+                  {strings.createProfileIntro}
                 </p>
                 <label className="stack compact">
                   <span>{strings.childName}</span>
