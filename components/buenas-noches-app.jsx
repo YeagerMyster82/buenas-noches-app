@@ -772,6 +772,7 @@ const initialState = {
   answers: [],
   tieCandidates: null,
   quizResult: null,
+  revealedResult: null,
   routineForm: {
     wakeTime: "",
     targetBedtime: "",
@@ -1242,6 +1243,7 @@ export default function BuenasNochesApp() {
   const activeChild = state.children.find((child) => child.id === state.activeChildId) || null;
   const editingChild = state.children.find((child) => child.id === state.editingChildId) || null;
   const resultCopy = state.quizResult ? buildResultCopy(state.quizResult, state.language) : null;
+  const revealedResultCopy = state.revealedResult ? buildResultCopy(state.revealedResult, state.language) : null;
   const canAddChild = state.children.length < childSlots.total;
   const hasPremiumAccess = isVerifiedPremiumState(state);
   const progressSummary = activeChild ? buildProgressSummary(activeChild.logs) : null;
@@ -1367,6 +1369,7 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
+      revealedResult: null,
       activeSection: "home",
       currentPlan: null,
     }));
@@ -1381,6 +1384,7 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
+      revealedResult: null,
       activeSection: current.children.length ? "home" : "child",
     }));
   }
@@ -1407,6 +1411,8 @@ export default function BuenasNochesApp() {
       routinePreviewOpen: false,
       sleepWindowOpen: false,
       accountLookupOpen: false,
+      onboardingMode: "",
+      revealedResult: null,
     };
     window.localStorage.setItem(storageKey, JSON.stringify(nextState));
     setState(nextState);
@@ -1436,6 +1442,7 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
+      revealedResult: null,
     }));
   }
 
@@ -1635,6 +1642,7 @@ export default function BuenasNochesApp() {
         answers: [],
         tieCandidates: null,
         quizResult: null,
+        revealedResult: null,
       }));
     } catch (error) {
       setState((current) => ({
@@ -1669,8 +1677,8 @@ export default function BuenasNochesApp() {
       children: [...current.children, child],
       activeChildId: child.id,
       expandedChildId: child.id,
-      activeSection: "home",
-      onboardingMode: "",
+      activeSection: "child",
+      onboardingMode: "reveal",
       childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no" },
       parentName: parentName || current.parentName,
       parentEmail: parentEmail || current.parentEmail,
@@ -1679,6 +1687,7 @@ export default function BuenasNochesApp() {
       answers: [],
       tieCandidates: null,
       quizResult: null,
+      revealedResult: current.quizResult,
     }));
 
     const leadPayload = {
@@ -1765,6 +1774,7 @@ export default function BuenasNochesApp() {
             ? current.children.map((entry) => (entry.id === child.id ? { ...entry, id: savedChildId } : entry))
             : current.children,
           activeChildId: savedChildId || current.activeChildId,
+          expandedChildId: savedChildId || current.expandedChildId,
           persistenceMessage: "Perfil guardado. Ya puedes entrar al dashboard de tu hijo.",
         }));
       } catch {
@@ -2561,22 +2571,10 @@ export default function BuenasNochesApp() {
             onOpenSettings={() => setState((current) => ({ ...current, activeSection: "settings" }))}
           />
 
-          {!state.parentProfileSaved && state.activeSection !== "admin" ? (
-            <FreeAccountSetup
-              strings={strings}
-              parentName={state.parentName}
-              parentEmail={state.parentEmail}
-              onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
-              onSubmit={saveFreeAccount}
-              onAlreadyHaveAccount={() =>
-                setState((current) => ({
-                  ...current,
-                  accountLookupOpen: true,
-                  accountLookupMessage: "",
-                }))
-              }
-            />
-          ) : state.activeSection !== "admin" && state.activeSection === "child" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
+          {state.activeSection !== "admin" &&
+          ((!state.children.length && !state.accountLookupOpen) ||
+            state.onboardingMode === "new-child" ||
+            state.onboardingMode === "reveal") ? (
             <>
               <article className="card card--soft card--quiz">
             {state.children.length > 0 ? (
@@ -2589,7 +2587,7 @@ export default function BuenasNochesApp() {
               <h2>{strings.createProfileFirst}</h2>
             </div>
 
-            {state.quizIndex === -1 && !state.quizResult ? (
+            {state.quizIndex === -1 && !state.quizResult && !state.revealedResult ? (
               <form className="stack" onSubmit={beginQuiz}>
                 <p className="lead-copy">
                   {state.language === "es"
@@ -2743,71 +2741,98 @@ export default function BuenasNochesApp() {
               </div>
             ) : null}
 
-            {resultCopy ? (
-              <div className="stack">
+            {resultCopy && !state.revealedResult ? (
+              <form className="stack account-capture" onSubmit={saveChildProfile}>
                 <div className="result-banner result-banner--light">
                   <p>{genderize(strings.freeAccountTitle, state.childDraft.gender)}</p>
-                  {state.parentProfileSaved ? (
-                    <>
-                      <p>
-                        {state.childDraft.name} {strings.childFitsProfile}
-                      </p>
-                      <h3>👉 {resultCopy.primaryName}</h3>
-                      <p>{resultCopy.reassurance}</p>
-                    </>
-                  ) : null}
                 </div>
-                {state.parentProfileSaved ? (
-                  <>
-                    <div className="content-block content-block--light">
-                      <p>{genderize(resultCopy.primaryDescription, state.childDraft.gender)}</p>
-                      <p>{genderize(resultCopy.framework, state.childDraft.gender)}</p>
-                    </div>
-                    {resultCopy.secondaryName ? (
-                      <p className="content-note">
-                        {state.language === "es"
-                          ? `También veo rasgos de ${resultCopy.secondaryName}, así que puede haber una mezcla de patrones.`
-                          : `I also see traits of ${resultCopy.secondaryName}, so there may be a mixed pattern.`}
-                      </p>
-                    ) : null}
-                    <button className="button button-primary" type="button" onClick={saveChildProfile}>
-                      {state.language === "es" ? "Guardar este perfil" : "Save this profile"}
-                    </button>
-                  </>
-                ) : (
-                  <form className="stack account-capture" onSubmit={saveChildProfile}>
-                    <div className="content-block content-block--light">
-                      <p>{genderize(strings.freeAccountCopy, state.childDraft.gender)}</p>
-                      <p>{genderize(strings.freeAccountMemory, state.childDraft.gender)}</p>
-                    </div>
-                    <label className="stack compact">
-                      <span>{strings.parentName}</span>
-                      <input
-                        type="text"
-                        value={state.parentName}
-                        onChange={(event) => setState((current) => ({ ...current, parentName: event.target.value }))}
-                        required
-                      />
-                    </label>
-                    <label className="stack compact">
-                      <span>{strings.parentEmail}</span>
-                      <input
-                        type="email"
-                        value={state.parentEmail}
-                        onChange={(event) => setState((current) => ({ ...current, parentEmail: event.target.value }))}
-                        required
-                      />
-                    </label>
-                    <button className="button button-primary" type="submit">
-                      {genderize(strings.seeChildProfile, state.childDraft.gender)} →
-                    </button>
-                    <p className="muted">{genderize(strings.freeAccountNoSpam, state.childDraft.gender)}</p>
-                  </form>
-                )}
+                <div className="content-block content-block--light">
+                  <p>{genderize(strings.freeAccountCopy, state.childDraft.gender)}</p>
+                  <p>{genderize(strings.freeAccountMemory, state.childDraft.gender)}</p>
                 </div>
-              ) : null}
+                <label className="stack compact">
+                  <span>{strings.parentName}</span>
+                  <input
+                    type="text"
+                    value={state.parentName}
+                    onChange={(event) => setState((current) => ({ ...current, parentName: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label className="stack compact">
+                  <span>{strings.parentEmail}</span>
+                  <input
+                    type="email"
+                    value={state.parentEmail}
+                    onChange={(event) => setState((current) => ({ ...current, parentEmail: event.target.value }))}
+                    required
+                  />
+                </label>
+                <button className="button button-primary" type="submit">
+                  {genderize(strings.seeChildProfile, state.childDraft.gender)} →
+                </button>
+                <p className="muted">{genderize(strings.freeAccountNoSpam, state.childDraft.gender)}</p>
+              </form>
+            ) : null}
+
+            {revealedResultCopy ? (
+              <div className="stack">
+                <div className="result-banner result-banner--light">
+                  <p>
+                    {state.language === "es"
+                      ? `${activeChild?.name || state.childDraft.name} tiene el perfil de sueño:`
+                      : `${activeChild?.name || state.childDraft.name}'s sleep profile is:`}
+                  </p>
+                  <h3>👉 {revealedResultCopy.primaryName}</h3>
+                </div>
+                <div className="content-block content-block--light">
+                  <p>{genderize(revealedResultCopy.primaryDescription, activeChild?.gender || state.childDraft.gender)}</p>
+                </div>
+                {revealedResultCopy.secondaryName ? (
+                  <p className="content-note">
+                    {state.language === "es"
+                      ? `También veo rasgos de ${revealedResultCopy.secondaryName}, así que puede haber una mezcla de patrones.`
+                      : `I also see traits of ${revealedResultCopy.secondaryName}, so there may be a mixed pattern.`}
+                  </p>
+                ) : null}
+                <button className="button button-primary" type="button" onClick={goToSalesFunnelFromRoutineGate}>
+                  {state.language === "es"
+                    ? `Desbloquear la rutina de ${activeChild?.name || state.childDraft.name}`
+                    : `Unlock ${activeChild?.name || state.childDraft.name}'s routine`}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setState((current) => ({
+                      ...current,
+                      activeSection: "home",
+                      onboardingMode: "",
+                      revealedResult: null,
+                    }))
+                  }
+                >
+                  {state.language === "es" ? "Explorar la app" : "Explore the app"}
+                </button>
+              </div>
+            ) : null}
               </article>
             </>
+          ) : !state.parentProfileSaved && state.activeSection !== "admin" ? (
+            <FreeAccountSetup
+              strings={strings}
+              parentName={state.parentName}
+              parentEmail={state.parentEmail}
+              onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
+              onSubmit={saveFreeAccount}
+              onAlreadyHaveAccount={() =>
+                setState((current) => ({
+                  ...current,
+                  accountLookupOpen: true,
+                  accountLookupMessage: "",
+                }))
+              }
+            />
           ) : state.activeSection === "home" ? (
             <>
               <HomeQuickCards
