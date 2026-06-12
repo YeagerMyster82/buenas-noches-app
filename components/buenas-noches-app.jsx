@@ -3205,7 +3205,14 @@ export default function BuenasNochesApp() {
                   routineSession={state.routineSession}
                   onRoutineFieldChange={updateRoutineField}
                   onGenerateRoutine={generateRoutine}
-                  onClose={() => setState((current) => ({ ...current, activeSection: "home", expandedChildId: activeChild?.id || current.expandedChildId }))}
+                  onClose={() =>
+                    setState((current) => ({
+                      ...current,
+                      activeSection: "home",
+                      expandedChildId: activeChild?.id || current.expandedChildId,
+                      savedLogDate: "",
+                    }))
+                  }
                   onClosePreview={() => setState((current) => ({ ...current, routinePreviewOpen: false }))}
                   onRoutineSessionChange={(patch) =>
                     setState((current) => ({
@@ -4691,6 +4698,14 @@ function RoutineSection({
       hasPlayedEndToneRef.current = true;
     }
   }, [routinePlayerOpen, isPaused, playerStep, isUntimedPlayerStep, secondsLeft, routineSession.soundMode]);
+
+  useEffect(() => {
+    if (!savedLogDate) return undefined;
+    const timer = window.setTimeout(() => {
+      onClose();
+    }, 2 * 60 * 1000);
+    return () => window.clearTimeout(timer);
+  }, [savedLogDate, onClose]);
 
   useEffect(() => {
     return () => {
