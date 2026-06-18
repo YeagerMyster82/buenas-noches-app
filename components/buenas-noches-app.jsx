@@ -1362,6 +1362,16 @@ export default function BuenasNochesApp() {
     }));
   }
 
+  function openAccountLookup() {
+    setState((current) => ({
+      ...current,
+      accountLookupOpen: true,
+      accountLookupMessage: "",
+      accountLookupStatus: "idle",
+      onboardingMode: "",
+    }));
+  }
+
   function startAddChild() {
     setState((current) => ({
       ...current,
@@ -2574,7 +2584,8 @@ export default function BuenasNochesApp() {
           />
 
           {state.activeSection !== "admin" &&
-          ((!state.children.length && !state.accountLookupOpen) ||
+          !state.accountLookupOpen &&
+          ((!state.children.length) ||
             state.onboardingMode === "new-child" ||
             state.onboardingMode === "reveal") ? (
             <>
@@ -2672,13 +2683,7 @@ export default function BuenasNochesApp() {
                 {state.children.length === 0 ? (
                   <AccountLookup
                     strings={strings}
-                    onToggle={() =>
-                      setState((current) => ({
-                        ...current,
-                        accountLookupOpen: true,
-                        accountLookupMessage: "",
-                      }))
-                    }
+                    onToggle={openAccountLookup}
                   />
                 ) : null}
               </form>
@@ -2825,13 +2830,7 @@ export default function BuenasNochesApp() {
               parentEmail={state.parentEmail}
               onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
               onSubmit={saveFreeAccount}
-              onAlreadyHaveAccount={() =>
-                setState((current) => ({
-                  ...current,
-                  accountLookupOpen: true,
-                  accountLookupMessage: "",
-                }))
-              }
+              onAlreadyHaveAccount={openAccountLookup}
             />
           ) : state.activeSection === "home" ? (
             <>
@@ -3039,13 +3038,7 @@ export default function BuenasNochesApp() {
                     {state.children.length === 0 ? (
                       <AccountLookup
                         strings={strings}
-                        onToggle={() =>
-                          setState((current) => ({
-                            ...current,
-                            accountLookupOpen: true,
-                            accountLookupMessage: "",
-                          }))
-                        }
+                        onToggle={openAccountLookup}
                       />
                     ) : null}
                   </form>
