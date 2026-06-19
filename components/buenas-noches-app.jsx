@@ -387,6 +387,9 @@ const copy = {
     pauseRoutine: "Pausar",
     resumeRoutine: "Continuar",
     extendActivity: "Extender 2 minutos",
+    timerMode: "Modo de rutina",
+    timerModeTimed: "Con timer",
+    timerModeManual: "Sin timer",
     transitionSound: "Sonido de transición",
     soundMode: "Modo de sonido",
     soundSilent: "Silencio",
@@ -572,6 +575,9 @@ const copy = {
     pauseRoutine: "Pause",
     resumeRoutine: "Resume",
     extendActivity: "Extend 2 minutes",
+    timerMode: "Routine mode",
+    timerModeTimed: "With timer",
+    timerModeManual: "No timer",
     transitionSound: "Transition sound",
     soundMode: "Sound mode",
     soundSilent: "Silent",
@@ -790,6 +796,7 @@ const initialState = {
     inBedAt: "",
     routineEndTime: "",
     fellAsleepAt: "",
+    timerMode: "timed",
     soundMode: "transition",
   },
   expandedSwapStep: "",
@@ -1935,6 +1942,7 @@ export default function BuenasNochesApp() {
         inBedAt: "",
         routineEndTime: "",
         fellAsleepAt: "",
+        timerMode: current.routineSession?.timerMode || "timed",
         soundMode: current.routineSession?.soundMode || "transition",
       },
       expandedSwapStep: "",
@@ -4641,7 +4649,8 @@ function RoutineSection({
     "dormir",
     "limite_claro",
   ];
-  const isUntimedPlayerStep = playerStep ? untimedRoutinePhases.includes(playerStep.phaseKey) : false;
+  const isManualRoutine = routineSession.timerMode === "manual";
+  const isUntimedPlayerStep = playerStep ? isManualRoutine || untimedRoutinePhases.includes(playerStep.phaseKey) : false;
   const stepDurationSeconds = playerStep ? getStepDurationSeconds(playerStep) + extendedSeconds : 0;
   const livePausedMs = isPaused && pausedAt ? Math.max(0, timerNow - pausedAt) : 0;
   const elapsedSeconds =
@@ -4933,6 +4942,18 @@ function RoutineSection({
                   ))}
                 </div>
                 <label className="stack compact">
+                  <span>{strings.timerMode}</span>
+                  <select
+                    value={routineSession.timerMode || "timed"}
+                    onChange={(event) => {
+                      onRoutineSessionChange({ timerMode: event.target.value });
+                    }}
+                  >
+                    <option value="timed">{strings.timerModeTimed}</option>
+                    <option value="manual">{strings.timerModeManual}</option>
+                  </select>
+                </label>
+                <label className="stack compact">
                   <span>{strings.soundMode}</span>
                   <select
                     value={routineSession.soundMode}
@@ -5100,7 +5121,7 @@ function RoutineSection({
                   </strong>
                   <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
                   {isUntimedPlayerStep ? (
-                    <strong className="routine-countdown routine-countdown--manual">Sin timer</strong>
+                    <strong className="routine-countdown routine-countdown--manual">{strings.timerModeManual}</strong>
                   ) : (
                     <strong className="routine-countdown">{formatTimer(secondsLeft)}</strong>
                   )}
@@ -5205,39 +5226,43 @@ function RoutineSection({
                     >
                       ←
                     </button>
-                    <button
-                      className="button button-ghost"
-                      type="button"
-                      onClick={() => {
-                        setIsPaused((paused) => {
-                          if (paused) {
-                            const resumedAt = Date.now();
-                            setPausedTotalMs((current) => current + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
-                            setPausedAt(0);
-                            restartAmbientSound(routineSession.soundMode);
-                          } else {
-                            setPausedAt(Date.now());
-                            stopAmbientSound();
-                          }
-                          setTimerNow(Date.now());
-                          return !paused;
-                        });
-                      }}
-                      aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}
-                    >
-                      {isPaused ? "▶" : "⏸"}
-                    </button>
-                    <button
-                      className="button button-ghost"
-                      type="button"
-                      onClick={() => {
-                        hasPlayedEndToneRef.current = false;
-                        setExtendedSeconds((current) => current + 120);
-                        setTimerNow(Date.now());
-                      }}
-                    >
-                      +2m
-                    </button>
+                    {!isUntimedPlayerStep ? (
+                      <>
+                        <button
+                          className="button button-ghost"
+                          type="button"
+                          onClick={() => {
+                            setIsPaused((paused) => {
+                              if (paused) {
+                                const resumedAt = Date.now();
+                                setPausedTotalMs((current) => current + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
+                                setPausedAt(0);
+                                restartAmbientSound(routineSession.soundMode);
+                              } else {
+                                setPausedAt(Date.now());
+                                stopAmbientSound();
+                              }
+                              setTimerNow(Date.now());
+                              return !paused;
+                            });
+                          }}
+                          aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}
+                        >
+                          {isPaused ? "▶" : "⏸"}
+                        </button>
+                        <button
+                          className="button button-ghost"
+                          type="button"
+                          onClick={() => {
+                            hasPlayedEndToneRef.current = false;
+                            setExtendedSeconds((current) => current + 120);
+                            setTimerNow(Date.now());
+                          }}
+                        >
+                          +2m
+                        </button>
+                      </>
+                    ) : null}
                     <button
                       className="button button-primary"
                       type="button"
