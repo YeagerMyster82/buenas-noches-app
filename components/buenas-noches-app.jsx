@@ -6630,11 +6630,15 @@ function AdminSection({ strings, language, onHome }) {
   const [adminCode, setAdminCode] = useState("");
   const [status, setStatus] = useState("");
   const [data, setData] = useState(null);
-  const [adminTab, setAdminTab] = useState("users");
+  const [adminTab, setAdminTab] = useState("dashboard");
   const [selectedUserEmail, setSelectedUserEmail] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
   const [replyDrafts, setReplyDrafts] = useState({});
   const [pushStatus, setPushStatus] = useState("");
+  const [expandedUserEmail, setExpandedUserEmail] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [userFilter, setUserFilter] = useState("todos");
+  const [reviewToggles, setReviewToggles] = useState({});
 
   async function loadAdminData(event) {
     event.preventDefault();
@@ -6742,214 +6746,363 @@ function AdminSection({ strings, language, onHome }) {
   }
 
   const userGroups = data ? buildAdminUserGroups(data) : [];
-  const userMix = data ? buildAdminUserMix(data) : { freeCount: 0, premiumCount: 0, total: 0, premiumPercent: 0 };
-  const selectedUser = userGroups.find((user) => user.email === selectedUserEmail) || null;
-  const selectedChild = selectedUser?.children.find((child) => child.id === selectedChildId) || null;
+  const premiumCount = userGroups.filter(u => u.isPremium).length;
+  const freeCount = userGroups.filter(u => !u.isPremium).length;
+  const totalCount = userGroups.length;
+  const pendingMessages = (data?.messages || []).filter(m => m.status !== "answered").length;
+  const today = new Date().toISOString().slice(0, 7);
+  const newThisMonth = userGroups.filter(u => u.children.some(c => c.created_at?.startsWith(today))).length;
+
+  const filteredUsers = userGroups.filter(u => {
+    const matchesSearch = !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase()) || (u.parentName || "").toLowerCase().includes(userSearch.toLowerCase());
+    const matchesFilter = userFilter === "todos" || (userFilter === "premium" && u.isPremium) || (userFilter === "gratis" && !u.isPremium);
+    return matchesSearch && matchesFilter;
+  });
+
+  const topicBadgeStyle = (topic) => {
+    const t = (topic || "").toLowerCase();
+    if (t.includes("soporte") || t.includes("support")) return { background: "rgba(217,150,140,.2)", color: "var(--coral)", border: "1px solid rgba(217,150,140,.3)" };
+    if (t.includes("sugerencia") || t.includes("suggestion")) return { background: "rgba(244,231,178,.2)", color: "var(--moon)", border: "1px solid rgba(244,231,178,.3)" };
+    return { background: "rgba(158,207,210,.2)", color: "var(--aqua)", border: "1px solid rgba(158,207,210,.3)" };
+  };
+
+  const sidebarItems = [
+    { id: "dashboard", label: "Dashboard", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2v8H3v-8Zm5-5h2v13H8V8Zm5-4h2v17h-2V4Zm5 6h2v11h-2v-11Z" /> },
+    { id: "usuarios", label: "Usuarios", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m5-3.13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-1a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /> },
+    { id: "mensajes", label: "Mensajes", icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z" />, badge: pendingMessages },
+    { id: "resenas", label: "Resenas", icon: <path strokeLinecap="round" strokeLinejoin="round" d="m12 17.27 6.18 3.73-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21Z" /> },
+  ];
+
+  if (!data) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--navy-950)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 360, background: "var(--navy-900)", border: "1px solid var(--border)", borderRadius: 24, padding: 32 }}>
+          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", marginBottom: 4 }}>QuiroKids</div>
+          <h2 style={{ marginBottom: 4 }}>Panel Admin</h2>
+          <p style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: 24 }}>Ingresa el codigo de acceso para continuar.</p>
+          <form onSubmit={loadAdminData} style={{ display: "grid", gap: 14 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Codigo de acceso</span>
+              <input type="password" value={adminCode} onChange={e => setAdminCode(e.target.value)} required />
+            </label>
+            {status ? <p style={{ color: "var(--coral)", fontSize: 13 }}>{status}</p> : null}
+            <button className="button button-primary" type="submit">Entrar al panel</button>
+            <button className="button button-ghost" type="button" onClick={onHome}>Volver a la app</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <article className="card card--feature admin-panel">
-      <div className="card-header">
-        <span className="section-label">{strings.sections.admin}</span>
-        <h2>{strings.adminOverview}</h2>
-        <p className="lead-copy">{strings.adminHint}</p>
-        <button className="button button-secondary" type="button" onClick={onHome}>
-          Inicio
-        </button>
-        {data ? (
-          <>
-            <button className="button button-primary" type="button" onClick={enableAdminPush}>
-              Activar notificaciones admin
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--navy-950)", color: "var(--ink)" }}>
+      {/* Sidebar */}
+      <aside style={{ width: 220, flexShrink: 0, background: "var(--navy-900)", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", padding: "24px 0", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
+        <div style={{ padding: "0 20px 24px", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
+          <div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 2 }}>QuiroKids</div>
+          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 18, fontWeight: 600 }}>Panel Admin</div>
+        </div>
+        <nav style={{ flex: 1, padding: "0 10px" }}>
+          {sidebarItems.map(item => (
+            <button key={item.id} type="button" onClick={() => setAdminTab(item.id)} style={{
+              display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px",
+              borderRadius: 10, marginBottom: 2, background: adminTab === item.id ? "var(--navy-800)" : "transparent",
+              color: adminTab === item.id ? "var(--ink)" : "rgba(255,248,239,.55)", fontWeight: 600, fontSize: 13.5,
+              border: "none", cursor: "pointer", textAlign: "left",
+            }}>
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">{item.icon}</svg>
+              {item.label}
+              {item.badge > 0 ? <span style={{ marginLeft: "auto", background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{item.badge}</span> : null}
             </button>
-            {pushStatus ? <p className="status-message status-success">{pushStatus}</p> : null}
-          </>
-        ) : null}
-        {data && status ? <p className="status-message status-warning">{status}</p> : null}
-      </div>
-      {!data ? (
-        <form className="stack compact" onSubmit={loadAdminData}>
-          <label className="stack compact">
-            <span>{strings.adminCode}</span>
-            <input
-              type="password"
-              value={adminCode}
-              onChange={(event) => setAdminCode(event.target.value)}
-              required
-            />
-          </label>
-          {status ? <p className="status-message status-warning">{status}</p> : null}
-          <button className="button button-primary" type="submit">
-            {strings.loadAdmin}
-          </button>
-        </form>
-      ) : (
-        <>
-          <div className="admin-tabs">
-            {[
-              ["users", strings.users],
-              ["messages", strings.messages],
-              ["reviews", strings.reviews],
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={adminTab === id ? "section-tab is-active" : "section-tab"}
-                onClick={() => setAdminTab(id)}
-              >
-                {label}
-              </button>
-            ))}
+          ))}
+        </nav>
+        <div style={{ padding: "16px 20px", borderTop: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--moon)", color: "var(--navy-950)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13 }}>J</div>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 600 }}>Joline</div>
+              <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>joline.yeager@yahoo.com</div>
+            </div>
           </div>
+          <button className="button button-ghost" type="button" onClick={onHome} style={{ width: "100%", marginTop: 12, fontSize: 12, minHeight: 36 }}>Volver a la app</button>
+        </div>
+      </aside>
 
-          {adminTab === "users" ? (
-            <div className="admin-users-stack">
-              <section className="admin-mix-card">
-                <div>
-                  <span className="section-label">Hoy</span>
-                  <h3>Usuarios del app desde hoy</h3>
-                  <p className="muted">Excluye compras que parecen pertenecer al curso.</p>
-                </div>
-                <div
-                  className="admin-mix-chart"
-                  style={{
-                    background: `conic-gradient(var(--moon) 0 ${userMix.premiumPercent}%, rgba(169, 216, 221, 0.92) ${userMix.premiumPercent}% 100%)`,
-                  }}
-                  aria-label={`Premium ${userMix.premiumCount}, gratis ${userMix.freeCount}`}
-                >
-                  <div className="admin-mix-chart__center">
-                    <strong>{userMix.total}</strong>
-                    <span>usuarios</span>
-                  </div>
-                </div>
-                <div className="admin-mix-legend">
-                  <span><i className="admin-mix-dot admin-mix-dot--premium" /> Premium: {userMix.premiumCount}</span>
-                  <span><i className="admin-mix-dot admin-mix-dot--free" /> Gratis: {userMix.freeCount}</span>
-                </div>
-              </section>
-              <div className="admin-split">
-              <section className="admin-list">
-                <h3>{strings.users}</h3>
-                {userGroups.map((user) => (
-                  <button
-                    key={user.email}
-                    type="button"
-                    className={selectedUserEmail === user.email ? "admin-list-item admin-list-button is-active" : "admin-list-item admin-list-button"}
-                    onClick={() => {
-                      setSelectedUserEmail(user.email);
-                      setSelectedChildId("");
-                    }}
-                  >
-                    <strong>{user.parentName || "Sin nombre"}</strong>
-                    <span>
-                      {user.email || "Sin email"} · {user.children.length} perfiles
-                      {user.isPremium ? <em className="premium-badge">Premium</em> : null}
-                    </span>
-                  </button>
-                ))}
-              </section>
-              <section className="admin-list">
-                <h3>{selectedUser ? `${selectedUser.parentName || "Usuario"} · ${selectedUser.email || "Sin email"}` : "Perfiles"}</h3>
-                {selectedUser ? (
-                  selectedUser.children.map((child) => (
-                    <button
-                      key={child.id}
-                      type="button"
-                      className={selectedChildId === child.id ? "admin-list-item admin-list-button is-active" : "admin-list-item admin-list-button"}
-                      onClick={() => setSelectedChildId(child.id)}
-                    >
-                      <strong>{child.child_name || "Sin nombre"}</strong>
-                      <span>
-                        Perfil {child.primary_profile} · {child.age_years ?? "?"} años
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="muted">Selecciona un usuario.</p>
-                )}
-              </section>
-              <section className="admin-list">
-                <h3>{selectedChild ? selectedChild.child_name || "Actividad" : "Actividad"}</h3>
-                {selectedChild ? (
-                  <>
-                    {(selectedUser.logsByChild.get(selectedChild.id) || []).map((log) => (
-                      <div className="admin-list-item" key={log.id}>
-                        <strong>
-                          {log.log_date} · {log.sleep_latency_minutes} min
-                        </strong>
-                        <span>
-                          Cama {log.in_bed_at} · Sueño {log.fell_asleep_at}
-                        </span>
-                        <small>Despertares: {log.night_wakings}</small>
-                      </div>
-                    ))}
-                    {(selectedUser.eventsByChild.get(selectedChild.id) || []).map((event) => (
-                      <div className="admin-list-item" key={event.id}>
-                        <strong>{event.event_label}</strong>
-                        <span>{event.event_type}</span>
-                        <small>{event.created_at?.slice(0, 10)}</small>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <p className="muted">Selecciona un perfil para ver actividad.</p>
-                )}
-              </section>
+      {/* Main content */}
+      <main style={{ flex: 1, padding: "40px 36px 60px", maxWidth: 1000, overflowY: "auto" }}>
+
+        {/* ── DASHBOARD ── */}
+        {adminTab === "dashboard" ? (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+              <div>
+                <h1 style={{ margin: 0, fontFamily: "'Baloo 2', sans-serif", fontSize: 28 }}>Dashboard</h1>
+                <p style={{ margin: "4px 0 0", color: "var(--ink-soft)", fontSize: 14 }}>Resumen de usuarios y suscripciones</p>
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, background: "var(--navy-800)", border: "1px solid var(--border)", padding: "7px 14px", borderRadius: 20, color: "var(--ink-soft)" }}>
+                {new Date().toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}
               </div>
             </div>
-          ) : null}
+            {/* KPI cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
+              {[
+                { label: "Usuarios totales", value: totalCount, delta: `+${newThisMonth} este mes`, color: "var(--aqua)" },
+                { label: "Premium activos", value: premiumCount, delta: premiumCount > 0 ? `${Math.round(premiumCount/Math.max(totalCount,1)*100)}% del total` : "0%", color: "var(--moon)" },
+                { label: "Gratis", value: freeCount, delta: "sin suscripcion", color: "var(--aqua)" },
+                { label: "Mensajes pendientes", value: pendingMessages, delta: "sin respuesta", color: pendingMessages > 0 ? "var(--coral)" : "var(--green)" },
+              ].map((kpi, i) => (
+                <div key={i} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: kpi.color }} />
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink-soft)", fontWeight: 600 }}>{kpi.label}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 32, fontWeight: 600, color: "var(--ink)", margin: "10px 0 6px" }}>{kpi.value}</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{kpi.delta}</div>
+                </div>
+              ))}
+            </div>
+            {/* User breakdown */}
+            <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: 24 }}>
+              <h3 style={{ margin: "0 0 16px", fontFamily: "'Baloo 2', sans-serif" }}>Desglose de usuarios</h3>
+              <div style={{ display: "grid", gap: 10 }}>
+                {[
+                  { label: "Premium", count: premiumCount, color: "var(--moon)", pct: totalCount > 0 ? premiumCount/totalCount : 0 },
+                  { label: "Gratis", count: freeCount, color: "var(--aqua)", pct: totalCount > 0 ? freeCount/totalCount : 0 },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: row.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13.5, minWidth: 70 }}>{row.label}</span>
+                    <div style={{ flex: 1, height: 8, background: "rgba(255,248,239,.08)", borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ height: "100%", background: row.color, width: `${Math.round(row.pct * 100)}%`, borderRadius: 999 }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, fontSize: 14, minWidth: 28, textAlign: "right" }}>{row.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
 
-          {adminTab === "messages" ? (
-            <AdminList
-              title={strings.messages}
-              items={data.messages}
-              renderItem={(messageItem) => (
-                <>
-                  <strong>{messageItem.parent_email || "Sin email"}</strong>
-                  <span>{messageItem.message}</span>
-                  <small>
-                    {messageItem.topic} · {messageItem.created_at?.slice(0, 10)}
-                  </small>
-                  {(messageItem.replies || []).map((reply) => (
-                    <div className="message-bubble message-bubble--admin" key={reply.id}>
-                      <strong>{reply.sender === "admin" ? "Tú" : "Usuario"}</strong>
-                      <p>{reply.message}</p>
+        {/* ── USUARIOS ── */}
+        {adminTab === "usuarios" ? (
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ margin: "0 0 4px", fontFamily: "'Baloo 2', sans-serif", fontSize: 28 }}>Usuarios</h1>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>{totalCount} familias registradas</p>
+            </div>
+            {/* Search + filters */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ink-soft)" }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                </svg>
+                <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Buscar por nombre o correo..." style={{ paddingLeft: 34, minHeight: 42 }} />
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {["todos", "premium", "gratis"].map(f => (
+                  <button key={f} type="button" onClick={() => setUserFilter(f)} style={{
+                    padding: "8px 14px", borderRadius: 20, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                    background: userFilter === f ? "var(--navy-950)" : "var(--navy-800)",
+                    color: userFilter === f ? "var(--ink)" : "var(--ink-soft)",
+                    border: `1px solid ${userFilter === f ? "var(--moon)" : "var(--border)"}`,
+                  }}>
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* User table */}
+            <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "rgba(255,248,239,.04)" }}>
+                    {["", "Usuario", "Estado", "Perfiles", "Ultima actividad"].map((h, i) => (
+                      <th key={i} style={{ textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink-soft)", fontWeight: 600, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map(user => {
+                    const isExpanded = expandedUserEmail === user.email;
+                    const lastLog = user.children.flatMap(c => Array.from(user.logsByChild.get(c.id) || [])).sort((a,b) => a.log_date < b.log_date ? 1 : -1)[0];
+                    return (
+                      <>
+                        <tr key={user.email} onClick={() => setExpandedUserEmail(isExpanded ? "" : user.email)}
+                          style={{ cursor: "pointer", borderBottom: "1px solid var(--border)", background: isExpanded ? "rgba(255,248,239,.04)" : "transparent" }}>
+                          <td style={{ padding: "14px 16px", width: 28 }}>
+                            <span style={{ color: "var(--ink-soft)", fontSize: 12, transition: "transform .15s", display: "inline-block", transform: isExpanded ? "rotate(90deg)" : "none" }}>▶</span>
+                          </td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <div style={{ fontWeight: 600, color: "var(--ink)" }}>{user.parentName || "Sin nombre"}</div>
+                            <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>{user.email}</div>
+                          </td>
+                          <td style={{ padding: "14px 16px" }}>
+                            <span style={{ display: "inline-block", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20,
+                              background: user.isPremium ? "rgba(244,231,178,.15)" : "rgba(255,248,239,.08)",
+                              color: user.isPremium ? "var(--moon)" : "var(--ink-soft)",
+                              border: `1px solid ${user.isPremium ? "rgba(244,231,178,.3)" : "var(--border)"}` }}>
+                              {user.isPremium ? "PREMIUM" : "GRATIS"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "14px 16px", color: "var(--ink-soft)", fontSize: 13.5 }}>{user.children.length}</td>
+                          <td style={{ padding: "14px 16px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--ink-soft)" }}>
+                            {lastLog ? lastLog.log_date : "Sin registros"}
+                          </td>
+                        </tr>
+                        {isExpanded ? (
+                          <tr key={`${user.email}-detail`} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td colSpan={5} style={{ padding: 0 }}>
+                              <div style={{ background: "rgba(255,248,239,.03)", padding: "16px 16px 16px 44px", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                                {user.children.map(child => {
+                                  const childLogs = Array.from(user.logsByChild.get(child.id) || []);
+                                  const avgLatency = childLogs.length ? Math.round(childLogs.reduce((s,l) => s + (l.sleep_latency_minutes || 0), 0) / childLogs.length) : null;
+                                  return (
+                                    <div key={child.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", minWidth: 200 }}>
+                                      <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 2 }}>{child.child_name || "Sin nombre"}, {child.age_years ?? "?"} anos</div>
+                                      <div style={{ fontSize: 11.5, color: "var(--aqua)", fontWeight: 600, marginBottom: 8 }}>Perfil: {child.primary_profile || "Sin perfil"}</div>
+                                      <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                                        {avgLatency !== null ? <span>Promedio para dormir: <b style={{ color: "var(--ink)", fontFamily: "'JetBrains Mono', monospace" }}>{avgLatency} min</b><br /></span> : null}
+                                        <span>Noches registradas: <b style={{ color: "var(--ink)", fontFamily: "'JetBrains Mono', monospace" }}>{childLogs.length}</b></span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </>
+                    );
+                  })}
+                  {filteredUsers.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--ink-soft)" }}>No hay usuarios que coincidan.</td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null}
+
+        {/* ── MENSAJES ── */}
+        {adminTab === "mensajes" ? (
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ margin: "0 0 4px", fontFamily: "'Baloo 2', sans-serif", fontSize: 28 }}>Mensajes</h1>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>{pendingMessages} conversaciones esperando respuesta</p>
+            </div>
+            {(data.messages || []).length === 0 ? <p style={{ color: "var(--ink-soft)" }}>No hay mensajes.</p> : null}
+            {(data.messages || []).map(msg => {
+              const isSupport = (msg.topic || "").toLowerCase().includes("soporte") || (msg.topic || "").toLowerCase().includes("support");
+              const badgeStyle = topicBadgeStyle(msg.topic);
+              return (
+                <div key={msg.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                    <div>
+                      <span style={{ ...badgeStyle, display: "inline-block", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, marginBottom: 6 }}>
+                        {(msg.topic || "MENSAJE").toUpperCase()}
+                      </span>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{msg.parent_email || "Sin email"}</div>
+                    </div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: "var(--ink-soft)" }}>{msg.created_at?.slice(0, 10)}</div>
+                  </div>
+                  <p style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.55, marginBottom: 14 }}>{msg.message}</p>
+                  {/* Previous replies */}
+                  {(msg.replies || []).map(reply => (
+                    <div key={reply.id} style={{ padding: "10px 12px", borderRadius: 10, marginBottom: 8, background: reply.sender === "admin" ? "rgba(244,231,178,.1)" : "rgba(158,207,210,.1)" }}>
+                      <strong style={{ fontSize: 12, color: reply.sender === "admin" ? "var(--moon)" : "var(--aqua)" }}>{reply.sender === "admin" ? "Tu" : "Usuario"}</strong>
+                      <p style={{ margin: "2px 0 0", fontSize: 13 }}>{reply.message}</p>
                     </div>
                   ))}
-                  <form className="message-reply-form" onSubmit={(event) => replyToMessage(event, messageItem)}>
-                    <textarea
-                      value={replyDrafts[messageItem.id] || ""}
-                      onChange={(event) => setReplyDrafts((current) => ({ ...current, [messageItem.id]: event.target.value }))}
-                      placeholder="Responder a este usuario..."
-                    />
-                    <button className="icon-button message-icon-action" type="submit" aria-label="Responder">
-                      ➤
-                    </button>
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+                    {isSupport ? (
+                      <>
+                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hola, te escribo de Buenas Noches re: tu mensaje`)}`} target="_blank" rel="noreferrer"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 12.5, fontWeight: 600, background: "#3FA66B", color: "white", textDecoration: "none" }}>
+                          <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35C8.52 21.5 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Z" /></svg>
+                          WhatsApp
+                        </a>
+                        <a href={`mailto:${msg.parent_email}?subject=Buenas Noches — Tu consulta`}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 12.5, fontWeight: 600, background: "var(--navy-700)", color: "var(--ink)", border: "1px solid var(--border)", textDecoration: "none" }}>
+                          Correo
+                        </a>
+                      </>
+                    ) : null}
+                  </div>
+                  {/* Reply form */}
+                  <form onSubmit={e => replyToMessage(e, msg)} style={{ display: "grid", gap: 8 }}>
+                    <textarea value={replyDrafts[msg.id] || ""} onChange={e => setReplyDrafts(cur => ({ ...cur, [msg.id]: e.target.value }))}
+                      placeholder="Responder a este usuario..." style={{ minHeight: 60 }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="button button-primary" type="submit" style={{ flex: 1, minHeight: 40 }}>Enviar respuesta</button>
+                      <button type="button" onClick={() => deleteAdminMessage(msg.id)} style={{
+                        padding: "0 14px", borderRadius: 9, background: "var(--navy-700)", color: "var(--coral)",
+                        border: "1px solid rgba(217,150,140,.3)", cursor: "pointer", fontSize: 14,
+                      }} aria-label="Borrar">🗑</button>
+                    </div>
                   </form>
-                  <button className="icon-button message-icon-action message-icon-action--danger" type="button" onClick={() => deleteAdminMessage(messageItem.id)} aria-label="Borrar mensaje">
-                    🗑
-                  </button>
-                </>
-              )}
-            />
-          ) : null}
+                </div>
+              );
+            })}
+          </>
+        ) : null}
 
-          {adminTab === "reviews" ? (
-            <AdminList
-              title={strings.reviews}
-              items={data.reviews}
-              renderItem={(review) => (
-                <>
-                  <strong>
-                    {review.rating}★ · {review.parent_email || "Sin email"}
-                  </strong>
-                  <span>{review.rating === 5 ? review.comment : review.improvement_feedback || review.comment}</span>
-                  <small>{review.public_approved ? "Publicada en muro" : "Privada"}</small>
-                </>
-              )}
-            />
-          ) : null}
-        </>
-      )}
-    </article>
+        {/* ── RESENAS ── */}
+        {adminTab === "resenas" ? (
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ margin: "0 0 4px", fontFamily: "'Baloo 2', sans-serif", fontSize: 28 }}>Resenas y comentarios</h1>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>De la encuesta periodica dentro de la app</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+              {/* Private <5★ */}
+              <div>
+                <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 3 }}>Comentarios privados (&lt;5★)</h3>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 14 }}>Solo visibles para ti — usalos para mejorar la app</p>
+                {(data.reviews || []).filter(r => r.rating < 5).map(review => (
+                  <div key={review.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+                    <div style={{ color: "var(--moon)", fontSize: 13, letterSpacing: 1, marginBottom: 5 }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>{review.parent_email || "Anonimo"} · {review.created_at?.slice(0, 10)}</div>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.55, marginBottom: 10 }}>{review.improvement_feedback || review.comment}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-soft)", fontStyle: "italic" }}>No publicado</span>
+                      <button className="button button-ghost" type="button" style={{ fontSize: 12, minHeight: 32, padding: "0 12px" }}>Responder</button>
+                    </div>
+                  </div>
+                ))}
+                {(data.reviews || []).filter(r => r.rating < 5).length === 0 ? <p style={{ color: "var(--ink-soft)" }}>Sin comentarios privados.</p> : null}
+              </div>
+              {/* 5★ wall */}
+              <div>
+                <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 3 }}>Resenas de 5★</h3>
+                <p style={{ fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 14 }}>Elige cuales mostrar en el muro de logros</p>
+                {(data.reviews || []).filter(r => r.rating === 5).map(review => {
+                  const isPublished = reviewToggles[review.id] !== undefined ? reviewToggles[review.id] : review.public_approved;
+                  return (
+                    <div key={review.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+                      <div style={{ color: "var(--moon)", fontSize: 13, marginBottom: 5 }}>★★★★★</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>{review.parent_email || "Anonimo"} · {review.created_at?.slice(0, 10)}</div>
+                      <p style={{ fontSize: 13.5, lineHeight: 1.55, marginBottom: 12 }}>{review.comment}</p>
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button type="button" onClick={() => setReviewToggles(cur => ({ ...cur, [review.id]: !isPublished }))} style={{
+                          padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                          background: isPublished ? "rgba(143,190,158,.2)" : "var(--navy-700)",
+                          color: isPublished ? "var(--green)" : "var(--ink-soft)",
+                          border: `1px solid ${isPublished ? "rgba(143,190,158,.3)" : "var(--border)"}`,
+                        }}>
+                          {isPublished ? "En el muro" : "Publicar en el muro"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {(data.reviews || []).filter(r => r.rating === 5).length === 0 ? <p style={{ color: "var(--ink-soft)" }}>Sin resenas de 5 estrellas aun.</p> : null}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {status ? <p style={{ color: "var(--coral)", marginTop: 16, fontSize: 13 }}>{status}</p> : null}
+      </main>
+    </div>
   );
 }
 
