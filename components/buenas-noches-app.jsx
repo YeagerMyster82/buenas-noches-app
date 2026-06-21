@@ -2889,17 +2889,6 @@ export default function BuenasNochesApp() {
                 );
               })() : null}
 
-              {/* Quick action cards */}
-              <HomeQuickCards
-                strings={strings}
-                activeChild={activeChild}
-                onOpenSleepWindow={() => setState((current) => ({ ...current, sleepWindowOpen: true }))}
-                onOpenRoutine={() => requestRoutine(activeChild?.id)}
-                onOpenSleep={() => setState((current) => ({ ...current, activeSection: "sleep" }))}
-                onOpenTips={() => setState((current) => ({ ...current, activeSection: "tips" }))}
-                onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
-              />
-
               {/* Trust card */}
               <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14 }}>
                 <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por que confiar en Buenas Noches</h3>
