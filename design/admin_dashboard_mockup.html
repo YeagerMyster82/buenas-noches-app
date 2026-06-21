@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuiroKids — Panel Admin (mockup)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --navy-900:#161E33;
+    --navy-800:#1F2A47;
+    --navy-700:#2B3A5F;
+    --cream-50:#F7F4EE;
+    --white:#FFFFFF;
+    --gold-500:#D6A85C;
+    --gold-600:#C2924A;
+    --gold-100:#F4E6CC;
+    --blue-400:#7FB6CC;
+    --blue-100:#E3F1F5;
+    --green-600:#4F8F6B;
+    --green-100:#E4F0E9;
+    --red-500:#C1666B;
+    --red-100:#F6E5E6;
+    --ink-900:#1F2433;
+    --ink-500:#5C6478;
+    --ink-300:#9AA0AE;
+    --border:#E6E1D6;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--cream-50);
+    color:var(--ink-900);
+    display:flex;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+  .display{font-family:'Fraunces', Georgia, serif;}
+
+  /* ---------- preview banner ---------- */
+  .preview-banner{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    background:var(--navy-900); color:var(--gold-500);
+    font-size:12px; letter-spacing:.04em; text-align:center;
+    padding:6px 0; font-family:'JetBrains Mono', monospace;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width:248px; min-width:248px;
+    background:var(--navy-900);
+    color:var(--white);
+    padding:54px 0 24px;
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{padding:0 24px 28px; border-bottom:1px solid rgba(255,255,255,.08);}
+  .brand .eyebrow{font-size:11px; letter-spacing:.12em; color:var(--gold-500); font-family:'JetBrains Mono',monospace; text-transform:uppercase;}
+  .brand .name{font-family:'Fraunces',serif; font-size:22px; font-weight:500; margin-top:4px;}
+
+  nav{padding:20px 12px; flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:12px;
+    padding:11px 14px; border-radius:8px;
+    color:rgba(255,255,255,.62);
+    font-size:14px; font-weight:500;
+    cursor:pointer; margin-bottom:2px;
+    transition:background .15s, color .15s;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.05); color:var(--white);}
+  .nav-item.active{background:var(--navy-700); color:var(--white);}
+  .nav-item .dot{width:6px; height:6px; border-radius:50%; background:var(--gold-500); opacity:0; transition:opacity .15s;}
+  .nav-item.active .dot{opacity:1;}
+  .nav-item svg{width:17px; height:17px; flex-shrink:0; opacity:.85;}
+
+  .sidebar-foot{padding:16px 24px 0; border-top:1px solid rgba(255,255,255,.08); margin-top:10px;}
+  .admin-chip{display:flex; align-items:center; gap:10px; padding-top:16px;}
+  .admin-chip .avatar{width:30px; height:30px; border-radius:50%; background:var(--gold-500); color:var(--navy-900); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+  .admin-chip .who{font-size:12.5px;}
+  .admin-chip .who .name{color:var(--white); font-weight:600;}
+  .admin-chip .who .email{color:rgba(255,255,255,.5);}
+
+  /* ---------- main ---------- */
+  main{flex:1; padding:54px 44px 60px; max-width:1280px;}
+  .page-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px;}
+  .page-head h1{font-family:'Fraunces',serif; font-size:30px; font-weight:500; color:var(--navy-900);}
+  .page-head p{color:var(--ink-500); font-size:14.5px; margin-top:4px;}
+  .today-pill{font-family:'JetBrains Mono',monospace; font-size:12px; background:var(--white); border:1px solid var(--border); padding:7px 14px; border-radius:20px; color:var(--ink-500);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---------- KPI cards ---------- */
+  .kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;}
+  .kpi-card{background:var(--white); border:1px solid var(--border); border-radius:14px; padding:20px 22px; position:relative; overflow:hidden;}
+  .kpi-card .eyebrow{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-500); font-weight:600;}
+  .kpi-card .big{font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:600; color:var(--navy-900); margin-top:10px; letter-spacing:-.01em;}
+  .kpi-card .delta{font-size:12.5px; margin-top:8px; display:flex; align-items:center; gap:4px;}
+  .delta.up{color:var(--green-600);}
+  .delta.down{color:var(--red-500);}
+  .delta.flat{color:var(--ink-300);}
+  .kpi-card .accent-bar{position:absolute; top:0; left:0; right:0; height:3px;}
+  .kpi-card.gold .accent-bar{background:var(--gold-500);}
+  .kpi-card.blue .accent-bar{background:var(--blue-400);}
+  .kpi-card.green .accent-bar{background:var(--green-600);}
+  .kpi-card.red .accent-bar{background:var(--red-500);}
+
+  /* ---------- charts row ---------- */
+  .charts-row{display:grid; grid-template-columns:1.6fr 1fr; gap:16px; margin-bottom:8px;}
+  .card{background:var(--white); border:1px solid var(--border); border-radius:14px; padding:24px;}
+  .card h3{font-family:'Fraunces',serif; font-size:17px; font-weight:500; margin-bottom:2px;}
+  .card .sub{font-size:13px; color:var(--ink-500); margin-bottom:18px;}
+  .legend-row{display:flex; gap:18px; margin-top:16px; flex-wrap:wrap;}
+  .legend-item{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-500);}
+  .legend-item .sw{width:9px; height:9px; border-radius:2px;}
+
+  .status-list{margin-top:6px;}
+  .status-row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border);}
+  .status-row:last-child{border-bottom:none;}
+  .status-row .label{display:flex; align-items:center; gap:9px; font-size:13.5px;}
+  .status-row .sw{width:9px; height:9px; border-radius:50%;}
+  .status-row .count{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px;}
+
+  /* ---------- badges ---------- */
+  .badge{display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; letter-spacing:.02em;}
+  .badge.premium{background:var(--gold-100); color:#8A6422;}
+  .badge.free{background:#EFEDE6; color:var(--ink-500);}
+  .badge.trial{background:var(--blue-100); color:#3D7A8F;}
+  .badge.canceled{background:var(--red-100); color:#9C3F45;}
+  .badge.soporte{background:var(--red-100); color:#9C3F45;}
+  .badge.pregunta{background:var(--blue-100); color:#3D7A8F;}
+  .badge.sugerencia{background:var(--gold-100); color:#8A6422;}
+
+  /* ---------- users table ---------- */
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:16px;}
+  .search-box{flex:1; max-width:340px; position:relative;}
+  .search-box input{width:100%; padding:10px 14px 10px 36px; border:1px solid var(--border); border-radius:10px; font-size:13.5px; background:var(--white); font-family:inherit;}
+  .search-box svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--ink-300);}
+  .chip-row{display:flex; gap:8px;}
+  .filter-chip{padding:8px 15px; border-radius:20px; font-size:12.5px; font-weight:600; border:1px solid var(--border); background:var(--white); color:var(--ink-500); cursor:pointer;}
+  .filter-chip.active{background:var(--navy-900); color:var(--white); border-color:var(--navy-900);}
+
+  table{width:100%; border-collapse:collapse; background:var(--white); border-radius:14px; overflow:hidden; border:1px solid var(--border);}
+  thead th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-500); font-weight:600; padding:14px 18px; border-bottom:1px solid var(--border); background:#FBFAF7;}
+  tbody td{padding:15px 18px; font-size:13.5px; border-bottom:1px solid var(--border);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.user-row{cursor:pointer;}
+  tbody tr.user-row:hover{background:#FBFAF7;}
+  .u-name{font-weight:600; color:var(--navy-900);}
+  .u-email{color:var(--ink-500); font-size:12.5px;}
+  .chev{display:inline-block; transition:transform .15s; color:var(--ink-300);}
+  tr.expanded .chev{transform:rotate(90deg);}
+  .detail-row td{padding:0; border-bottom:1px solid var(--border);}
+  .detail-row{display:none;}
+  .detail-row.show{display:table-row;}
+  .detail-inner{background:#FBFAF7; padding:18px 18px 18px 50px; display:flex; gap:14px; flex-wrap:wrap;}
+  .profile-card{background:var(--white); border:1px solid var(--border); border-radius:10px; padding:13px 16px; min-width:210px;}
+  .profile-card .pname{font-weight:600; font-size:13.5px; margin-bottom:3px;}
+  .profile-card .ptag{font-size:11.5px; color:var(--blue-400); font-weight:600; margin-bottom:8px;}
+  .profile-card .pmeta{font-size:12px; color:var(--ink-500); line-height:1.6;}
+  .profile-card .pmeta b{color:var(--ink-900); font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- messages ---------- */
+  .msg-card{background:var(--white); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:14px;}
+  .msg-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
+  .msg-from{font-weight:600; font-size:13.5px;}
+  .msg-date{font-size:11.5px; color:var(--ink-300); font-family:'JetBrains Mono',monospace;}
+  .msg-body{font-size:13.5px; color:var(--ink-900); margin-bottom:14px; line-height:1.55;}
+  .msg-actions{display:flex; gap:10px;}
+  .btn{padding:9px 16px; border-radius:9px; font-size:12.5px; font-weight:600; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px;}
+  .btn-whatsapp{background:#3FA66B; color:white;}
+  .btn-email{background:var(--white); border:1px solid var(--border); color:var(--ink-900);}
+  .btn-reply{background:var(--navy-900); color:white;}
+  .btn-ghost{background:transparent; border:1px solid var(--border); color:var(--ink-500);}
+  .btn-trash{background:var(--white); border:1px solid var(--red-100); color:var(--red-500); padding:9px 11px;}
+  .reply-box{width:100%; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-family:inherit; font-size:13px; margin-bottom:10px; resize:vertical; min-height:60px;}
+
+  /* ---------- reviews ---------- */
+  .review-cols{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .review-col h3{font-family:'Fraunces',serif; font-size:16px; margin-bottom:3px;}
+  .review-col .sub{font-size:12.5px; color:var(--ink-500); margin-bottom:14px;}
+  .review-card{background:var(--white); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:12px;}
+  .stars{color:var(--gold-500); font-size:13px; letter-spacing:1px; margin-bottom:6px;}
+  .review-user{font-size:12px; color:var(--ink-500); margin-bottom:8px;}
+  .review-text{font-size:13.5px; line-height:1.55; margin-bottom:12px;}
+  .review-foot{display:flex; justify-content:space-between; align-items:center;}
+  .private-tag{font-size:11px; color:var(--ink-300); font-style:italic;}
+  .toggle-wall{font-size:12px; font-weight:600; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--white); cursor:pointer; color:var(--ink-500);}
+  .toggle-wall.published{background:var(--green-100); border-color:var(--green-100); color:var(--green-600);}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">VISTA PREVIA — Datos de muestra para ilustrar el diseño, no son datos reales</div>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="eyebrow">QuiroKids</div>
+    <div class="name">Panel Admin</div>
+  </div>
+  <nav>
+    <div class="nav-item active" data-view="dashboard">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg>
+      Dashboard <span class="dot"></span>
+    </div>
+    <div class="nav-item" data-view="usuarios">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m5-3.13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-1a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg>
+      Usuarios <span class="dot"></span>
+    </div>
+    <div class="nav-item" data-view="mensajes">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z"/></svg>
+      Mensajes <span class="dot"></span>
+      <span style="margin-left:auto; background:var(--red-500); color:white; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px;">3</span>
+    </div>
+    <div class="nav-item" data-view="resenas">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m12 17.27 6.18 3.73-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21Z"/></svg>
+      Reseñas <span class="dot"></span>
+    </div>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="admin-chip">
+      <div class="avatar">J</div>
+      <div class="who">
+        <div class="name">Joline</div>
+        <div class="email">joline.yeager@yahoo.com</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div class="view active" id="view-dashboard">
+    <div class="page-head">
+      <div>
+        <h1>Dashboard</h1>
+        <p>Resumen de usuarios, suscripciones y crecimiento</p>
+      </div>
+      <div class="today-pill">20 jun 2026</div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card blue">
+        <div class="accent-bar"></div>
+        <div class="eyebrow">Usuarios totales</div>
+        <div class="big">128</div>
+        <div class="delta up">↑ 12% vs. mes pasado</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="accent-bar"></div>
+        <div class="eyebrow">Premium activos</div>
+        <div class="big">14</div>
+        <div class="delta up">↑ 4 nuevos esta semana</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="accent-bar"></div>
+        <div class="eyebrow">En prueba gratuita</div>
+        <div class="big">9</div>
+        <div class="delta flat">3 vencen esta semana</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="accent-bar"></div>
+        <div class="eyebrow">Cancelaciones (mes)</div>
+        <div class="big">2</div>
+        <div class="delta down">↓ tasa de cancelación 14%</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card">
+        <h3>Crecimiento — últimos 30 días</h3>
+        <div class="sub">Usuarios gratis vs. premium, por día</div>
+        <canvas id="growthChart" height="110"></canvas>
+        <div class="legend-row">
+          <div class="legend-item"><span class="sw" style="background:var(--gold-500)"></span>Premium</div>
+          <div class="legend-item"><span class="sw" style="background:var(--blue-400)"></span>Gratis</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Estado de suscripciones</h3>
+        <div class="sub">14 suscriptores premium en total</div>
+        <canvas id="statusDonut" height="170"></canvas>
+        <div class="status-list">
+          <div class="status-row"><div class="label"><span class="sw" style="background:var(--green-600)"></span>Activa</div><div class="count">10</div></div>
+          <div class="status-row"><div class="label"><span class="sw" style="background:var(--blue-400)"></span>Prueba</div><div class="count">9</div></div>
+          <div class="status-row"><div class="label"><span class="sw" style="background:var(--gold-500)"></span>Pago pendiente</div><div class="count">2</div></div>
+          <div class="status-row"><div class="label"><span class="sw" style="background:var(--red-500)"></span>Cancelada</div><div class="count">2</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== USUARIOS ===================== -->
+  <div class="view" id="view-usuarios">
+    <div class="page-head">
+      <div>
+        <h1>Usuarios</h1>
+        <p>128 familias registradas</p>
+      </div>
+      <div class="today-pill">20 jun 2026</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+        <input type="text" id="userSearch" placeholder="Buscar por nombre o correo...">
+      </div>
+      <div class="chip-row">
+        <div class="filter-chip active" data-filter="todos">Todos</div>
+        <div class="filter-chip" data-filter="premium">Premium</div>
+        <div class="filter-chip" data-filter="gratis">Gratis</div>
+        <div class="filter-chip" data-filter="prueba">Prueba</div>
+        <div class="filter-chip" data-filter="cancelada">Cancelada</div>
+      </div>
+    </div>
+
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th style="width:28px;"></th>
+          <th>Usuario</th>
+          <th>Estado</th>
+          <th>Perfiles</th>
+          <th>Miembro desde</th>
+          <th>Última actividad</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr class="user-row" data-status="premium" data-name="betza betzaidagonzalezr@gmail.com">
+          <td><span class="chev">▶</span></td>
+          <td><div class="u-name">Betza</div><div class="u-email">betzaidagonzalezr@gmail.com</div></td>
+          <td><span class="badge premium">PREMIUM</span></td>
+          <td>1</td>
+          <td class="mono">14 abr 2026</td>
+          <td class="mono">hace 2 h</td>
+        </tr>
+        <tr class="detail-row"><td colspan="6"><div class="detail-inner">
+          <div class="profile-card">
+            <div class="pname">Sofía, 4 años</div>
+            <div class="ptag">Perfil: Sensible al estímulo</div>
+            <div class="pmeta">Tiempo prom. en dormir: <b>22 min</b><br>Racha de rutina: <b>9 días</b><br>Última sesión: <b>anoche, 8:41 PM</b></div>
+          </div>
+        </div></td></tr>
+
+        <tr class="user-row" data-status="premium" data-name="cèlia bmassaguec@yahoo.com">
+          <td><span class="chev">▶</span></td>
+          <td><div class="u-name">Cèlia</div><div class="u-email">bmassaguec@yahoo.com</div></td>
+          <td><span class="badge premium">PREMIUM</span></td>
+          <td>1</td>
+          <td class="mono">02 may 2026</td>
+          <td class="mono">hace 1 día</td>
+        </tr>
+        <tr class="detail-row"><td colspan="6"><div class="detail-inner">
+          <div class="profile-card">
+            <div class="pname">Mateo, 6 años</div>
+            <div class="ptag">Perfil: Necesita movimiento</div>
+            <div class="pmeta">Tiempo prom. en dormir: <b>35 min</b><br>Racha de rutina: <b>3 días</b><br>Última sesión: <b>ayer, 9:10 PM</b></div>
+          </div>
+        </div></td></tr>
+
+        <tr class="user-row" data-status="prueba" data-name="brenda brendisr07@gmail.com">
+          <td><span class="chev">▶</span></td>
+          <td><div class="u-name">Brenda</div><div class="u-email">brendisr07@gmail.com</div></td>
+          <td><span class="badge trial">PRUEBA · 4 días rest.</span></td>
+          <td>1</td>
+          <td class="mono">17 jun 2026</td>
+          <td class="mono">hace 5 h</td>
+        </tr>
+        <tr class="detail-row"><td colspan="6"><div class="detail-inner">
+          <div class="profile-card">
+            <div class="pname">Luca, 3 años</div>
+            <div class="ptag">Perfil: Resistencia a la rutina</div>
+            <div class="pmeta">Tiempo prom. en dormir: <b>48 min</b><br>Racha de rutina: <b>2 días</b><br>Última sesión: <b>hoy, 7:55 PM</b></div>
+          </div>
+        </div></td></tr>
+
+        <tr class="user-row" data-status="gratis" data-name="carina carinabarrena@gmail.com">
+          <td><span class="chev">▶</span></td>
+          <td><div class="u-name">Carina</div><div class="u-email">carinabarrena@gmail.com</div></td>
+          <td><span class="badge free">GRATIS</span></td>
+          <td>2</td>
+          <td class="mono">29 may 2026</td>
+          <td class="mono">hace 3 días</td>
+        </tr>
+        <tr class="detail-row"><td colspan="6"><div class="detail-inner">
+          <div class="profile-card">
+            <div class="pname">Emma, 5 años</div>
+            <div class="ptag">Perfil aún no calculado</div>
+            <div class="pmeta">Solo usó el cronómetro libre<br>Sin rutina activa<br>Última sesión: <b>hace 3 días</b></div>
+          </div>
+          <div class="profile-card">
+            <div class="pname">Diego, 2 años</div>
+            <div class="ptag">Perfil: Sensible al estímulo</div>
+            <div class="pmeta">Tiempo prom. en dormir: <b>40 min</b><br>Racha de rutina: <b>0 días</b><br>Última sesión: <b>hace 3 días</b></div>
+          </div>
+        </div></td></tr>
+
+        <tr class="user-row" data-status="cancelada" data-name="daniela danielasardo@hotmail.com">
+          <td><span class="chev">▶</span></td>
+          <td><div class="u-name">Daniela</div><div class="u-email">danielasardo@hotmail.com</div></td>
+          <td><span class="badge canceled">CANCELADA</span></td>
+          <td>2</td>
+          <td class="mono">03 mar 2026</td>
+          <td class="mono">hace 2 semanas</td>
+        </tr>
+        <tr class="detail-row"><td colspan="6"><div class="detail-inner">
+          <div class="profile-card">
+            <div class="pname">Valentina, 7 años</div>
+            <div class="ptag">Perfil: Necesita movimiento</div>
+            <div class="pmeta">Tiempo prom. en dormir: <b>18 min</b><br>Canceló: <b>5 jun 2026</b><br>Última sesión: <b>hace 2 semanas</b></div>
+          </div>
+        </div></td></tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===================== MENSAJES ===================== -->
+  <div class="view" id="view-mensajes">
+    <div class="page-head">
+      <div>
+        <h1>Mensajes</h1>
+        <p>3 conversaciones esperando respuesta</p>
+      </div>
+      <div class="today-pill">20 jun 2026</div>
+    </div>
+
+    <div class="msg-card">
+      <div class="msg-head">
+        <div>
+          <span class="badge soporte">SOPORTE</span>
+          <div class="msg-from" style="margin-top:6px;">danielasardo@hotmail.com</div>
+        </div>
+        <div class="msg-date">07 may 2026</div>
+      </div>
+      <div class="msg-body">Hola, intenté pagar mi suscripción pero la tarjeta fue rechazada dos veces. ¿Me pueden ayudar?</div>
+      <div class="msg-actions">
+        <button class="btn btn-whatsapp">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35C8.52 21.5 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Zm0 18c-1.6 0-3.1-.45-4.38-1.23l-.31-.18-3.05.8.82-2.98-.2-.31A7.93 7.93 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8Z"/></svg>
+          Responder por WhatsApp
+        </button>
+        <button class="btn btn-email">Responder por correo</button>
+        <button class="btn btn-ghost" style="margin-left:auto;">Marcar resuelto</button>
+      </div>
+    </div>
+
+    <div class="msg-card">
+      <div class="msg-head">
+        <div>
+          <span class="badge pregunta">PREGUNTA</span>
+          <div class="msg-from" style="margin-top:6px;">danielasardo@hotmail.com</div>
+        </div>
+        <div class="msg-date">07 may 2026</div>
+      </div>
+      <div class="msg-body">Hola!! Recomiendan algún tipo de musica para la rutina de la noche?</div>
+      <textarea class="reply-box" placeholder="Responder a este usuario...">Hola Daniela! tibetan sound bowls son muy buenos, sonidos de la naturaleza también, mozart...</textarea>
+      <div class="msg-actions">
+        <button class="btn btn-reply">Enviar respuesta</button>
+        <button class="btn-trash" title="Eliminar mensaje">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="msg-card">
+      <div class="msg-head">
+        <div>
+          <span class="badge sugerencia">SUGERENCIA</span>
+          <div class="msg-from" style="margin-top:6px;">carinabarrena@gmail.com</div>
+        </div>
+        <div class="msg-date">15 jun 2026</div>
+      </div>
+      <div class="msg-body">Sería genial poder cambiar el sonido de la alarma de fin de rutina, es un poco fuerte para mi hijo.</div>
+      <textarea class="reply-box" placeholder="Responder a este usuario..."></textarea>
+      <div class="msg-actions">
+        <button class="btn btn-reply">Enviar respuesta</button>
+        <button class="btn-trash" title="Eliminar mensaje">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== RESEÑAS ===================== -->
+  <div class="view" id="view-resenas">
+    <div class="page-head">
+      <div>
+        <h1>Reseñas y comentarios</h1>
+        <p>De la encuesta periódica dentro de la app</p>
+      </div>
+      <div class="today-pill">20 jun 2026</div>
+    </div>
+
+    <div class="review-cols">
+      <div class="review-col">
+        <h3>Comentarios privados (&lt; 5★)</h3>
+        <div class="sub">Solo visibles para ti — úsalos para mejorar la app</div>
+
+        <div class="review-card">
+          <div class="stars">★★★☆☆</div>
+          <div class="review-user">betzaidagonzalezr@gmail.com · 12 jun 2026</div>
+          <div class="review-text">Me encanta el contenido pero a veces el video tarda mucho en cargar y se traba.</div>
+          <div class="review-foot">
+            <span class="private-tag">No publicado</span>
+            <button class="btn-ghost" style="padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600;">Responder</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="stars">★★☆☆☆</div>
+          <div class="review-user">usuario anónimo · 06 jun 2026</div>
+          <div class="review-text">Me gustaría poder ajustar la hora de dormir manualmente, no siempre confío en el cálculo automático.</div>
+          <div class="review-foot">
+            <span class="private-tag">No publicado</span>
+            <button class="btn-ghost" style="padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600;">Responder</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-col">
+        <h3>Reseñas de 5★</h3>
+        <div class="sub">Elige cuáles mostrar en el muro de logros</div>
+
+        <div class="review-card">
+          <div class="stars">★★★★★</div>
+          <div class="review-user">jolinemartha82@aol.com · 20 may 2026</div>
+          <div class="review-text">Mi hija se quedó dormida en 20 minutos anoche 🥹🥹🥹 Gracias! Gracias! Gracias!</div>
+          <div class="review-foot">
+            <span class="private-tag">Sugerida: pedir reseña en App Store</span>
+            <button class="toggle-wall published">✓ En el muro</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="stars">★★★★★</div>
+          <div class="review-user">sin email · 18 may 2026</div>
+          <div class="review-text">Yo compré el curso buenas noches y nos ayudó un montón! Pero me gusta mucho más el aplicativo porque me ayuda a saber en que orden debo hacer los ejercicios!</div>
+          <div class="review-foot">
+            <span class="private-tag">Sugerida: pedir reseña en App Store</span>
+            <button class="toggle-wall">Publicar en el muro</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // nav switching
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-'+item.dataset.view).classList.add('active');
+    });
+  });
+
+  // user row expand
+  document.querySelectorAll('.user-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const detail = row.nextElementSibling;
+      const isShown = detail.classList.contains('show');
+      document.querySelectorAll('.detail-row').forEach(d=>d.classList.remove('show'));
+      document.querySelectorAll('.user-row').forEach(r=>r.classList.remove('expanded'));
+      if(!isShown){ detail.classList.add('show'); row.classList.add('expanded'); }
+    });
+  });
+
+  // filter chips
+  document.querySelectorAll('.filter-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const f = chip.dataset.filter;
+      document.querySelectorAll('#userTable tbody tr.user-row').forEach(row=>{
+        const show = f==='todos' || row.dataset.status===f;
+        row.style.display = show ? '' : 'none';
+        row.nextElementSibling.style.display = show ? '' : 'none';
+        if(!show){ row.nextElementSibling.classList.remove('show'); row.classList.remove('expanded'); }
+      });
+    });
+  });
+
+  // search
+  document.getElementById('userSearch').addEventListener('input', (e)=>{
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('#userTable tbody tr.user-row').forEach(row=>{
+      const match = row.dataset.name.includes(q);
+      row.style.display = match ? '' : 'none';
+      row.nextElementSibling.style.display = match ? '' : 'none';
+    });
+  });
+
+  // wall toggle
+  document.querySelectorAll('.toggle-wall').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const pub = btn.classList.toggle('published');
+      btn.textContent = pub ? '✓ En el muro' : 'Publicar en el muro';
+    });
+  });
+
+  // charts
+  const days = Array.from({length:30}, (_,i)=> i+1);
+  const premiumData = [2,2,3,3,3,4,4,4,5,5,5,6,6,7,7,7,8,8,9,9,10,10,10,11,12,12,13,13,14,14];
+  const freeData = [40,42,45,48,50,53,55,58,60,62,65,68,70,72,75,78,80,82,85,87,89,91,93,96,98,100,103,106,110,114];
+
+  new Chart(document.getElementById('growthChart'), {
+    type:'line',
+    data:{
+      labels: days,
+      datasets:[
+        {label:'Premium', data:premiumData, borderColor:'#D6A85C', backgroundColor:'rgba(214,168,92,.12)', fill:true, tension:.35, pointRadius:0, borderWidth:2.5},
+        {label:'Gratis', data:freeData, borderColor:'#7FB6CC', backgroundColor:'rgba(127,182,204,.10)', fill:true, tension:.35, pointRadius:0, borderWidth:2.5}
+      ]
+    },
+    options:{
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{display:false},
+        y:{grid:{color:'#EFEAE0'}, ticks:{font:{family:'JetBrains Mono', size:10}, color:'#9AA0AE'}}
+      }
+    }
+  });
+
+  new Chart(document.getElementById('statusDonut'), {
+    type:'doughnut',
+    data:{
+      labels:['Activa','Prueba','Pago pendiente','Cancelada'],
+      datasets:[{data:[10,9,2,2], backgroundColor:['#4F8F6B','#7FB6CC','#D6A85C','#C1666B'], borderWidth:0}]
+    },
+    options:{
+      cutout:'68%',
+      plugins:{legend:{display:false}}
+    }
+  });
+</script>
+
+</body>
+</html>

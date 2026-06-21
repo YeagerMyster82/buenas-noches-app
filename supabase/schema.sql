@@ -59,14 +59,94 @@ create table if not exists nightly_logs (
   parent_email text not null,
   child_id uuid references children(id) on delete cascade,
   log_date date not null,
+  routine_start_time time,
   in_bed_at time not null,
   fell_asleep_at time not null,
   sleep_latency_minutes integer not null,
+  night_wakings text not null default '0',
   notes text,
   ratings jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   unique (child_id, log_date)
 );
+
+alter table nightly_logs
+  add column if not exists routine_start_time time;
+
+alter table nightly_logs
+  add column if not exists night_wakings text not null default '0';
+
+create table if not exists support_messages (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  parent_name text,
+  child_name text,
+  topic text not null default 'support',
+  message text not null,
+  status text not null default 'new',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists support_message_replies (
+  id uuid primary key default gen_random_uuid(),
+  message_id uuid not null references support_messages(id) on delete cascade,
+  sender text not null check (sender in ('admin', 'user')),
+  message text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists app_reviews (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  parent_name text,
+  child_name text,
+  photo_url text,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  improvement_feedback text,
+  public_approved boolean not null default false,
+  needs_follow_up boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table app_reviews
+  add column if not exists photo_url text;
+
+create index if not exists support_messages_created_at_idx
+  on support_messages (created_at desc);
+
+create index if not exists support_message_replies_message_created_at_idx
+  on support_message_replies (message_id, created_at asc);
+
+create index if not exists app_reviews_public_created_at_idx
+  on app_reviews (public_approved, created_at desc);
+
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  endpoint text not null unique,
+  parent_email text,
+  role text not null default 'user' check (role in ('user', 'admin')),
+  subscription jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_email_role_idx
+  on push_subscriptions (parent_email, role);
+
+create table if not exists admin_activity_events (
+  id uuid primary key default gen_random_uuid(),
+  parent_email text,
+  child_id uuid,
+  event_type text not null,
+  event_label text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists admin_activity_events_child_created_at_idx
+  on admin_activity_events (child_id, created_at desc);
 
 insert into profiles (code, name, description) values
   ('A', 'Segunda energía', 'Niño que en la noche parece activarse más.'),
@@ -76,5 +156,10 @@ insert into profiles (code, name, description) values
   ('E', 'Cuerpo inquieto', 'Niño que se mueve mucho en la cama y sigue buscando input.'),
   ('F', 'Necesita cerquita', 'Niño que necesita presencia y cercanía para bajar revoluciones.'),
   ('G', 'Mente encendida', 'Niño que no logra apagar la mente al dormir.'),
-  ('H', 'Se duerme, pero no sostiene el sueño', 'Niño que logra dormirse pero despierta más tarde.')
+  ('H', 'Se duerme, pero no sostiene el sueño', 'Niño que logra dormirse pero despierta más tarde.'),
+  ('EL_INAGOTABLE', 'El Incansable', 'Overtired, missed the sleep window, cortisol is keeping them wired.'),
+  ('EL_DESVELADO', 'El Vigilante Nocturno', 'Nervous system is stuck, tired but unable to drift into sleep.'),
+  ('EL_NEGOCIADOR', 'El Negociador', 'Needs connection before the body can let go and rest.'),
+  ('EL_BERRINCHE', 'El Volcán Emocional', 'Full sympathetic activation, overwhelmed and unable to regulate.'),
+  ('EL_SONAMBULO', 'El Explorador Nocturno', 'Crashes into sleep from exhaustion but never fully came down first.')
 on conflict (code) do nothing;
