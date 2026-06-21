@@ -32,11 +32,11 @@ function toYouTubeEmbedUrl(url) {
     const parsed = new URL(url);
     if (parsed.hostname.includes("youtu.be")) {
       const videoId = parsed.pathname.replace("/", "");
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      return `https://www.youtube.com/embed/${videoId}?rel=0`;
     }
     const videoId = parsed.searchParams.get("v");
     if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      return `https://www.youtube.com/embed/${videoId}?rel=0`;
     }
   } catch {
     return url;
@@ -63,79 +63,79 @@ const routineMusicTracks = {
 const routineVideoResources = {
   descarga: {
     title: "Descarga",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/24082507-a357-46d1-8d8d-fe2c9bc7becd?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/24082507-a357-46d1-8d8d-fe2c9bc7becd?autoplay=false&preload=false&responsive=true",
   },
   activacion_ligera: {
     title: "Activación ligera",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/cfaffd3e-15ea-48f5-acfa-ae49f6cabde1?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/cfaffd3e-15ea-48f5-acfa-ae49f6cabde1?autoplay=false&preload=false&responsive=true",
   },
   conexion: {
     title: "Conexión",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/f4699082-c82e-42ba-9fda-70b6de648b17?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/f4699082-c82e-42ba-9fda-70b6de648b17?autoplay=false&preload=false&responsive=true",
   },
   berrinches_coregulacion: {
     title: "Berrinches / coregulación",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/4df00984-616e-49c5-8606-49d95c8df1bf?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/4df00984-616e-49c5-8606-49d95c8df1bf?autoplay=false&preload=false&responsive=true",
   },
   compresiones_articulares: {
     title: "Compresiones articulares",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/9b2d2cc7-2121-4890-b5b5-e6faa5b54ac9?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/9b2d2cc7-2121-4890-b5b5-e6faa5b54ac9?autoplay=false&preload=false&responsive=true",
   },
   presion_profunda: {
     title: "Presión profunda",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/39b6780f-ea8d-4506-922e-0e58aa5bdcac?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/39b6780f-ea8d-4506-922e-0e58aa5bdcac?autoplay=false&preload=false&responsive=true",
   },
   mecerse_presion: {
     title: "Mecerse + presión profunda",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/c5890def-ca84-4a0f-9865-eb2a3da7faac?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/c5890def-ca84-4a0f-9865-eb2a3da7faac?autoplay=false&preload=false&responsive=true",
   },
   gargaras_tarareo_mmm: {
     title: "Gárgaras / tarareo / sonido mmm",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/a2076f69-4634-473c-bde3-dc7e36dc2647?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/a2076f69-4634-473c-bde3-dc7e36dc2647?autoplay=false&preload=false&responsive=true",
   },
   ponerse_de_cabeza: {
     title: "Ponerse de cabeza",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/eb07e87f-74e8-41f3-8bd7-ee1a0b5352db?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/eb07e87f-74e8-41f3-8bd7-ee1a0b5352db?autoplay=false&preload=false&responsive=true",
   },
   respiracion_conejo: {
     title: "Respiración de conejo",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/3073b08a-8154-42eb-a46d-7e2ea0fd69e0?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/3073b08a-8154-42eb-a46d-7e2ea0fd69e0?autoplay=false&preload=false&responsive=true",
   },
   oler_la_flor: {
     title: "Oler la flor",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/edfdd25c-33da-42ab-a7f2-b8ba566d7b82?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/edfdd25c-33da-42ab-a7f2-b8ba566d7b82?autoplay=false&preload=false&responsive=true",
   },
   movimientos_oculares: {
     title: "Movimientos oculares",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/74d90717-a573-4782-bd96-3a59e5ea5d95?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/74d90717-a573-4782-bd96-3a59e5ea5d95?autoplay=false&preload=false&responsive=true",
   },
   frase_final: {
     title: "La frase final",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/6f05fc06-0479-45e4-a60b-ba15d2f2ca30?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/6f05fc06-0479-45e4-a60b-ba15d2f2ca30?autoplay=false&preload=false&responsive=true",
   },
   audios_cortos: {
     title: "Audios cortos",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/ec5a4b10-ddca-47d8-b359-b1acad6cfc39?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/ec5a4b10-ddca-47d8-b359-b1acad6cfc39?autoplay=false&preload=false&responsive=true",
   },
   pesadilla: {
     title: "Si tiene pesadilla",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/739af802-75e4-4c76-9df7-a06d6142d739?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/739af802-75e4-4c76-9df7-a06d6142d739?autoplay=false&preload=false&responsive=true",
   },
   sistema_nervioso: {
     title: "Sistema nervioso y sueño",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/ce4fdb77-61eb-49fd-ba3f-69a13790051d?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/ce4fdb77-61eb-49fd-ba3f-69a13790051d?autoplay=false&preload=false&responsive=true",
   },
   perfiles_sueno: {
     title: "Los 5 perfiles y por qué no logran dormir",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/8d254f44-f6c1-48db-9abf-cb988338763d?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/8d254f44-f6c1-48db-9abf-cb988338763d?autoplay=false&preload=false&responsive=true",
   },
   homescreen: {
     title: "Cómo agregar la app a tu pantalla de inicio",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/e7b6c36f-b38b-43bd-9654-e74ea7a4e79c?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/e7b6c36f-b38b-43bd-9654-e74ea7a4e79c?autoplay=false&preload=false&responsive=true",
   },
   como_usar_app: {
     title: "Cómo usar el app",
-    embedUrl: "https://player.mediadelivery.net/embed/640174/19cc5e2a-13cf-4fcf-94fd-a9a8ef3f30f6?autoplay=true&loop=false&muted=false&preload=true&responsive=true",
+    embedUrl: "https://player.mediadelivery.net/embed/640174/19cc5e2a-13cf-4fcf-94fd-a9a8ef3f30f6?autoplay=false&preload=false&responsive=true",
   },
 };
 
@@ -5922,6 +5922,39 @@ function RoutineSection({
   );
 }
 
+function VideoThumb({ video, isLocked, lockLabel }) {
+  const [playing, setPlaying] = useState(false);
+  if (isLocked) {
+    return (
+      <div className="video-library-placeholder">
+        <span className="video-library-lock">🔒</span>
+        <p>{lockLabel || "Disponible con premium"}</p>
+      </div>
+    );
+  }
+  if (playing) {
+    return (
+      <div className="embedded-video">
+        <iframe src={video.embedUrl.replace("autoplay=false", "autoplay=true")} title={video.title}
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+      </div>
+    );
+  }
+  return (
+    <button type="button" onClick={() => setPlaying(true)} style={{
+      width: "100%", aspectRatio: "16/9", borderRadius: 14, border: "none",
+      background: "linear-gradient(135deg, var(--navy-700), var(--navy-600))",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      gap: 8, cursor: "pointer",
+    }}>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(244,231,178,.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--moon)", marginLeft: 3 }}><path d="M8 5v14l11-7z" /></svg>
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-soft)" }}>Reproducir</span>
+    </button>
+  );
+}
+
 function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
   const [activeTab, setActiveTab] = useState("education");
@@ -5975,15 +6008,7 @@ function VideoSection({ activeChild, strings, locked = false }) {
                     <BrandIcon type="child" />
                     <strong>{video.title}</strong>
                   </div>
-                  <div className="embedded-video">
-                    <iframe
-                      src={video.embedUrl}
-                      title={video.title}
-                      loading="lazy"
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                      allowFullScreen
-                    />
-                  </div>
+                  <VideoThumb video={video} isLocked={false} />
                 </div>
               ))}
             </div>
@@ -6001,22 +6026,7 @@ function VideoSection({ activeChild, strings, locked = false }) {
                     <BrandIcon type="books" />
                     <strong>{locked ? `Video premium ${index + 1}` : video.title}</strong>
                   </div>
-                  {locked ? (
-                    <div className="video-library-placeholder">
-                      <span className="video-library-lock">🔒</span>
-                      <p>Disponible con premium</p>
-                    </div>
-                  ) : (
-                    <div className="embedded-video">
-                      <iframe
-                        src={video.embedUrl}
-                        title={video.title}
-                        loading="lazy"
-                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                        allowFullScreen
-                      />
-                    </div>
-                  )}
+                  <VideoThumb video={video} isLocked={locked} lockLabel="Disponible con premium" />
                 </div>
               ))}
             </div>
@@ -6035,22 +6045,7 @@ function VideoSection({ activeChild, strings, locked = false }) {
                   <BrandIcon type="brain" />
                   <strong>{locked ? `NeuroHack ${index + 1}` : video.title}</strong>
                 </div>
-                {locked ? (
-                  <div className="video-library-placeholder">
-                    <span className="video-library-lock">🔒</span>
-                    <p>Desbloquéalo con premium</p>
-                  </div>
-                ) : (
-                  <div className="embedded-video">
-                    <iframe
-                      src={video.embedUrl}
-                      title={video.title}
-                      loading="lazy"
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
+                <VideoThumb video={video} isLocked={locked} lockLabel="Desbloquéalo con premium" />
               </div>
             ))}
           </div>
