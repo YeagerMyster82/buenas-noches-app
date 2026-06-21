@@ -701,7 +701,7 @@ const avoidItems = [
 const facilitateSleepItems = [
   {
     title: "Tener una rutina predecible",
-    copy: "El cerebro ama la repetición. Cuando haces lo mismo todas las noches, el cuerpo entiende: "Ah, viene la hora de dormir".",
+    copy: "El cerebro ama la repetición. Cuando haces lo mismo todas las noches, el cuerpo entiende: 'Ah, viene la hora de dormir'.",
   },
   {
     title: "Usar luz suave y cálida",
