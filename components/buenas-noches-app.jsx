@@ -841,9 +841,17 @@ function minutesToTime(value) {
 }
 
 function normalizeChildSleepGoal(value) {
+  if (!value) return "";
   const minutes = timeToMinutes(value);
-  // A sleep goal before noon is almost always a wake-up time entered in the wrong place.
-  return value && minutes >= 12 * 60 ? value : "";
+  if (minutes >= 12 * 60) return value;
+  // 6:00–11:59 entered without PM — almost certainly means evening (e.g. 8:00 → 20:00)
+  if (minutes >= 6 * 60 && minutes < 12 * 60) {
+    const corrected = minutes + 12 * 60;
+    const h = String(Math.floor(corrected / 60)).padStart(2, "0");
+    const m = String(corrected % 60).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+  return "";
 }
 
 function calculateSleepWindow({ birthday, wakeTime, napsCount }) {
@@ -2669,6 +2677,7 @@ export default function BuenasNochesApp() {
                       }))
                     }
                   />
+                  <small className="field-help">{state.language === "es" ? "Ej: 20:00 para las 8 PM. Si usas reloj de 12 horas, suma 12 a las horas de la tarde." : "E.g. 20:00 for 8 PM."}</small>
                 </label>
                 <label className="stack compact">
                   <span>{strings.napQuestion}</span>
@@ -4077,6 +4086,7 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
           <label className="stack compact">
             <span>{strings.sleepGoal}</span>
             <input name="sleepGoal" type="time" defaultValue={activeChild.sleepGoal || ""} />
+            <small className="field-help">{strings.language === "en" ? "E.g. 20:00 for 8 PM." : "Ej: 20:00 para las 8 PM. Si tu dispositivo usa 12 horas, ingresa la hora en formato 24 h."}</small>
           </label>
           <label className="stack compact">
             <span>{strings.napQuestion}</span>
