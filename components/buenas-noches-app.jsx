@@ -802,6 +802,7 @@ const initialState = {
   expandedSwapStep: "",
   editingChildId: "",
   savedLogDate: "",
+  routineSubTab: "tonight",
   wakingPromptLogDate: "",
   sleepWindowOpen: false,
   sleepWindowCompleted: false,
@@ -3331,7 +3332,19 @@ export default function BuenasNochesApp() {
               ) : null}
 
               {state.activeSection === "routine" ? (
-                <RoutineSection
+                <>
+                  {/* Segmented control — matches mockup: Esta noche / Facilitar / Evitar / Alimentos */}
+                  <div style={{ display: "flex", background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 13, padding: 4, marginBottom: 16, gap: 3 }}>
+                    {[["tonight", "Esta noche"], ["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
+                      <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: id }))}
+                        style={{ flex: 1, textAlign: "center", padding: "9px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                          background: state.routineSubTab === id ? "var(--moon)" : "transparent",
+                          color: state.routineSubTab === id ? "var(--navy-950)" : "var(--ink-soft)" }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {state.routineSubTab === "tonight" ? <RoutineSection
                   activeChild={activeChild}
                   allChildren={state.children.filter(c => c.primaryProfile)}
                   onSelectRoutineChild={(childId) => requestRoutine(childId)}
@@ -3370,7 +3383,11 @@ export default function BuenasNochesApp() {
                   onSaveGuidedRoutine={saveGuidedRoutineLog}
                   safetyTriggered={safetyTriggered}
                   savedLogDate={state.savedLogDate}
-                />
+                  /> : null}
+                  {state.routineSubTab === "facilitar" ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
+                  {state.routineSubTab === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
+                  {state.routineSubTab === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
+                </>
               ) : null}
 
               {state.activeSection === "sleep" ? (
@@ -4609,6 +4626,17 @@ function HomeSection({
     }
   }
 
+  const avgLatency = activeChild.logs?.length
+    ? Math.round(activeChild.logs.filter(l => Number.isFinite(Number(l.latency))).reduce((s,l) => s + Number(l.latency), 0) / Math.max(activeChild.logs.filter(l => Number.isFinite(Number(l.latency))).length, 1))
+    : null;
+  const sortedLogs = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1);
+  let streak = 0;
+  for (let i = 0; i < sortedLogs.length; i++) {
+    const d = new Date(sortedLogs[i].date);
+    const expected = new Date(); expected.setDate(expected.getDate() - i);
+    if (d.toISOString().slice(0,10) === expected.toISOString().slice(0,10)) streak++; else break;
+  }
+
   return (
     <div className="dashboard-grid dashboard-grid--single">
       <article className="card card--feature dashboard-card dashboard-profile-card">
@@ -4617,39 +4645,64 @@ function HomeSection({
             ⌃
           </button>
         ) : null}
-        <header className="dashboard-profile-header">
-          {avatar ? (
-            <img className="profile-animal profile-animal--dashboard" src={avatar.src} alt={avatar.alt} />
-          ) : null}
-          <div className="dashboard-name-row">
-            <h1>{activeChild.name}</h1>
-            {!isReportsMode ? (
-              <button className="icon-button dashboard-name-edit" type="button" onClick={onEditProfile} aria-label={`${strings.editProfile} ${activeChild.name}`}>
-                ✎
-              </button>
-            ) : null}
-          </div>
-          <p>Perfil: {profileName}</p>
-        </header>
-        <div className="summary-grid">
-          {isReportsMode ? (
-            <>
+
+        {/* Non-reports mode: profile-hero matching mockup */}
+        {!isReportsMode ? (
+          <>
+            <p style={{ fontSize: 13.5, color: "var(--ink-soft)" }}><b style={{ color: "var(--ink)", fontWeight: 600 }}>Nino</b> — perfil de sueno</p>
+            <div style={{ textAlign: "center", padding: "6px 0 16px" }}>
+              {/* Animated circular avatar */}
+              <div style={{
+                width: 128, height: 128, margin: "0 auto 14px", borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), rgba(244,231,178,.15) 70%)",
+                display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+                animation: "popIn .6s cubic-bezier(.2,.9,.3,1.3) both",
+                boxShadow: "0 0 0 1.5px rgba(244,231,178,.3)",
+              }}>
+                <style>{`@keyframes popIn { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.08);opacity:1} 100%{transform:scale(1)} }`}</style>
+                {avatar ? (
+                  <img src={avatar.src} alt={avatar.alt} style={{ width: "88%", height: "88%", objectFit: "contain", marginTop: "8%" }} />
+                ) : (
+                  <span style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 42, fontWeight: 700, color: "var(--moon)" }}>{activeChild.name?.[0] || "?"}</span>
+                )}
+              </div>
+              <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 21, fontWeight: 600 }}>{activeChild.name}</div>
+              <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 2 }}>{formatAgeLabel(activeChild.birthday, "es")}</div>
+              <div style={{ display: "inline-block", marginTop: 10, background: "rgba(158,207,210,.16)", color: "var(--aqua)", fontSize: 11.5, fontWeight: 700, padding: "6px 14px", borderRadius: 18 }}>
+                {profileName}
+              </div>
+            </div>
+            {/* 2-box stat grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "0 0 14px" }}>
+              <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
+                <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Tiempo prom. en dormir</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 600 }}>{avgLatency !== null && !isNaN(avgLatency) ? `${avgLatency} min` : "--"}</div>
+              </div>
+              <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
+                <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Racha de rutina</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 600 }}>{streak} dias</div>
+              </div>
+            </div>
+            {profileDescription ? <p style={{ fontSize: 12.5, color: "rgba(255,248,239,.75)", lineHeight: 1.65, marginBottom: 14 }}>{profileDescription}</p> : null}
+            <button className="button button-ghost" type="button" onClick={onEditProfile} style={{ width: "100%", marginBottom: 8 }}>{strings.editProfile}</button>
+          </>
+        ) : (
+          <>
+            <header className="dashboard-profile-header">
+              {avatar ? <img className="profile-animal profile-animal--dashboard" src={avatar.src} alt={avatar.alt} /> : null}
+              <div className="dashboard-name-row">
+                <h1>{activeChild.name}</h1>
+              </div>
+              <p>Perfil: {profileName}</p>
+            </header>
+            <div className="summary-grid">
               <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
-              <Stat label="Última noche" value={lastLog?.date || "--"} />
+              <Stat label="Ultima noche" value={lastLog?.date || "--"} />
               <Stat label="A la cama" value={lastLog?.bedTime || "--:--"} />
-              <Stat label="Luces apagadas" value={lastLog?.routineEndTime || "--:--"} />
               <Stat label="Tiempo para dormir" value={lastLog ? `${lastLog.latency || 0} min` : "--"} />
-            </>
-          ) : (
-            <>
-              <Stat label={strings.age} value={formatAgeLabel(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
-              <Stat label={strings.gender} value={childGenderLabel(activeChild.gender, strings.age === "Age" ? "en" : "es")} />
-              <Stat label={strings.sleepNeed} value={getRecommendedSleepHours(activeChild.birthday, strings.age === "Age" ? "en" : "es")} />
-              <Stat label={strings.sleepGoal} value={activeChild.sleepGoal || "--:--"} />
-            </>
-          )}
-        </div>
-        {!isReportsMode && profileDescription ? <p className="profile-description">{profileDescription}</p> : null}
+            </div>
+          </>
+        )}
 
         {isReportsMode && lastActivityRatings.length ? (
           <div className="activity-feedback-card">
@@ -5957,107 +6010,57 @@ function VideoThumb({ video, isLocked, lockLabel }) {
 
 function VideoSection({ activeChild, strings, locked = false }) {
   if (!activeChild) return null;
-  const [activeTab, setActiveTab] = useState("education");
-  const educationCount = freeProfileVideoLibrary.length + educationVideoLibrary.length;
-  const neuroCount = activityVideoLibrary.length;
+  const [videoFilter, setVideoFilter] = useState("todos");
+  const allVideos = [
+    ...freeProfileVideoLibrary.map(v => ({ ...v, isFree: true, type: "education" })),
+    ...educationVideoLibrary.map(v => ({ ...v, isFree: false, type: "education" })),
+    ...activityVideoLibrary.map(v => ({ ...v, isFree: false, type: "neurohack" })),
+  ];
+  const filtered = allVideos.filter(v => {
+    if (videoFilter === "gratis") return v.isFree;
+    if (videoFilter === "premium") return !v.isFree;
+    return true;
+  });
 
   return (
-    <article className="card card--feature">
-      <div className="card-header">
-        <span className="section-label">{strings.videoLibrary}</span>
-        <h2>{strings.readyForBunny}</h2>
-      </div>
-      <p className="lead-copy">
-        {locked
-          ? "Explora los videos gratis y descubre lo que se desbloquea dentro de premium."
-          : "Aquí tienes la biblioteca completa, separada entre educación y NeuroHacks."}
-      </p>
-
-      <div className="video-library-tabs" role="tablist" aria-label="Secciones de video">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "education"}
-          className={activeTab === "education" ? "section-tab is-active" : "section-tab"}
-          onClick={() => setActiveTab("education")}
-        >
-          {strings.education} ({educationCount})
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "neurohacks"}
-          className={activeTab === "neurohacks" ? "section-tab is-active" : "section-tab"}
-          onClick={() => setActiveTab("neurohacks")}
-        >
-          NeuroHacks ({neuroCount}) {locked ? "🔒" : ""}
-        </button>
-      </div>
-
-      {activeTab === "education" ? (
-        <div className="video-library-section">
-          <div className="video-library-block">
-            <div className="card-header">
-              <span className="section-label">Gratis</span>
-              <h3>Videos abiertos</h3>
-            </div>
-            <div className="video-library-grid">
-              {freeProfileVideoLibrary.map((video) => (
-                <div key={`profiles-${video.title}`} className="video-library-card">
-                  <div className="video-library-card__header">
-                    <BrandIcon type="child" />
-                    <strong>{video.title}</strong>
-                  </div>
-                  <VideoThumb video={video} isLocked={false} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="video-library-block">
-            <div className="card-header">
-              <span className="section-label">Premium</span>
-              <h3>Educación</h3>
-            </div>
-            <div className="video-library-grid">
-              {educationVideoLibrary.map((video, index) => (
-                <div key={`education-${video.title}`} className={locked ? "video-library-card video-library-card--locked" : "video-library-card"}>
-                  <div className="video-library-card__header">
-                    <BrandIcon type="books" />
-                    <strong>{locked ? `Video premium ${index + 1}` : video.title}</strong>
-                  </div>
-                  <VideoThumb video={video} isLocked={locked} lockLabel="Disponible con premium" />
-                </div>
-              ))}
-            </div>
-          </div>
+    <div style={{ display: "grid", gap: 16 }}>
+      <div>
+        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 14 }}><b style={{ color: "var(--ink)" }}>Video</b> — ejercicios guiados</p>
+        {/* Filter pills */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {[["todos", "Todos"], ["gratis", "Gratis"], ["premium", "Premium"]].map(([id, label]) => (
+            <button key={id} type="button" onClick={() => setVideoFilter(id)} style={{
+              padding: "7px 14px", borderRadius: 18, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              background: videoFilter === id ? "var(--moon)" : "var(--navy-800)",
+              color: videoFilter === id ? "var(--navy-950)" : "var(--ink-soft)",
+              border: `1px solid ${videoFilter === id ? "var(--moon)" : "var(--border)"}`,
+            }}>{label}</button>
+          ))}
         </div>
-      ) : (
-        <div className="video-library-section">
-          <div className="card-header">
-            <span className="section-label">NeuroHacks</span>
-            <h3>{locked ? "Disponible con premium" : "Actividades"}</h3>
-          </div>
-          <div className="video-library-grid">
-            {activityVideoLibrary.map((video, index) => (
-              <div key={`activity-${video.title}`} className={locked ? "video-library-card video-library-card--locked" : "video-library-card"}>
-                <div className="video-library-card__header">
-                  <BrandIcon type="brain" />
-                  <strong>{locked ? `NeuroHack ${index + 1}` : video.title}</strong>
-                </div>
-                <VideoThumb video={video} isLocked={locked} lockLabel="Desbloquéalo con premium" />
+      </div>
+      {/* 2-column video grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+        {filtered.map((video, i) => (
+          <div key={`${video.title}-${i}`} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "10px 12px 6px", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: video.isFree ? "rgba(158,207,210,.2)" : "rgba(244,231,178,.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>
+                {video.isFree ? "🆓" : "★"}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+              <strong style={{ fontSize: 12, lineHeight: 1.3 }}>{video.title}</strong>
+            </div>
+            <VideoThumb video={video} isLocked={locked && !video.isFree} lockLabel="Premium" /></div>
+        ))}
+      </div>
       {locked ? (
-        <a className="button button-primary button-link" href={SALES_FUNNEL_URL}>
-          {strings.unlockPremium}
-        </a>
+        <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
+          <div style={{ flex: 1 }}>
+            <strong style={{ fontSize: 13, display: "block", marginBottom: 6 }}>Desbloquea todos los videos con premium</strong>
+            <a className="button button-primary button-link" href={SALES_FUNNEL_URL} style={{ fontSize: 12, minHeight: 36, padding: "0 14px" }}>{strings.unlockPremium}</a>
+          </div>
+        </article>
       ) : null}
-    </article>
+
+    </div>
   );
 }
 
