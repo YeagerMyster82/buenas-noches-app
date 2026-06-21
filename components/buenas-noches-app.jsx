@@ -5245,325 +5245,226 @@ function RoutineSection({
     stopAmbientSound();
   }
 
+  // 12-hour display helper
+  const fmt12 = (t) => {
+    if (!t) return "--";
+    const [h, m] = t.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    return `${h % 12 || 12}:${String(m).padStart(2,"0")} ${ampm}`;
+  };
+
+  // Format window as "7:00 PM – 8:00 PM"
+  const fmtWindow = (w) => w ? w.split(" - ").map(fmt12).join(" – ") : "";
+  const fmtWindowFull = idealSleepWindow ? fmtWindow(idealSleepWindow) : "";
+
+  // Sleep window check
+  const windowWarning = routineForm.targetBedtime && idealSleepWindow ? (() => {
+    const [ws, we] = idealSleepWindow.split(" - ");
+    const t = timeToMinutes(routineForm.targetBedtime);
+    const isOutside = t < timeToMinutes(ws) || t > timeToMinutes(we);
+    return { isOutside, windowStr: fmtWindowFull };
+  })() : null;
+
+  // Avatar helper
+  const getChildAvatar = (child) => {
+    const av = getProfileAvatar(child?.primaryProfile);
+    return av ? <img src={av.src} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} /> : <span style={{ fontWeight: 700 }}>{child?.name?.[0]}</span>;
+  };
+
   return (
-    <div className="dashboard-grid">
-      <article className="card card--soft">
-        <div className="card-header">
-          <div>
-            <span className="section-label">{strings.tonightRoutine}</span>
-            <h2>{strings.mapNight} {activeChild.name}</h2>
-          </div>
-          <button className="button button-ghost" type="button" onClick={onClose}>
-            {strings.backToChildren}
-          </button>
-        </div>
-        {allChildren.length > 1 ? (
-          <div style={{ marginBottom: 4 }}>
-            <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>Para quien es la rutina de hoy?</p>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {allChildren.map((child) => {
-                const isActive = child.id === activeChild?.id;
-                return (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => onSelectRoutineChild?.(child.id)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "10px 14px", borderRadius: 14, cursor: "pointer",
+    <div style={{ display: "grid", gap: 14 }}>
+
+      {/* ── STATE 1: Form ── */}
+      {!currentPlan ? (
+        <>
+          {/* Child toggle */}
+          {allChildren.length > 1 ? (
+            <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: 18 }}>
+              <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 12 }}>Para quien es la rutina de hoy?</p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {allChildren.map((child) => {
+                  const av = getProfileAvatar(child.primaryProfile);
+                  const isActive = child.id === activeChild?.id;
+                  return (
+                    <button key={child.id} type="button" onClick={() => onSelectRoutineChild?.(child.id)} style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14,
                       background: isActive ? "rgba(244,231,178,.12)" : "var(--navy-700)",
-                      border: isActive ? "1.5px solid var(--moon)" : "1.5px solid transparent",
-                      color: "var(--ink)", textAlign: "left",
-                    }}
-                  >
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--navy-600)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-                      {child.name?.[0] || "?"}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{child.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>{profileMap?.[child.primaryProfile]?.name || child.primaryProfile}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-        <form className="stack" onSubmit={onGenerateRoutine}>
-          <label className="stack compact">
-            <span>{strings.wakeTime}</span>
-            <input type="time" value={routineForm.wakeTime} onChange={(event) => onRoutineFieldChange("wakeTime", event.target.value)} required />
-          </label>
-          {idealSleepWindow ? (
-            <div className="content-block content-block--light">
-              <strong>
-                Ventana ideal para {activeChild.name} hoy: {idealSleepWindow}
-              </strong>
+                      border: `1.5px solid ${isActive ? "var(--moon)" : "transparent"}`,
+                      color: "var(--ink)", cursor: "pointer", textAlign: "left",
+                    }}>
+                      <div style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--navy-600)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {av ? <img src={av.src} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} /> : <span style={{ fontWeight: 700, fontSize: 14 }}>{child.name?.[0]}</span>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{child.name}</div>
+                        <div style={{ fontSize: 11, color: isActive ? "var(--moon)" : "var(--ink-soft)" }}>{profileMap?.[child.primaryProfile]?.name || child.primaryProfile}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
-          <label className="stack compact">
-            <span>{strings.targetBedtime}</span>
-            <input
-              type="time"
-              value={routineForm.targetBedtime}
-              onChange={(event) => onRoutineFieldChange("targetBedtime", event.target.value)}
-              required
-            />
-          </label>
-          {routineForm.targetBedtime && idealSleepWindow ? (() => {
-            const [windowStart, windowEnd] = idealSleepWindow.split(" - ");
-            const targetMins = timeToMinutes(routineForm.targetBedtime);
-            const startMins = timeToMinutes(windowStart);
-            const endMins = timeToMinutes(windowEnd);
-            const isOutside = targetMins < startMins || targetMins > endMins;
-            return isOutside ? (
-              <div className="status-message status-warning">
-                {routineForm.targetBedtime} está fuera de la ventana ideal de {activeChild.name}. Según su edad y la hora en que despertó, lo ideal es entre {idealSleepWindow}.
+
+          {/* Form card */}
+          <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: 18 }}>
+            <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 17, fontWeight: 600, marginBottom: 4 }}>Mapear la noche de {activeChild.name}</h3>
+            <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 18 }}>Estos datos calculan su rutina y horario ideal de hoy.</p>
+            <form onSubmit={onGenerateRoutine} style={{ display: "grid", gap: 14 }}>
+              {/* Side-by-side time inputs */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora se desperto hoy?</span>
+                  <input type="time" value={routineForm.wakeTime} onChange={e => onRoutineFieldChange("wakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
+                </label>
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora te gustaria que se duerma?</span>
+                  <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
+                </label>
               </div>
-            ) : (
-              <div className="status-message status-success">
-                {routineForm.targetBedtime} está dentro de la ventana ideal ({idealSleepWindow}). ¡Perfecto!
+              {/* Sleep window warning/confirmation */}
+              {windowWarning ? (
+                <div style={{
+                  fontSize: 12, lineHeight: 1.55, padding: "11px 13px", borderRadius: 12,
+                  background: windowWarning.isOutside ? "rgba(217,150,140,.14)" : "rgba(143,190,158,.14)",
+                  color: windowWarning.isOutside ? "var(--coral)" : "var(--green)",
+                  border: `1px solid ${windowWarning.isOutside ? "rgba(217,150,140,.3)" : "rgba(143,190,158,.3)"}`,
+                }}>
+                  {windowWarning.isOutside
+                    ? <><b>{fmt12(routineForm.targetBedtime)} esta fuera de la ventana ideal de {activeChild.name}.</b> Segun su edad y la hora en que desperto, lo ideal es entre <b>{fmtWindowFull}</b>. Dormir fuera de esta ventana puede hacer que le cueste mas conciliar el sueno.</>
+                    : <><b>{fmt12(routineForm.targetBedtime)} esta dentro de la ventana ideal</b> ({fmtWindowFull}). Perfecto!</>}
+                </div>
+              ) : null}
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora cenan hoy?</span>
+                <input type="time" value={routineForm.dinnerTime} onChange={e => onRoutineFieldChange("dinnerTime", e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Cuantos minutos suele tardar en prepararse? (bano, pijama, etc.)</span>
+                <input type="number" min="5" max="90" step="5" value={routineForm.prepareDuration} onChange={e => onRoutineFieldChange("prepareDuration", e.target.value)} required />
+              </label>
+              {activeChild.takesNap === "yes" ? (
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>{strings.napQuestion}</span>
+                  <select value={routineForm.napTaken} onChange={e => onRoutineFieldChange("napTaken", e.target.value)}>
+                    <option value="no">{strings.no}</option>
+                    <option value="yes">{strings.yes}</option>
+                  </select>
+                </label>
+              ) : null}
+              {activeChild.takesNap === "yes" && routineForm.napTaken === "yes" ? (
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>{strings.napWakeTime}</span>
+                  <input type="time" value={routineForm.napWakeTime} onChange={e => onRoutineFieldChange("napWakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
+                </label>
+              ) : null}
+              <button className="button button-primary" type="submit">Generar rutina</button>
+            </form>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* ── STATE 2: Plan ── */}
+          <button type="button" onClick={() => { onClose(); onRoutineFieldChange && null; }} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--ink-soft)", fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" /></svg>
+            Editar horarios
+          </button>
+
+          {/* Plan header card */}
+          <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: 18 }}>
+            <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 17, fontWeight: 600, marginBottom: 3 }}>Rutina de {activeChild.name}</h3>
+            <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 14 }}>
+              Desperto {fmt12(currentPlan.wakeTime)} · cena {fmt12(currentPlan.dinnerTime)} · meta dormido {fmt12(currentPlan.targetBedtime)}
+            </p>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, color: "var(--ink-soft)", fontWeight: 600 }}>
+                <i style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--moon)", display: "inline-block" }} />Elegido para su perfil
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, color: "var(--ink-soft)", fontWeight: 600 }}>
+                <i style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--aqua)", display: "inline-block" }} />Igual para todos los perfiles
+              </span>
+            </div>
+          </div>
+
+          {/* Step cards */}
+          {currentPlan.steps.map((step) => {
+            const isPersonalized = !!step.selectedActivity;
+            const videos = getRoutineVideosForStep(step, currentPlan.profile);
+            const accentColor = isPersonalized ? "var(--moon)" : "var(--aqua)";
+            return (
+              <div key={step.id} style={{
+                background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 16,
+                padding: "15px 16px", borderLeft: `3px solid ${accentColor}`,
+              }}>
+                {/* Phase tag + time */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700, color: accentColor }}>{step.label}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>
+                    {fmt12(step.start)}{step.end && step.end !== step.start ? ` – ${fmt12(step.end)}` : ""}
+                  </span>
+                </div>
+                {/* Activity title */}
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
+                  {step.selectedActivity?.displayName || step.guidance?.title || step.preparationItems?.map(i => i.displayName).join(" + ")}
+                </div>
+                {/* Instructions */}
+                <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.75)", lineHeight: 1.55, marginBottom: 6 }}>
+                  {step.selectedActivity?.instructions || step.guidance?.guidance || step.preparationItems?.map(i => i.instructions).join(" ")}
+                </div>
+                {/* Purpose italic */}
+                {step.purpose ? <div style={{ fontSize: 11.5, color: "var(--ink-soft)", fontStyle: "italic", lineHeight: 1.5 }}>{step.purpose}</div> : null}
+                {/* Video chips */}
+                {videos.length ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                    {videos.map(v => (
+                      <button key={v.title} type="button" onClick={() => setVideoModal(v)} style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px",
+                        borderRadius: 20, background: "rgba(158,207,210,.16)", color: "var(--aqua)",
+                        fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer",
+                      }}>
+                        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                        {v.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {/* Personalized tag */}
+                {isPersonalized ? (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: "var(--moon)", marginTop: 9 }}>
+                    <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>
+                    Elegido para {activeChild.name}
+                  </div>
+                ) : null}
+                {/* Alternative activity chips */}
+                {step.alternatives?.length > 1 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                    {step.alternatives.filter(a => a.id !== step.selectedActivityId).slice(0, 4).map(a => (
+                      <button key={a.id} type="button" onClick={() => onChangeActivity(step.id, a.id)} style={{
+                        fontSize: 10.5, padding: "5px 10px", borderRadius: 20,
+                        background: "var(--navy-700)", color: "rgba(255,248,239,.72)",
+                        border: "1px solid var(--border)", cursor: "pointer",
+                      }}>{a.displayName}</button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             );
-          })() : null}
-          <label className="stack compact">
-            <span>{strings.dinnerTime}</span>
-            <input type="time" value={routineForm.dinnerTime} onChange={(event) => onRoutineFieldChange("dinnerTime", event.target.value)} />
-            <small className="field-help">{strings.dinnerShared}</small>
-          </label>
-          <label className="stack compact">
-            <span>Tiempo de bano y pijama (minutos)</span>
-            <input
-              type="number"
-              min="5"
-              max="90"
-              step="5"
-              value={routineForm.prepareDuration}
-              onChange={(event) => onRoutineFieldChange("prepareDuration", event.target.value)}
-              required
-            />
-            <small className="field-help">Solo el bano y ponerse el pijama. Los pasos neurologicos del perfil de {activeChild.name} se calculan automaticamente — la rutina completa dura mas que esto.</small>
-          </label>
-          {activeChild.takesNap === "yes" ? (
-            <label className="stack compact">
-              <span>{strings.napQuestion}</span>
-              <select value={routineForm.napTaken} onChange={(event) => onRoutineFieldChange("napTaken", event.target.value)}>
-                <option value="no">{strings.no}</option>
-                <option value="yes">{strings.yes}</option>
-              </select>
-            </label>
-          ) : null}
-          {activeChild.takesNap === "yes" && routineForm.napTaken === "yes" ? (
-            <label className="stack compact">
-              <span>{strings.napWakeTime}</span>
-              <input
-                type="time"
-                value={routineForm.napWakeTime}
-                onChange={(event) => onRoutineFieldChange("napWakeTime", event.target.value)}
-                required
-              />
-            </label>
-          ) : null}
-          <button className="button button-primary" type="submit">
-            {strings.generateRoutine}
-          </button>
-        </form>
-      </article>
+          })}
+
+          {/* Launch buttons */}
+          <div style={{ display: "grid", gap: 8 }}>
+            <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
+              Comenzar rutina guiada →
+            </button>
+            <button className="button button-ghost" type="button" onClick={() => { onRoutineSessionChange({ timerMode: "manual" }); beginGuidedRoutine(); }}>
+              Solo lista, con inicio/fin manual
+            </button>
+          </div>
+        </>
+      )}
 
       {currentPlan ? (
         <>
-          {routinePreviewOpen ? (
-            <div className="routine-modal" role="dialog" aria-modal="true" aria-label={strings.routinePreviewTitle}>
-              <div className="routine-modal__panel">
-                <button className="routine-modal__close" type="button" onClick={onClosePreview}>
-                  ×
-                </button>
-                <span className="section-label">{strings.tonightRoutine}</span>
-                <h2>{strings.routinePreviewTitle}</h2>
-                <p>{strings.routinePreviewCopy}</p>
-                <div className="summary-grid">
-                  <Stat label="Cena" value={currentPlan.dinnerTime} />
-                  <Stat label="Empezar rutina" value={currentPlan.routineStart} />
-                  <Stat label="En cama" value={currentPlan.steps?.find(s => s.phaseKey === "a_la_cama")?.start || currentPlan.bedtime} />
-                  <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
-                </div>
-                <div className="result-strip result-strip--ok">
-                  <strong>Vista completa de la rutina</strong>
-                  <span>Desliza para revisar todos los pasos antes de comenzar.</span>
-                </div>
-                <div className="stack compact">
-                  {currentPlan.steps.map((step, index) => (
-                    <div className="routine-preview-step" key={step.id}>
-                      <strong>
-                        {index + 1}. {step.label}
-                      </strong>
-                      <span>
-                        {step.selectedActivity?.displayName ||
-                          step.guidance?.title ||
-                          step.preparationItems?.map((item) => item.displayName).join(", ")}
-                      </span>
-                      <small>
-                        {step.start} - {step.end}
-                      </small>
-                    </div>
-                  ))}
-                </div>
-                <label className="stack compact">
-                  <span>{strings.timerMode}</span>
-                  <select
-                    value={routineSession.timerMode || "timed"}
-                    onChange={(event) => {
-                      onRoutineSessionChange({ timerMode: event.target.value });
-                    }}
-                  >
-                    <option value="timed">{strings.timerModeTimed}</option>
-                    <option value="manual">{strings.timerModeManual}</option>
-                  </select>
-                </label>
-                <label className="stack compact">
-                  <span>{strings.soundMode}</span>
-                  <select
-                    value={routineSession.soundMode}
-                    onChange={(event) => {
-                      onRoutineSessionChange({ soundMode: event.target.value });
-                      if (routinePlayerOpen && !isPaused) {
-                        restartAmbientSound(event.target.value);
-                      }
-                    }}
-                  >
-                    <option value="transition">{strings.soundTransition}</option>
-                    <option value="calm">{strings.soundCalm}</option>
-                    <option value="nature">{strings.soundNature}</option>
-                    <option value="track3">{strings.soundTrackThree}</option>
-                    <option value="silent">{strings.soundSilent}</option>
-                  </select>
-                </label>
-                {activeMusicTrack ? (
-                  <div className="music-track-preview">
-                    <strong>{activeMusicTrack.label}</strong>
-                    <span>Se reproducirá dentro de la rutina.</span>
-                  </div>
-                ) : null}
-                <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
-                  {strings.beginRoutine}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          <article className="card card--feature">
-            <div className="card-header">
-              <span className="section-label">Plan de hoy</span>
-              <h2>{activeChild.name}</h2>
-            </div>
-              <div className="summary-grid">
-                <Stat label="Cena" value={currentPlan.dinnerTime} />
-                <Stat label="Empezar rutina" value={currentPlan.routineStart} />
-                <Stat label="En cama" value={currentPlan.bedtime} />
-                <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
-                <Stat label="Tiempo esperado para dormir" value={`${currentPlan.expectedLatency} min`} />
-              <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
-            </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
-                Comenzar rutina guiada →
-              </button>
-              <button className="button button-ghost" type="button" onClick={() => {
-                onRoutineSessionChange({ timerMode: "manual" });
-                beginGuidedRoutine();
-              }}>
-                Solo lista, con inicio/fin manual
-              </button>
-            </div>
-            <div className="stack">
-              {currentPlan.steps.map((step) => (
-                <div className="step-card" key={step.id}>
-                  <div className="step-topline">
-                    <strong>{step.label}</strong>
-                    <span>
-                      {step.start} - {step.end}
-                    </span>
-                  </div>
-                  <p className="step-copy">{step.purpose}</p>
-
-                  {step.preparationItems ? (
-                    <div className="special-guidance">
-                      <strong>Lista para preparar el cuerpo</strong>
-                      <ul className="mini-list">
-                        {step.preparationItems.map((item) => (
-                          <li key={item.id}>
-                            <strong>{item.displayName}:</strong> {item.instructions}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : step.selectedActivity ? (
-                    <>
-                      <div className="selected-activity">
-                        <strong>{step.selectedActivity.displayName}</strong>
-                        <span>{step.selectedActivity.shortLabel}</span>
-                        <p>{step.selectedActivity.instructions}</p>
-                      </div>
-                      {getRoutineVideosForStep(step, currentPlan.profile).length ? (
-                        <div className="video-resource-row">
-                          {getRoutineVideosForStep(step, currentPlan.profile).map((video) => (
-                            <button
-                              key={`${step.id}-${video.title}`}
-                              className="button button-ghost"
-                              type="button"
-                              onClick={() => setVideoModal(video)}
-                            >
-                              Video: {video.title}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                      <button className="button button-ghost" type="button" onClick={() => onToggleSwapStep(step.id)}>
-                        {strings.changeActivity}
-                      </button>
-                      {expandedSwapStep === step.id ? (
-                        <label className="stack compact">
-                          <span>{strings.samePhaseOptions}</span>
-                          <select value={step.selectedActivityId} onChange={(event) => onChangeActivity(step.id, event.target.value)}>
-                            {step.alternatives.map((activity) => (
-                              <option key={activity.id} value={activity.id}>
-                                {activity.displayName}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : null}
-                    </>
-                  ) : (
-                    <div className="special-guidance">
-                      <strong>{step.guidance?.title}</strong>
-                      <p>{step.guidance?.guidance}</p>
-                      <ul className="mini-list">
-                        {step.guidance?.examples?.map((example) => (
-                          <li key={example}>{example}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {!step.selectedActivity && getRoutineVideosForStep(step, currentPlan.profile).length ? (
-                    <div className="video-resource-row">
-                      {getRoutineVideosForStep(step, currentPlan.profile).map((video) => (
-                        <button
-                          key={`${step.id}-${video.title}`}
-                          className="button button-ghost"
-                          type="button"
-                          onClick={() => setVideoModal(video)}
-                        >
-                          Video: {video.title}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </article>
-
           {routinePlayerOpen && isManualRoutine ? (() => {
             const totalElapsedSec = manualStartMs > 0 ? Math.max(0, Math.floor((timerNow - manualStartMs) / 1000)) : 0;
             const bedElapsedSec = manualInBedMs > 0 ? Math.max(0, Math.floor((timerNow - manualInBedMs) / 1000)) : 0;
