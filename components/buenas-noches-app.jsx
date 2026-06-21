@@ -5029,15 +5029,17 @@ function RoutineSection({
                 <Stat label="Tiempo esperado para dormir" value={`${currentPlan.expectedLatency} min`} />
               <Stat label="Perfil" value={profileMap[activeChild.primaryProfile]?.name} />
             </div>
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={() => {
+            <div style={{ display: "grid", gap: 8 }}>
+              <button className="button button-primary" type="button" onClick={beginGuidedRoutine}>
+                Comenzar rutina guiada →
+              </button>
+              <button className="button button-ghost" type="button" onClick={() => {
+                onRoutineSessionChange({ timerMode: "manual" });
                 beginGuidedRoutine();
-              }}
-            >
-              {strings.openGuidedRoutine}
-            </button>
+              }}>
+                Solo lista, con inicio/fin manual
+              </button>
+            </div>
             <div className="stack">
               {currentPlan.steps.map((step) => (
                 <div className="step-card" key={step.id}>
@@ -5214,146 +5216,154 @@ function RoutineSection({
           })() : null}
 
           {routinePlayerOpen && !isManualRoutine && playerStep ? (
-            <div className="routine-modal" role="dialog" aria-modal="true" aria-label="Rutina guiada">
-              <div className="routine-modal__panel">
+            <div className=”routine-modal” role=”dialog” aria-modal=”true” aria-label=”Rutina guiada”>
+              <div className=”routine-modal__panel” style={{ textAlign: “center” }}>
                 <button
-                  className="routine-modal__close"
-                  type="button"
-                  onClick={() => {
-                    setRoutinePlayerOpen(false);
-                    stopAmbientSound();
-                  }}
+                  className=”routine-modal__close”
+                  type=”button”
+                  onClick={() => { setRoutinePlayerOpen(false); stopAmbientSound(); }}
                 >
                   ×
                 </button>
-                <span className="section-label">
-                  Paso {routineStepIndex + 1} de {currentPlan.steps.length}
-                </span>
-                <h2>{playerStep.label}</h2>
-                <p className="muted">
-                  {playerStep.start} - {playerStep.end}
-                </p>
-                <div className="routine-timer">
-                  <strong>
-                    {playerStep.selectedActivity?.displayName || playerStep.guidance?.title || "Preparar para dormir"}
-                  </strong>
-                  <span>{playerStep.selectedActivity?.shortLabel || playerStep.purpose}</span>
-                  {isUntimedPlayerStep ? (
-                    <strong className="routine-countdown routine-countdown--manual">{strings.timerModeManual}</strong>
-                  ) : (
-                    <strong className="routine-countdown">{formatTimer(secondsLeft)}</strong>
-                  )}
+
+                {/* Progress + phase */}
+                <div style={{ fontSize: “11px”, fontWeight: 700, color: “var(--ink-soft)”, marginBottom: 6 }}>
+                  PASO {routineStepIndex + 1} DE {currentPlan.steps.length}
                 </div>
-                {playerStep.phaseKey === "dormir" ? (
-                  <div className="sleep-readiness-card sleep-readiness-card--blue">
-                    <strong>Tiempo en cama</strong>
-                    <p>
-                      La app empieza a contar desde que marcaste “A la cama”. Cuando tu hijo se duerma, toca el
-                      botón para registrar esta noche.
+                <div style={{ fontSize: “11px”, textTransform: “uppercase”, letterSpacing: “.06em”, fontWeight: 700, color: “var(--moon)”, marginBottom: 6 }}>
+                  {playerStep.label}
+                </div>
+                <h2 style={{ fontFamily: “'Baloo 2', sans-serif”, fontSize: “clamp(1.3rem,5vw,1.6rem)”, marginBottom: 6 }}>
+                  {playerStep.selectedActivity?.displayName || playerStep.guidance?.title || “Preparar para dormir”}
+                </h2>
+                <div style={{ fontSize: “11px”, color: “var(--ink-soft)”, fontFamily: “'JetBrains Mono',monospace”, marginBottom: 18 }}>
+                  {playerStep.start} – {playerStep.end}
+                </div>
+
+                {/* Circular timer or “a tu ritmo” pill */}
+                {!isUntimedPlayerStep ? (
+                  <div style={{
+                    width: 128, height: 128, borderRadius: “50%”,
+                    background: “var(--navy-700)”, border: “3px solid var(--moon)”,
+                    display: “flex”, flexDirection: “column”, alignItems: “center”, justifyContent: “center”,
+                    margin: “0 auto 18px”
+                  }}>
+                    <span style={{ fontFamily: “'JetBrains Mono',monospace”, fontSize: 28, fontWeight: 700, color: secondsLeft <= 30 ? “var(--coral)” : “var(--ink)” }}>
+                      {formatTimer(secondsLeft)}
+                    </span>
+                    <span style={{ fontSize: “9.5px”, color: “var(--ink-soft)”, textTransform: “uppercase”, letterSpacing: “.06em”, marginTop: 2 }}>
+                      restante
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: “inline-block”, padding: “8px 18px”, borderRadius: 999,
+                    background: “rgba(255,248,239,.08)”, color: “var(--ink-soft)”,
+                    fontSize: 12, fontWeight: 700, marginBottom: 18
+                  }}>
+                    A tu ritmo
+                  </div>
+                )}
+
+                {/* Instructions */}
+                {playerStep.phaseKey !== “dormir” ? (
+                  <div style={{ textAlign: “left” }}>
+                    <p style={{ fontSize: 13, color: “var(--ink-soft)”, lineHeight: 1.6, marginBottom: 6 }}>
+                      {playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}
                     </p>
-                    <div className="summary-grid">
-                      <Stat label={strings.bedTime} value={routineSession.inBedAt || "--:--"} />
-                      <div className="stat-card sleep-save-stat">
-                        <span>{strings.sleepTime}</span>
-                        <strong>{routineSession.fellAsleepAt || "--:--"}</strong>
-                        <button className="button button-primary" type="button" onClick={saveChildAsleep}>
-                          Mi hijo ya se durmió
-                        </button>
-                      </div>
-                    </div>
-                    <p className="muted">
-                      Si todavía necesita que mamá o papá estén cerca para dormirse, eso es normal. Primero buscamos
-                      que se duerma en 15 minutos o menos de forma consistente; después trabajamos la retirada gradual.
-                    </p>
+                    {playerStep.purpose ? (
+                      <p style={{ fontSize: 11.5, color: “var(--ink-soft)”, fontStyle: “italic”, lineHeight: 1.5 }}>
+                        {playerStep.purpose}
+                      </p>
+                    ) : null}
+                    {playerStep.preparationItems?.length ? (
+                      <ul className=”mini-list” style={{ marginTop: 10 }}>
+                        {playerStep.preparationItems.map((item) => (
+                          <li key={item.id}><strong>{item.displayName}:</strong> {item.instructions}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {playerStep.guidance?.examples?.length ? (
+                      <ul className=”mini-list” style={{ marginTop: 10 }}>
+                        {playerStep.guidance.examples.map((ex) => <li key={ex}>{ex}</li>)}
+                      </ul>
+                    ) : null}
                   </div>
                 ) : null}
-                {playerStep.phaseKey !== "dormir" ? <p>{playerStep.selectedActivity?.instructions || playerStep.guidance?.guidance}</p> : null}
+
+                {/* Video chips */}
                 {playerStepVideos.length ? (
-                  <div className="video-resource-row">
+                  <div className=”video-resource-row” style={{ justifyContent: “center”, margin: “10px 0” }}>
                     {playerStepVideos.map((video) => (
-                      <button
-                        key={`${playerStep.id}-${video.title}`}
-                        className="button button-ghost"
-                        type="button"
-                        onClick={() => setVideoModal(video)}
-                      >
-                        Video: {video.title}
+                      <button key={`${playerStep.id}-${video.title}`} className=”button button-ghost” type=”button” onClick={() => setVideoModal(video)}
+                        style={{ fontSize: 11, padding: “6px 12px”, borderRadius: 20, display: “inline-flex”, alignItems: “center”, gap: 5 }}>
+                        ▶ {video.title}
                       </button>
                     ))}
                   </div>
                 ) : null}
-                {playerStep.phaseKey !== "dormir" && playerStep.selectedActivity ? (
-                  <label className="stack compact">
-                    <span>{strings.changeActivity}</span>
+
+                {/* Change activity */}
+                {playerStep.phaseKey !== “dormir” && playerStep.selectedActivity ? (
+                  <label className=”stack compact” style={{ textAlign: “left”, marginTop: 10 }}>
+                    <span style={{ fontSize: 11.5 }}>{strings.changeActivity}</span>
                     <select value={playerStep.selectedActivityId} onChange={(event) => onChangeActivity(playerStep.id, event.target.value)}>
                       {playerStep.alternatives.map((activity) => (
-                        <option key={activity.id} value={activity.id}>
-                          {activity.displayName}
-                        </option>
+                        <option key={activity.id} value={activity.id}>{activity.displayName}</option>
                       ))}
                     </select>
                   </label>
                 ) : null}
-                {playerStep.phaseKey !== "dormir" && playerStep.preparationItems?.length ? (
-                  <ul className="mini-list">
-                    {playerStep.preparationItems.map((item) => (
-                      <li key={item.id}>
-                        <strong>{item.displayName}:</strong> {item.instructions}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {playerStep.phaseKey !== "dormir" && playerStep.guidance?.examples?.length ? (
-                  <ul className="mini-list">
-                    {playerStep.guidance.examples.map((example) => (
-                      <li key={example}>{example}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {playerStep.phaseKey === "calmar_el_cuerpo" ? (
-                  <div className="sleep-readiness-card">
+
+                {/* Sleep readiness — calmar */}
+                {playerStep.phaseKey === “calmar_el_cuerpo” ? (
+                  <div className=”sleep-readiness-card” style={{ marginTop: 12, textAlign: “left” }}>
                     <strong>¿Ya ves señales de sueño?</strong>
-                    <p>Ojos pesados, cuerpo relajado, menos movimiento, deja de hablar o respiración más lenta.</p>
-                    <div className="inline-actions">
-                      <button
-                        className="button button-primary"
-                        type="button"
-                        onClick={() => {
-                          const dormirIndex = currentPlan.steps.findIndex((step) => step.phaseKey === "dormir");
-                          playTransitionTone(routineSession.soundMode);
-                          setRoutineStepIndex(dormirIndex >= 0 ? dormirIndex : currentPlan.steps.length - 1);
-                        }}
-                      >
-                        Sí, ya está listo
-                      </button>
-                      <button className="button button-ghost" type="button" onClick={() => playTransitionTone(routineSession.soundMode)}>
-                        No todavía
-                      </button>
+                    <p>Ojos pesados, cuerpo relajado, menos movimiento, respiración más lenta.</p>
+                    <div className=”inline-actions” style={{ marginTop: 10 }}>
+                      <button className=”button button-primary” type=”button” onClick={() => {
+                        const dormirIndex = currentPlan.steps.findIndex((s) => s.phaseKey === “dormir”);
+                        playTransitionTone(routineSession.soundMode);
+                        setRoutineStepIndex(dormirIndex >= 0 ? dormirIndex : currentPlan.steps.length - 1);
+                      }}>Sí, ya está listo</button>
+                      <button className=”button button-ghost” type=”button” onClick={() => playTransitionTone(routineSession.soundMode)}>No todavía</button>
                     </div>
-                    <p className="muted">Si ya está listo… no hagas más.</p>
                   </div>
                 ) : null}
+
+                {/* Dormir state */}
+                {playerStep.phaseKey === “dormir” ? (
+                  <div className=”sleep-readiness-card sleep-readiness-card--blue” style={{ textAlign: “left”, marginTop: 12 }}>
+                    <strong>Tiempo en cama</strong>
+                    <p>Cuando tu hijo se duerma, toca el botón para registrar esta noche.</p>
+                    <div className=”summary-grid” style={{ marginTop: 10 }}>
+                      <Stat label={strings.bedTime} value={routineSession.inBedAt || “--:--”} />
+                      <div className=”stat-card sleep-save-stat”>
+                        <span>{strings.sleepTime}</span>
+                        <strong>{routineSession.fellAsleepAt || “--:--”}</strong>
+                        <button className=”button button-primary” type=”button” onClick={saveChildAsleep}>
+                          Ya se durmió
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Nav controls */}
                 {!isLastRoutineStep ? (
-                  <div className="inline-actions routine-compact-controls routine-compact-controls--single">
-                    <button
-                      className="button button-ghost"
-                      type="button"
-                      disabled={routineStepIndex === 0}
-                      onClick={() => setRoutineStepIndex((index) => Math.max(0, index - 1))}
-                      aria-label="Anterior"
-                    >
+                  <div style={{ display: “flex”, gap: 8, marginTop: 18, alignItems: “center” }}>
+                    <button className=”button button-ghost” type=”button” disabled={routineStepIndex === 0}
+                      onClick={() => setRoutineStepIndex((i) => Math.max(0, i - 1))} style={{ minWidth: 44, padding: “0 12px” }}>
                       ←
                     </button>
                     {!isUntimedPlayerStep ? (
                       <>
-                        <button
-                          className="button button-ghost"
-                          type="button"
+                        <button className=”button button-ghost” type=”button” style={{ minWidth: 44, padding: “0 12px” }}
                           onClick={() => {
                             setIsPaused((paused) => {
                               if (paused) {
                                 const resumedAt = Date.now();
-                                setPausedTotalMs((current) => current + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
+                                setPausedTotalMs((cur) => cur + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
                                 setPausedAt(0);
                                 restartAmbientSound(routineSession.soundMode);
                               } else {
@@ -5363,45 +5373,24 @@ function RoutineSection({
                               setTimerNow(Date.now());
                               return !paused;
                             });
-                          }}
-                          aria-label={isPaused ? strings.resumeRoutine : strings.pauseRoutine}
-                        >
-                          {isPaused ? "▶" : "⏸"}
-                        </button>
-                        <button
-                          className="button button-ghost"
-                          type="button"
-                          onClick={() => {
-                            hasPlayedEndToneRef.current = false;
-                            setExtendedSeconds((current) => current + 120);
-                            setTimerNow(Date.now());
-                          }}
-                        >
+                          }}>{isPaused ? “▶” : “⏸”}</button>
+                        <button className=”button button-ghost” type=”button” style={{ minWidth: 44, padding: “0 12px” }}
+                          onClick={() => { hasPlayedEndToneRef.current = false; setExtendedSeconds((c) => c + 120); setTimerNow(Date.now()); }}>
                           +2m
                         </button>
                       </>
                     ) : null}
-                    <button
-                      className="button button-primary"
-                      type="button"
+                    <button className=”button button-primary” type=”button” style={{ flex: 1 }}
                       onClick={() => {
-                          playTransitionTone(routineSession.soundMode);
-                          if (playerStep.phaseKey === "a_la_cama") {
-                            onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
-                          }
-                          if (currentPlan.steps[routineStepIndex + 1]?.phaseKey === "dormir") {
-                            onRoutineSessionChange({ routineEndTime: routineSession.routineEndTime || getCurrentTimeValue() });
-                          }
-                          setStepStartedAt(Date.now());
-                          setPausedAt(0);
-                          setPausedTotalMs(0);
-                          setExtendedSeconds(0);
-                          setTimerNow(Date.now());
-                          setIsPaused(false);
-                          setRoutineStepIndex((index) => index + 1);
-                        }}
-                      >
-                      Siguiente
+                        playTransitionTone(routineSession.soundMode);
+                        if (playerStep.phaseKey === “a_la_cama”) onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
+                        if (currentPlan.steps[routineStepIndex + 1]?.phaseKey === “dormir”) onRoutineSessionChange({ routineEndTime: routineSession.routineEndTime || getCurrentTimeValue() });
+                        setStepStartedAt(Date.now());
+                        setPausedAt(0); setPausedTotalMs(0); setExtendedSeconds(0);
+                        setTimerNow(Date.now()); setIsPaused(false);
+                        setRoutineStepIndex((i) => i + 1);
+                      }}>
+                      Siguiente paso →
                     </button>
                   </div>
                 ) : null}
