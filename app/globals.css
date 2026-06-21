@@ -182,15 +182,16 @@ img {
 }
 
 .bottom-app-nav__item {
-  min-height: 68px;
+  min-height: 58px;
   display: grid;
   place-items: center;
   gap: 4px;
   border-radius: 18px;
   background: transparent;
-  color: rgba(255, 248, 239, 0.45);
+  color: rgba(255, 248, 239, 0.38);
   font-weight: 700;
   padding: 8px 4px;
+  transition: color 0.15s;
 }
 
 .bottom-app-nav__item span {
@@ -221,7 +222,11 @@ img {
 }
 
 .bottom-app-nav__item.is-active {
-  background: rgba(244, 231, 178, 0.12);
+  background: rgba(244, 231, 178, 0.1);
+  color: var(--moon);
+}
+
+.bottom-app-nav__item.is-active small {
   color: var(--moon);
 }
 

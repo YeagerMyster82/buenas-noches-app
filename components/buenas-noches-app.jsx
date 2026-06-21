@@ -3396,71 +3396,125 @@ function AppTopBar({
   onOpenMessages,
   onOpenSettings,
 }) {
+  const avatarMap = { owl: "🦉", fox: "🦊", bear: "🐻", cat: "🐱", bunny: "🐰" };
+  const avatar = activeChild?.avatar ? avatarMap[activeChild.avatar] : null;
+
   return (
-    <header className="app-topbar">
-      <div className="child-select">
-        <select
-          value={activeChild?.id || ""}
-          onChange={(event) => event.target.value === "add" ? onAddChild() : onSelectChild(event.target.value)}
-          aria-label="Seleccionar niño"
-        >
-          {children.length ? (
-            children.map((child) => (
-              <option key={child.id} value={child.id}>
-                {child.name || "Niño"}
-              </option>
-            ))
-          ) : (
-            <option value="">{strings.sections.child}</option>
-          )}
-          <option value="add">+ Agregar niño</option>
-        </select>
+    <header style={{ background: "var(--navy-950)", borderBottom: "1px solid var(--border)" }}>
+      {/* Main bar */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10, padding: "10px 14px" }}>
+
+        {/* Child switcher pill */}
+        <div style={{ position: "relative" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "var(--navy-800)", border: "1px solid var(--border)",
+            padding: "6px 12px 6px 8px", borderRadius: 30, pointerEvents: "none",
+            position: "absolute", inset: 0, zIndex: 1
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%", background: "var(--navy-700)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, flexShrink: 0, overflow: "hidden"
+            }}>
+              {activeChild?.profileAvatarSrc
+                ? <img src={activeChild.profileAvatarSrc} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} />
+                : <span>{avatar || (activeChild?.name?.[0] || "👶")}</span>}
+            </div>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {activeChild?.name || "Niño"}
+            </span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255,248,239,.5)", flexShrink: 0, marginLeft: "auto" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+          <select
+            value={activeChild?.id || ""}
+            onChange={(e) => e.target.value === "add" ? onAddChild() : onSelectChild(e.target.value)}
+            aria-label="Seleccionar niño"
+            style={{ opacity: 0, position: "relative", zIndex: 2, width: "100%", minHeight: 44, cursor: "pointer" }}
+          >
+            {children.length ? children.map((c) => (
+              <option key={c.id} value={c.id}>{c.name || "Niño"}</option>
+            )) : <option value="">Niño</option>}
+            <option value="add">+ Agregar niño</option>
+          </select>
+        </div>
+
+        {/* Wordmark */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+          <img src="/icons/buenas-noches-icon.svg" alt="" style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0 }} />
+          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+            <span style={{ color: "var(--moon)" }}>BUENAS</span>
+            {" "}
+            <span style={{ color: "var(--aqua)" }}>NOCHES</span>
+          </div>
+        </div>
+
+        {/* Action icons */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+          <button onClick={onAddChild} aria-label="Agregar niño" style={{
+            width: 32, height: 32, borderRadius: "50%", background: "var(--navy-800)",
+            border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--ink-soft)", fontSize: 16, cursor: "pointer"
+          }}>+</button>
+          <button onClick={onOpenMessages} aria-label="Mensajes" style={{
+            width: 32, height: 32, borderRadius: "50%", background: "var(--navy-800)",
+            border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--ink-soft)", fontSize: 14, cursor: "pointer"
+          }}>✉</button>
+          <button onClick={onOpenSettings} aria-label="Configuración" style={{
+            width: 32, height: 32, borderRadius: "50%", background: "var(--navy-800)",
+            border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--ink-soft)", fontSize: 14, cursor: "pointer"
+          }}>⚙</button>
+        </div>
       </div>
-      <img className="app-topbar-logo" src="/brand/logo-buenas-noches.png" alt="Buenas Noches" />
-      <div className="app-topbar-actions">
-        <button className="icon-button app-icon-button" type="button" onClick={onAddChild} aria-label="Agregar niño">
-          +
-        </button>
-        <button className="icon-button app-icon-button" type="button" onClick={onOpenMessages} aria-label="Mensajes">
-          ✉
-        </button>
-        <button className="icon-button app-icon-button" type="button" onClick={onOpenSettings} aria-label="Configuración">
-          ⚙
-        </button>
+
+      {/* Trust strip */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6, padding: "6px 14px 8px",
+        fontSize: 10.5, color: "var(--moon)", fontWeight: 700, letterSpacing: ".01em",
+        borderTop: "1px solid var(--border)"
+      }}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        Creado por especialistas en sistema nervioso infantil · QuiroKids® Lima, Perú
       </div>
     </header>
   );
 }
 
-function BottomAppNav({ options, activeSection, onSelect }) {
-  const icons = {
-    home: { type: "image", src: "/ui-icons/icon-home.png", alt: "Inicio" },
-    reports: { type: "image", src: "/ui-icons/icon-reporte.png", alt: "Reportes" },
-    routine: { type: "image", src: "/ui-icons/icon-rutina.png", alt: "Rutina" },
-    child: { type: "image", src: "/ui-icons/icon-child.png", alt: "Niño" },
-    videos: { type: "image", src: "/ui-icons/icon-video.png", alt: "Video" },
-    purchase: { type: "text", value: "⭐️", className: "bottom-app-nav__purchase-star" },
-  };
+function NavIcon({ id }) {
+  const s = { width: 20, height: 20, display: "block" };
+  const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+  if (id === "home") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6" /></svg>;
+  if (id === "reports") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M3 13h2v8H3v-8Zm5-5h2v13H8V8Zm5-4h2v17h-2V4Zm5 6h2v11h-2v-11Z" /></svg>;
+  if (id === "routine") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>;
+  if (id === "child") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-5 0-8 2.24-8 4v1h16v-1c0-1.76-3-4-8-4Z" /></svg>;
+  if (id === "videos") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m15 10 4.55-2.55A1 1 0 0 1 21 8.39v7.22a1 1 0 0 1-1.45.9L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z" /></svg>;
+  if (id === "purchase") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" /></svg>;
+  return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>;
+}
 
+function BottomAppNav({ options, activeSection, onSelect }) {
   return (
     <nav className="bottom-app-nav" aria-label="Navegación principal">
-      {options.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          className={activeSection === option.id ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
-          onClick={() => onSelect(option.id)}
-        >
-          {icons[option.id]?.type === "image" ? (
-            <img className="bottom-app-nav__icon-image" src={icons[option.id].src} alt="" aria-hidden="true" />
-          ) : (
-            <span className={icons[option.id]?.className || ""} aria-hidden="true">
-              {icons[option.id]?.value || "•"}
-            </span>
-          )}
-          <small>{option.label}</small>
-        </button>
-      ))}
+      {options.map((option) => {
+        const active = activeSection === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            className={active ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
+            onClick={() => onSelect(option.id)}
+          >
+            <NavIcon id={option.id} />
+            <small>{option.label}</small>
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -3707,29 +3761,120 @@ function ProfileIntroModal({ child, profileMap, language, onClose }) {
   );
 }
 
-function HomeQuickCards({ strings, onOpenRoutine, onOpenSleep, onOpenTips, onOpenWins }) {
+function HomeQuickCards({ strings, activeChild, onOpenRoutine, onOpenSleep, onOpenTips, onOpenWins }) {
+  const cards = [
+    {
+      onClick: onOpenRoutine,
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+        </svg>
+      ),
+      iconBg: "rgba(244,231,178,.15)",
+      iconColor: "var(--moon)",
+      label: strings.sections.routine,
+      sub: "Generar rutina para hoy",
+      accent: "var(--moon)",
+      featured: true,
+    },
+    {
+      onClick: onOpenSleep,
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
+      iconBg: "rgba(158,207,210,.15)",
+      iconColor: "var(--aqua)",
+      label: strings.sleepTracker,
+      sub: "Registrar cuánto tarda en dormir",
+      accent: "var(--aqua)",
+    },
+    {
+      onClick: onOpenTips,
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+        </svg>
+      ),
+      iconBg: "rgba(143,190,158,.15)",
+      iconColor: "var(--green)",
+      label: strings.sections.tips,
+      sub: "Ideas rápidas para mejorar la noche",
+      accent: "var(--green)",
+    },
+    {
+      onClick: onOpenWins,
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+        </svg>
+      ),
+      iconBg: "rgba(217,150,140,.15)",
+      iconColor: "var(--coral)",
+      label: strings.publicWinsWall,
+      sub: "Celebrar avances",
+      accent: "var(--coral)",
+    },
+  ];
+
   return (
-    <section className="home-card-grid">
-      <button className="home-action-card" type="button" onClick={onOpenRoutine}>
-        <span className="home-card-icon">☾</span>
-        <strong>{strings.sections.routine}</strong>
-        <small>Generar rutina para hoy</small>
-      </button>
-      <button className="home-action-card" type="button" onClick={onOpenSleep}>
-        <span className="home-card-icon">◷</span>
-        <strong>{strings.sleepTracker}</strong>
-        <small>Registrar cuánto tarda en dormir</small>
-      </button>
-      <button className="home-action-card" type="button" onClick={onOpenTips}>
-        <span className="home-card-icon">✦</span>
-        <strong>{strings.sections.tips}</strong>
-        <small>Ideas rápidas para mejorar la noche</small>
-      </button>
-      <button className="home-action-card" type="button" onClick={onOpenWins}>
-        <span className="home-card-icon">★</span>
-        <strong>{strings.publicWinsWall}</strong>
-        <small>Celebrar avances</small>
-      </button>
+    <section>
+      {activeChild && (
+        <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 14 }}>
+          Buenas noches · <strong style={{ color: "var(--ink)" }}>{activeChild.name}</strong>
+        </p>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+        {cards.map((card, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={card.onClick}
+            style={{
+              minHeight: card.featured ? 170 : 150,
+              display: "grid",
+              alignContent: "end",
+              gap: 8,
+              padding: 18,
+              textAlign: "left",
+              borderRadius: 22,
+              background: card.featured
+                ? `linear-gradient(145deg, rgba(40,57,78,.98), rgba(45,65,90,.96))`
+                : "var(--navy-800)",
+              border: card.featured
+                ? `1px solid rgba(244,231,178,.2)`
+                : "1px solid var(--border)",
+              color: "var(--ink)",
+              cursor: "pointer",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {card.featured && (
+              <div style={{
+                position: "absolute", right: -20, top: -20,
+                width: 100, height: 100, borderRadius: "50%",
+                background: `radial-gradient(circle, rgba(244,231,178,.18), transparent 70%)`
+              }} />
+            )}
+            <div style={{
+              width: 38, height: 38, borderRadius: 12,
+              background: card.iconBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: card.iconColor, position: "relative"
+            }}>
+              {card.icon}
+            </div>
+            <strong style={{ fontSize: "1.05rem", fontFamily: "'Baloo 2', sans-serif", color: card.featured ? "var(--ink)" : "var(--ink)" }}>
+              {card.label}
+            </strong>
+            <small style={{ color: "var(--ink-soft)", fontWeight: 600, fontSize: "0.78rem", lineHeight: 1.4 }}>
+              {card.sub}
+            </small>
+          </button>
+        ))}
+      </div>
     </section>
   );
 }
