@@ -5685,16 +5685,34 @@ function RoutineSection({
                   </div>
                 ) : null}
 
-                {/* Change activity */}
-                {playerStep.phaseKey !== "dormir" && playerStep.selectedActivity ? (
-                  <label className="stack compact" style={{ textAlign: "left", marginTop: 10 }}>
-                    <span style={{ fontSize: 11.5 }}>{strings.changeActivity}</span>
-                    <select value={playerStep.selectedActivityId} onChange={(event) => onChangeActivity(playerStep.id, event.target.value)}>
-                      {playerStep.alternatives.map((activity) => (
-                        <option key={activity.id} value={activity.id}>{activity.displayName}</option>
-                      ))}
-                    </select>
-                  </label>
+                {/* Change activity — chips instead of dropdown */}
+                {playerStep.phaseKey !== "dormir" && playerStep.alternatives?.length > 1 ? (
+                  <div style={{ textAlign: "left", marginTop: 12 }}>
+                    <div style={{ fontSize: 11, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700, marginBottom: 8 }}>
+                      {strings.changeActivity}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {playerStep.alternatives.map((activity) => {
+                        const isSelected = activity.id === playerStep.selectedActivityId;
+                        return (
+                          <button
+                            key={activity.id}
+                            type="button"
+                            onClick={() => onChangeActivity(playerStep.id, activity.id)}
+                            style={{
+                              padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                              background: isSelected ? "var(--moon)" : "var(--navy-700)",
+                              color: isSelected ? "var(--navy-950)" : "var(--ink-soft)",
+                              border: isSelected ? "none" : "1px solid var(--border)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {activity.displayName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ) : null}
 
                 {/* Sleep readiness — calmar: single shortcut button, no "No todavia" */}
@@ -5736,28 +5754,22 @@ function RoutineSection({
                       ←
                     </button>
                     {!isUntimedPlayerStep ? (
-                      <>
-                        <button className="button button-ghost" type="button" style={{ minWidth: 44, padding: "0 12px" }}
-                          onClick={() => {
-                            setIsPaused((paused) => {
-                              if (paused) {
-                                const resumedAt = Date.now();
-                                setPausedTotalMs((cur) => cur + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
-                                setPausedAt(0);
-                                restartAmbientSound(routineSession.soundMode);
-                              } else {
-                                setPausedAt(Date.now());
-                                stopAmbientSound();
-                              }
-                              setTimerNow(Date.now());
-                              return !paused;
-                            });
-                          }}>{isPaused ? "▶" : "⏸"}</button>
-                        <button className="button button-ghost" type="button" style={{ minWidth: 44, padding: "0 12px" }}
-                          onClick={() => { hasPlayedEndToneRef.current = false; setExtendedSeconds((c) => c + 120); setTimerNow(Date.now()); }}>
-                          +2m
-                        </button>
-                      </>
+                      <button className="button button-ghost" type="button" style={{ minWidth: 44, padding: "0 12px" }}
+                        onClick={() => {
+                          setIsPaused((paused) => {
+                            if (paused) {
+                              const resumedAt = Date.now();
+                              setPausedTotalMs((cur) => cur + (pausedAt ? Math.max(0, resumedAt - pausedAt) : 0));
+                              setPausedAt(0);
+                              restartAmbientSound(routineSession.soundMode);
+                            } else {
+                              setPausedAt(Date.now());
+                              stopAmbientSound();
+                            }
+                            setTimerNow(Date.now());
+                            return !paused;
+                          });
+                        }}>{isPaused ? "▶" : "⏸"}</button>
                     ) : null}
                     <button className="button button-primary" type="button" style={{ flex: 1 }}
                       onClick={() => {
