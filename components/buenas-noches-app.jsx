@@ -2851,23 +2851,43 @@ export default function BuenasNochesApp() {
             />
           ) : state.activeSection === "home" ? (
             <>
-              {/* Hero card — ideal bedtime */}
-              {activeChild?.sleepGoal ? (
-                <article style={{
-                  background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)",
-                  border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px",
-                  marginBottom: 4, position: "relative", overflow: "hidden", color: "var(--ink)"
-                }}>
-                  <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
-                  <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 6 }}>Hora ideal para dormir hoy</div>
-                  <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, color: "var(--ink)", lineHeight: 1, marginBottom: 6 }}>
-                    {activeChild.sleepGoal}
-                  </div>
-                  <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)" }}>
-                    Meta de sueño para {activeChild.name}
-                  </div>
-                </article>
-              ) : null}
+              {/* Hero card — ideal bedtime window */}
+              {activeChild ? (() => {
+                const lastLog = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1)[0];
+                const lastNightHours = lastLog ? calculateTotalSleepHours(lastLog.sleepTime, lastLog.wakeTime, lastLog.napDuration) : null;
+                const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, activeChild.birthday) : 0;
+                const debtLabel = sleepDebt <= 0 ? "Al dia" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
+                const debtColor = sleepDebt <= 0 ? "var(--green)" : sleepDebt < 1 ? "var(--moon)" : "var(--coral)";
+                const displayTime = activeChild.sleepGoal || null;
+                return (
+                  <article style={{
+                    background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)",
+                    border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px",
+                    position: "relative", overflow: "hidden", color: "var(--ink)"
+                  }}>
+                    <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
+                    <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 6 }}>
+                      Hora ideal para dormir hoy
+                    </div>
+                    {displayTime ? (
+                      <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, lineHeight: 1, marginBottom: 6 }}>
+                        {displayTime}
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(1.4rem,6vw,2rem)", fontWeight: 600, lineHeight: 1.2, marginBottom: 6, color: "var(--ink-soft)" }}>
+                        Configura la hora en el perfil de {activeChild.name}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", marginBottom: 14 }}>
+                      {displayTime ? `Meta de sueño para ${activeChild.name}` : "Ve a Nino > Editar perfil > Hora de dormir"}
+                    </div>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
+                      Deuda de sueno: {debtLabel}
+                    </div>
+                  </article>
+                );
+              })() : null}
 
               {/* Quick action cards */}
               <HomeQuickCards
@@ -2881,35 +2901,53 @@ export default function BuenasNochesApp() {
               />
 
               {/* Trust card */}
-              {activeChild ? (
-                <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14, marginTop: 4 }}>
-                  <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por qué confiar en Buenas Noches</h3>
-                  {[
-                    {
-                      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4.4-2.3 8-6 8-11V6l-8-4-8 4v4c0 5 3.6 8.7 8 11Z" />,
-                      title: "Único centro de quiropráctica neurológica pediátrica en Perú",
-                      body: "Buenas Noches nace de la experiencia clínica real de QuiroKids con cientos de familias."
-                    },
-                    {
-                      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z" />,
-                      title: "Cada rutina está respaldada por evidencia",
-                      body: "Las recomendaciones citan fuentes como Harvard Medical School y la American Academy of Sleep Medicine."
-                    }
-                  ].map((row, i) => (
-                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(244,231,178,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" width="15" height="15">{row.icon}</svg>
-                      </div>
-                      <div>
-                        <strong style={{ fontSize: 12.5, display: "block", marginBottom: 2 }}>{row.title}</strong>
-                        <span style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{row.body}</span>
-                      </div>
+              <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14 }}>
+                <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por que confiar en Buenas Noches</h3>
+                {[
+                  {
+                    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4.4-2.3 8-6 8-11V6l-8-4-8 4v4c0 5 3.6 8.7 8 11Z" />,
+                    title: "Unico centro de quiropractica neurologica pediatrica en Peru",
+                    body: "Buenas Noches nace de la experiencia clinica real de QuiroKids con cientos de familias."
+                  },
+                  {
+                    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z" />,
+                    title: "Cada rutina esta respaldada por evidencia",
+                    body: "Las recomendaciones citan fuentes como Harvard Medical School y la American Academy of Sleep Medicine."
+                  }
+                ].map((row, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(244,231,178,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" width="15" height="15">{row.icon}</svg>
                     </div>
-                  ))}
-                  <blockquote style={{ margin: 0, padding: "13px 14px", borderRadius: 13, background: "rgba(15,22,38,.35)", fontSize: 12, fontStyle: "italic", color: "rgba(255,248,239,.8)", lineHeight: 1.6, borderLeft: "2px solid var(--moon)" }}>
-                    "Llevamos años ayudando a familias a entender el sistema nervioso de sus hijos en consulta. Creé esta app para que esa misma guía esté disponible cada noche."
-                    <div style={{ marginTop: 8, fontStyle: "normal", fontSize: 11, fontWeight: 700, color: "var(--moon)" }}>— Joline Yeager, fundadora de QuiroKids</div>
-                  </blockquote>
+                    <div>
+                      <strong style={{ fontSize: 12.5, display: "block", marginBottom: 2 }}>{row.title}</strong>
+                      <span style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{row.body}</span>
+                    </div>
+                  </div>
+                ))}
+                <blockquote style={{ margin: 0, padding: "13px 14px", borderRadius: 13, background: "rgba(15,22,38,.35)", fontSize: 12, fontStyle: "italic", color: "rgba(255,248,239,.8)", lineHeight: 1.6, borderLeft: "2px solid var(--moon)" }}>
+                  Llevamos anos ayudando a familias a entender el sistema nervioso de sus hijos en consulta. Cree esta app para que esa misma guia este disponible cada noche, no solo una vez al mes.
+                  <div style={{ marginTop: 8, fontStyle: "normal", fontSize: 11, fontWeight: 700, color: "var(--moon)" }}>- Joline Yeager, fundadora de QuiroKids</div>
+                </blockquote>
+              </article>
+
+              {/* Upsell card */}
+              {activeChild && !state.premiumRoutineGateOpen ? (
+                <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(244,231,178,.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
+                    <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.4.3.6.8.6 1.3V16h6v-.8c0-.5.2-1 .6-1.3A6 6 0 0 0 12 3Z" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ fontSize: 13, display: "block", marginBottom: 6, lineHeight: 1.4 }}>
+                      Quieres una rutina paso a paso para que {activeChild?.name || "tu hijo"} se duerma mas rapido?
+                    </strong>
+                    <button className="button button-primary" style={{ minHeight: 36, padding: "0 14px", fontSize: 12 }} type="button"
+                      onClick={() => requestRoutine(activeChild?.id)}>
+                      Ver rutina premium
+                    </button>
+                  </div>
                 </article>
               ) : null}
 
@@ -5158,7 +5196,7 @@ function RoutineSection({
             <small className="field-help">{strings.dinnerShared}</small>
           </label>
           <label className="stack compact">
-            <span>{strings.prepareDuration}</span>
+            <span>Tiempo de bano y pijama (minutos)</span>
             <input
               type="number"
               min="5"
@@ -5168,7 +5206,7 @@ function RoutineSection({
               onChange={(event) => onRoutineFieldChange("prepareDuration", event.target.value)}
               required
             />
-            <small className="field-help">{strings.prepareDurationHelp}</small>
+            <small className="field-help">Solo el bano y ponerse el pijama. Los pasos neurologicos del perfil de {activeChild.name} se calculan automaticamente — la rutina completa dura mas que esto.</small>
           </label>
           {activeChild.takesNap === "yes" ? (
             <label className="stack compact">
