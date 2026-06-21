@@ -5384,7 +5384,7 @@ function RoutineSection({
                 <div className="summary-grid">
                   <Stat label="Cena" value={currentPlan.dinnerTime} />
                   <Stat label="Empezar rutina" value={currentPlan.routineStart} />
-                  <Stat label="En cama" value={currentPlan.bedtime} />
+                  <Stat label="En cama" value={currentPlan.steps?.find(s => s.phaseKey === "a_la_cama")?.start || currentPlan.bedtime} />
                   <Stat label="Meta dormido" value={currentPlan.targetBedtime} />
                 </div>
                 <div className="result-strip result-strip--ok">
