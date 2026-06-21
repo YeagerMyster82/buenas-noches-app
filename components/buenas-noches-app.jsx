@@ -2851,6 +2851,25 @@ export default function BuenasNochesApp() {
             />
           ) : state.activeSection === "home" ? (
             <>
+              {/* Hero card — ideal bedtime */}
+              {activeChild?.sleepGoal ? (
+                <article style={{
+                  background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)",
+                  border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px",
+                  marginBottom: 4, position: "relative", overflow: "hidden", color: "var(--ink)"
+                }}>
+                  <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
+                  <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 6 }}>Hora ideal para dormir hoy</div>
+                  <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, color: "var(--ink)", lineHeight: 1, marginBottom: 6 }}>
+                    {activeChild.sleepGoal}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)" }}>
+                    Meta de sueño para {activeChild.name}
+                  </div>
+                </article>
+              ) : null}
+
+              {/* Quick action cards */}
               <HomeQuickCards
                 strings={strings}
                 activeChild={activeChild}
@@ -2860,6 +2879,40 @@ export default function BuenasNochesApp() {
                 onOpenTips={() => setState((current) => ({ ...current, activeSection: "tips" }))}
                 onOpenWins={() => setState((current) => ({ ...current, activeSection: "wins" }))}
               />
+
+              {/* Trust card */}
+              {activeChild ? (
+                <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14, marginTop: 4 }}>
+                  <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por qué confiar en Buenas Noches</h3>
+                  {[
+                    {
+                      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4.4-2.3 8-6 8-11V6l-8-4-8 4v4c0 5 3.6 8.7 8 11Z" />,
+                      title: "Único centro de quiropráctica neurológica pediátrica en Perú",
+                      body: "Buenas Noches nace de la experiencia clínica real de QuiroKids con cientos de familias."
+                    },
+                    {
+                      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z" />,
+                      title: "Cada rutina está respaldada por evidencia",
+                      body: "Las recomendaciones citan fuentes como Harvard Medical School y la American Academy of Sleep Medicine."
+                    }
+                  ].map((row, i) => (
+                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(244,231,178,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" width="15" height="15">{row.icon}</svg>
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: 12.5, display: "block", marginBottom: 2 }}>{row.title}</strong>
+                        <span style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{row.body}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <blockquote style={{ margin: 0, padding: "13px 14px", borderRadius: 13, background: "rgba(15,22,38,.35)", fontSize: 12, fontStyle: "italic", color: "rgba(255,248,239,.8)", lineHeight: 1.6, borderLeft: "2px solid var(--moon)" }}>
+                    "Llevamos años ayudando a familias a entender el sistema nervioso de sus hijos en consulta. Creé esta app para que esa misma guía esté disponible cada noche."
+                    <div style={{ marginTop: 8, fontStyle: "normal", fontSize: 11, fontWeight: 700, color: "var(--moon)" }}>— Joline Yeager, fundadora de QuiroKids</div>
+                  </blockquote>
+                </article>
+              ) : null}
+
               {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
           ) : state.activeSection === "reports" || state.activeSection === "child" ? (
@@ -4546,49 +4599,112 @@ function HomeSection({
         ) : null}
 
         {isReportsMode ? (
-        <section className={weeklyChart.empty ? "chart-panel dashboard-chart chart-panel--empty" : "chart-panel dashboard-chart"}>
-          <div className="chart-heading">
-            <div>
-              <span className="section-label">Progreso</span>
-              <h2>7 días</h2>
-            </div>
-            <div className="chart-arrows">
-              <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)} aria-label="Ver semana anterior">
-                ‹
-              </button>
-              <button type="button" onClick={() => setWeekOffset((offset) => Math.min(0, offset + 1))} disabled={!weeklyChart.canGoForward} aria-label="Ver semana siguiente">
-                ›
-              </button>
-            </div>
-          </div>
-          <div className="chart-legend" aria-label="Leyenda del gráfico">
-            <span><i className="legend-bar" /> Hora en cama → hora dormido</span>
-          </div>
-          <NightSleepTimelineChart days={weeklyChart.days} onEditDay={setEditingLogDate} />
-          <div className="night-metrics-grid">
-            {weeklyChart.days.map((day) => (
-              <article className="night-metric-card" key={`metrics-${day.dateKey}`}>
-                <strong>{day.label}</strong>
-                <span>Horas de sueño: {day.totalSleepHours === null ? "--" : `${day.totalSleepHours} h`}</span>
-                <span>Despertares: {day.wakings}</span>
-                <span>Deuda de sueño: {formatSleepDebt(day.sleepDebt, "es")}</span>
+        <section style={{ display: "grid", gap: 18 }}>
+          {/* Sleep debt gauge */}
+          {(() => {
+            const weekDebt = weeklyChart.days.reduce((sum, d) => sum + (d.sleepDebt || 0), 0);
+            const debtLevel = weekDebt <= 0 ? 0 : weekDebt < 2 ? 1 : weekDebt < 5 ? 2 : 3;
+            const debtColors = ["var(--green)", "var(--moon)", "var(--coral)", "var(--coral)"];
+            const debtLabels = ["Al día", "Baja", "Moderada", "Alta"];
+            const debtMessages = [
+              `${activeChild.name} debería estar regulada emocionalmente hoy.`,
+              `Algo de deuda acumulada. Prioriza una noche completa esta semana.`,
+              `Deuda moderada. El sueño de ${activeChild.name} merece atención esta semana.`,
+              `Deuda alta. Considera ajustar horarios para recuperar el sueño.`,
+            ];
+            const markerPct = Math.min(96, debtLevel * 33);
+            return (
+              <article className="card card--feature" style={{ gap: 14 }}>
+                <div className="card-header">
+                  <h2>Deuda de sueño acumulada</h2>
+                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                    {weeklyChart.empty ? "Guarda noches para ver tu deuda acumulada" : `Esta semana · ${weekDebt > 0 ? formatSleepDebt(weekDebt, "es") + " menos de lo recomendado" : "al día"}`}
+                  </p>
+                </div>
+                <div style={{ height: 12, borderRadius: 8, background: "linear-gradient(90deg, var(--green), var(--moon), var(--coral))", position: "relative", margin: "8px 0 4px" }}>
+                  <div style={{ position: "absolute", top: -5, left: `${markerPct}%`, width: 3, height: 22, background: "var(--ink)", borderRadius: 2 }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ink-soft)" }}>
+                  <span>Al día</span><span>Moderada</span><span>Alta</span>
+                </div>
+                <div style={{ background: `${debtColors[debtLevel]}22`, color: debtColors[debtLevel], border: `1px solid ${debtColors[debtLevel]}44`, borderRadius: 10, padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5, marginTop: 4 }}>
+                  <strong>{debtLabels[debtLevel]}</strong> — {debtMessages[debtLevel]}
+                </div>
               </article>
-            ))}
-          </div>
-          {weeklyChart.empty ? (
-            <p className="muted">
-              {strings.age === "Age"
-                ? "Your saved nights will fill this graph."
-                : "Tus noches guardadas van a llenar este gráfico."}
-            </p>
-          ) : null}
-          {lastLog ? (
-            <div className="night-summary-grid">
-              <Stat label="Horas de sueño" value={lastNightHours === null ? "--" : `${lastNightHours} h`} />
-              <Stat label="Despertares" value={String(normalizeNightWakings(lastLog.nightWakings))} />
-              <Stat label="Deuda de sueño" value={formatSleepDebt(lastNightDebt, "es")} />
-            </div>
-          ) : null}
+            );
+          })()}
+
+          {/* Sleep latency line chart */}
+          {(() => {
+            const recentLogs = [...(activeChild.logs || [])]
+              .filter(l => l.date && Number.isFinite(Number(l.latency)))
+              .sort((a, b) => a.date < b.date ? -1 : 1)
+              .slice(-14);
+            const avg = recentLogs.length ? Math.round(recentLogs.reduce((s, l) => s + Number(l.latency), 0) / recentLogs.length) : null;
+            const maxVal = recentLogs.length ? Math.max(...recentLogs.map(l => Number(l.latency)), 30) : 60;
+            const W = 580, H = 130, PAD = 10;
+            const pts = recentLogs.map((l, i) => {
+              const x = PAD + (i / Math.max(recentLogs.length - 1, 1)) * (W - PAD * 2);
+              const y = H - PAD - ((Number(l.latency) / maxVal) * (H - PAD * 2));
+              return { x, y, latency: l.latency, date: l.date };
+            });
+            const pathD = pts.length > 1 ? pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") : null;
+
+            return (
+              <article className="card card--feature" style={{ gap: 14 }}>
+                <div className="card-header">
+                  <h2>Tiempo para dormir</h2>
+                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                    {recentLogs.length > 0 ? `Últimos ${recentLogs.length} registros · promedio ${avg} min` : "Aún no hay noches registradas"}
+                  </p>
+                </div>
+                {recentLogs.length > 1 ? (
+                  <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", borderRadius: 8, overflow: "visible" }}>
+                    {/* grid lines */}
+                    {[0, 0.5, 1].map((t) => (
+                      <line key={t} x1={PAD} x2={W - PAD} y1={PAD + (1 - t) * (H - PAD * 2)} y2={PAD + (1 - t) * (H - PAD * 2)} stroke="rgba(255,248,239,.08)" strokeWidth="1" />
+                    ))}
+                    {/* area fill */}
+                    {pathD && (
+                      <path d={`${pathD} L${pts[pts.length - 1].x},${H - PAD} L${pts[0].x},${H - PAD} Z`}
+                        fill="rgba(244,231,178,.08)" />
+                    )}
+                    {/* line */}
+                    {pathD && <path d={pathD} fill="none" stroke="var(--moon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+                    {/* dots */}
+                    {pts.map((p, i) => (
+                      <circle key={i} cx={p.x} cy={p.y} r="4" fill="var(--moon)" stroke="var(--navy-900)" strokeWidth="2" />
+                    ))}
+                    {/* labels */}
+                    {pts.map((p, i) => (
+                      i % Math.max(1, Math.floor(pts.length / 6)) === 0 ? (
+                        <text key={`lbl-${i}`} x={p.x} y={H} textAnchor="middle" fill="rgba(255,248,239,.45)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                          {p.date?.slice(5)}
+                        </text>
+                      ) : null
+                    ))}
+                  </svg>
+                ) : (
+                  <p className="muted" style={{ textAlign: "center", padding: "20px 0" }}>
+                    Guarda al menos 2 noches para ver el gráfico de progreso.
+                  </p>
+                )}
+                {/* stat boxes */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
+                    <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Promedio</div>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 18, fontWeight: 600 }}>{avg !== null ? `${avg} min` : "--"}</div>
+                  </div>
+                  <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
+                    <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Última noche</div>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 18, fontWeight: 600 }}>{lastLog ? `${lastLog.latency} min` : "--"}</div>
+                  </div>
+                </div>
+              </article>
+            );
+          })()}
+
+          {/* Edit log if open */}
           {editingLog ? (
             <form
               className="edit-log-card"
