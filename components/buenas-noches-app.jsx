@@ -4661,7 +4661,7 @@ function HomeSection({
             );
           })()}
 
-          {/* Sleep latency line chart */}
+          {/* Sleep latency line chart — matches mockup: smooth curve, no dots, no x-labels, y-ticks only */}
           {(() => {
             const recentLogs = [...(activeChild.logs || [])]
               .filter(l => l.date && Number.isFinite(Number(l.latency)))
@@ -4669,61 +4669,73 @@ function HomeSection({
               .slice(-14);
             const avg = recentLogs.length ? Math.round(recentLogs.reduce((s, l) => s + Number(l.latency), 0) / recentLogs.length) : null;
             const maxVal = recentLogs.length ? Math.max(...recentLogs.map(l => Number(l.latency)), 30) : 60;
-            const W = 580, H = 130, PAD = 10;
-            const pts = recentLogs.map((l, i) => {
-              const x = PAD + (i / Math.max(recentLogs.length - 1, 1)) * (W - PAD * 2);
-              const y = H - PAD - ((Number(l.latency) / maxVal) * (H - PAD * 2));
-              return { x, y, latency: l.latency, date: l.date };
-            });
-            const pathD = pts.length > 1 ? pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") : null;
+            const W = 580, H = 130, PADL = 32, PADR = 8, PADT = 10, PADB = 10;
+            const chartW = W - PADL - PADR;
+            const chartH = H - PADT - PADB;
+
+            const pts = recentLogs.map((l, i) => ({
+              x: PADL + (i / Math.max(recentLogs.length - 1, 1)) * chartW,
+              y: PADT + chartH - ((Number(l.latency) / maxVal) * chartH),
+              v: Number(l.latency),
+            }));
+
+            // Smooth bezier path (tension ~0.35, matching Chart.js default)
+            function smoothPath(points) {
+              if (points.length < 2) return "";
+              let d = `M${points[0].x},${points[0].y}`;
+              for (let i = 0; i < points.length - 1; i++) {
+                const p0 = points[i], p1 = points[i + 1];
+                const cp1x = p0.x + (p1.x - p0.x) * 0.35;
+                const cp2x = p1.x - (p1.x - p0.x) * 0.35;
+                d += ` C${cp1x},${p0.y} ${cp2x},${p1.y} ${p1.x},${p1.y}`;
+              }
+              return d;
+            }
+
+            const linePath = pts.length > 1 ? smoothPath(pts) : null;
+            const areaPath = linePath ? `${linePath} L${pts[pts.length-1].x},${PADT + chartH} L${pts[0].x},${PADT + chartH} Z` : null;
+
+            // Y-axis ticks
+            const yTicks = [0, 0.5, 1].map(t => ({
+              y: PADT + chartH * (1 - t),
+              label: Math.round(maxVal * t),
+            }));
 
             return (
               <article className="card card--feature" style={{ gap: 14 }}>
                 <div className="card-header">
                   <h2>Tiempo para dormir</h2>
                   <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                    {recentLogs.length > 0 ? `Últimos ${recentLogs.length} registros · promedio ${avg} min` : "Aún no hay noches registradas"}
+                    {recentLogs.length > 0 ? `Ultimos ${recentLogs.length} registros · promedio ${avg} min` : "Aun no hay noches registradas"}
                   </p>
                 </div>
                 {recentLogs.length > 1 ? (
-                  <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", borderRadius: 8, overflow: "visible" }}>
-                    {/* grid lines */}
-                    {[0, 0.5, 1].map((t) => (
-                      <line key={t} x1={PAD} x2={W - PAD} y1={PAD + (1 - t) * (H - PAD * 2)} y2={PAD + (1 - t) * (H - PAD * 2)} stroke="rgba(255,248,239,.08)" strokeWidth="1" />
+                  <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
+                    {/* Y-axis grid lines + tick labels */}
+                    {yTicks.map((t, i) => (
+                      <g key={i}>
+                        <line x1={PADL} x2={W - PADR} y1={t.y} y2={t.y} stroke="rgba(247,244,238,.08)" strokeWidth="1" />
+                        <text x={PADL - 5} y={t.y + 3} textAnchor="end" fill="rgba(247,244,238,.4)" fontSize="9" fontFamily="JetBrains Mono, monospace">{t.label}</text>
+                      </g>
                     ))}
-                    {/* area fill */}
-                    {pathD && (
-                      <path d={`${pathD} L${pts[pts.length - 1].x},${H - PAD} L${pts[0].x},${H - PAD} Z`}
-                        fill="rgba(244,231,178,.08)" />
-                    )}
-                    {/* line */}
-                    {pathD && <path d={pathD} fill="none" stroke="var(--moon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
-                    {/* dots */}
-                    {pts.map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r="4" fill="var(--moon)" stroke="var(--navy-900)" strokeWidth="2" />
-                    ))}
-                    {/* labels */}
-                    {pts.map((p, i) => (
-                      i % Math.max(1, Math.floor(pts.length / 6)) === 0 ? (
-                        <text key={`lbl-${i}`} x={p.x} y={H} textAnchor="middle" fill="rgba(255,248,239,.45)" fontSize="9" fontFamily="JetBrains Mono, monospace">
-                          {p.date?.slice(5)}
-                        </text>
-                      ) : null
-                    ))}
+                    {/* Area fill */}
+                    {areaPath && <path d={areaPath} fill="rgba(214,168,92,.14)" />}
+                    {/* Smooth line — gold #D6A85C, no dots */}
+                    {linePath && <path d={linePath} fill="none" stroke="#D6A85C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
                   </svg>
                 ) : (
                   <p className="muted" style={{ textAlign: "center", padding: "20px 0" }}>
-                    Guarda al menos 2 noches para ver el gráfico de progreso.
+                    Guarda al menos 2 noches para ver el grafico de progreso.
                   </p>
                 )}
-                {/* stat boxes */}
+                {/* Stat boxes */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
                     <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Promedio</div>
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 18, fontWeight: 600 }}>{avg !== null ? `${avg} min` : "--"}</div>
                   </div>
                   <div style={{ background: "var(--navy-700)", borderRadius: 12, padding: 13 }}>
-                    <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Última noche</div>
+                    <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 5 }}>Ultima noche</div>
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 18, fontWeight: 600 }}>{lastLog ? `${lastLog.latency} min` : "--"}</div>
                   </div>
                 </div>
