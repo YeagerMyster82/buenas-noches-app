@@ -1,0 +1,24 @@
+{
+  "appId": "com.quirokids.buenasnoches",
+  "appName": "Buenas Noches",
+  "webDir": "public",
+  "server": {
+    "url": "https://app.quirokids.com",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#16222E",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#16222E"
+    },
+    "Purchases": {
+      "apiKey": "REVENUECAT_API_KEY_PLACEHOLDER"
+    }
+  }
+}

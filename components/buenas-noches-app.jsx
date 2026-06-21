@@ -6854,18 +6854,80 @@ function AdminSection({ strings, language, onHome }) {
                         {isExpanded ? (
                           <tr key={`${user.email}-detail`} style={{ borderBottom: "1px solid var(--border)" }}>
                             <td colSpan={5} style={{ padding: 0 }}>
-                              <div style={{ background: "rgba(255,248,239,.03)", padding: "16px 16px 16px 44px", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                              <div style={{ background: "rgba(255,248,239,.03)", padding: "20px 20px 20px 50px" }}>
                                 {user.children.map(child => {
-                                  const childLogs = Array.from(user.logsByChild.get(child.id) || []);
-                                  const avgLatency = childLogs.length ? Math.round(childLogs.reduce((s,l) => s + (l.sleep_latency_minutes || 0), 0) / childLogs.length) : null;
+                                  const childLogs = [...(user.logsByChild.get(child.id) || [])]
+                                    .filter(l => l.log_date && Number.isFinite(Number(l.sleep_latency_minutes)))
+                                    .sort((a,b) => a.log_date < b.log_date ? -1 : 1)
+                                    .slice(-14);
+                                  const avg = childLogs.length ? Math.round(childLogs.reduce((s,l) => s + Number(l.sleep_latency_minutes), 0) / childLogs.length) : null;
+                                  const maxVal = childLogs.length ? Math.max(...childLogs.map(l => Number(l.sleep_latency_minutes)), 15) : 60;
+                                  const W = 400, H = 90, PL = 28, PR = 8, PT = 8, PB = 8;
+                                  const cW = W - PL - PR, cH = H - PT - PB;
+                                  const pts = childLogs.map((l,i) => ({
+                                    x: PL + (i / Math.max(childLogs.length - 1, 1)) * cW,
+                                    y: PT + cH - (Number(l.sleep_latency_minutes) / maxVal) * cH,
+                                  }));
+                                  const linePath = pts.length > 1 ? pts.map((p,i) => {
+                                    if (i === 0) return `M${p.x},${p.y}`;
+                                    const prev = pts[i-1];
+                                    const cpx = prev.x + (p.x - prev.x) * 0.35;
+                                    return `C${cpx},${prev.y} ${p.x - (p.x - prev.x)*0.35},${p.y} ${p.x},${p.y}`;
+                                  }).join(" ") : null;
+                                  const areaPath = linePath ? `${linePath} L${pts[pts.length-1].x},${PT+cH} L${pts[0].x},${PT+cH} Z` : null;
+                                  const yTicks = [0, 0.5, 1].map(t => ({ y: PT + cH*(1-t), v: Math.round(maxVal*t) }));
+                                  const lastLog = childLogs[childLogs.length - 1];
+
                                   return (
-                                    <div key={child.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", minWidth: 200 }}>
-                                      <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 2 }}>{child.child_name || "Sin nombre"}, {child.age_years ?? "?"} anos</div>
-                                      <div style={{ fontSize: 11.5, color: "var(--aqua)", fontWeight: 600, marginBottom: 8 }}>Perfil: {child.primary_profile || "Sin perfil"}</div>
-                                      <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.6 }}>
-                                        {avgLatency !== null ? <span>Promedio para dormir: <b style={{ color: "var(--ink)", fontFamily: "'JetBrains Mono', monospace" }}>{avgLatency} min</b><br /></span> : null}
-                                        <span>Noches registradas: <b style={{ color: "var(--ink)", fontFamily: "'JetBrains Mono', monospace" }}>{childLogs.length}</b></span>
+                                    <div key={child.id} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", marginBottom: 12 }}>
+                                      {/* Header */}
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                                        <div>
+                                          <div style={{ fontWeight: 700, fontSize: 14 }}>{child.child_name || "Sin nombre"}</div>
+                                          <div style={{ fontSize: 11.5, color: "var(--aqua)", fontWeight: 600, marginTop: 2 }}>{child.primary_profile || "Sin perfil"} · {child.age_years ?? "?"} anos</div>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 10 }}>
+                                          {[
+                                            { label: "Promedio", value: avg !== null ? `${avg} min` : "--" },
+                                            { label: "Ultima noche", value: lastLog ? `${lastLog.sleep_latency_minutes} min` : "--" },
+                                            { label: "Registros", value: String(childLogs.length) },
+                                          ].map((s,i) => (
+                                            <div key={i} style={{ background: "var(--navy-700)", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+                                              <div style={{ fontSize: 9.5, color: "var(--ink-soft)", marginBottom: 3, textTransform: "uppercase", letterSpacing: ".05em" }}>{s.label}</div>
+                                              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 600 }}>{s.value}</div>
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
+                                      {/* Chart */}
+                                      {childLogs.length > 1 ? (
+                                        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block", borderRadius: 8 }}>
+                                          {yTicks.map((t,i) => (
+                                            <g key={i}>
+                                              <line x1={PL} x2={W-PR} y1={t.y} y2={t.y} stroke="rgba(255,248,239,.06)" strokeWidth="1" />
+                                              <text x={PL-4} y={t.y+3} textAnchor="end" fill="rgba(255,248,239,.35)" fontSize="8" fontFamily="JetBrains Mono, monospace">{t.v}</text>
+                                            </g>
+                                          ))}
+                                          {areaPath && <path d={areaPath} fill="rgba(214,168,92,.1)" />}
+                                          {linePath && <path d={linePath} fill="none" stroke="#D6A85C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+                                          {pts.map((p,i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill="#D6A85C" />)}
+                                        </svg>
+                                      ) : (
+                                        <p style={{ fontSize: 12, color: "var(--ink-soft)", textAlign: "center", padding: "10px 0" }}>
+                                          {childLogs.length === 0 ? "Sin noches registradas aun." : "Necesita al menos 2 registros para el grafico."}
+                                        </p>
+                                      )}
+                                      {/* Recent nights list */}
+                                      {childLogs.length > 0 ? (
+                                        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 6 }}>
+                                          {[...childLogs].reverse().slice(0, 7).map((log, i) => (
+                                            <div key={i} style={{ fontSize: 10.5, color: "var(--ink-soft)" }}>
+                                              <span style={{ color: "var(--ink-soft)" }}>{log.log_date?.slice(5)}</span>
+                                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "var(--ink)", marginLeft: 6, fontWeight: 600 }}>{log.sleep_latency_minutes} min</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : null}
                                     </div>
                                   );
                                 })}
