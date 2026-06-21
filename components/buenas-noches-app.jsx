@@ -3287,6 +3287,8 @@ export default function BuenasNochesApp() {
               {state.activeSection === "routine" ? (
                 <RoutineSection
                   activeChild={activeChild}
+                  allChildren={state.children.filter(c => c.primaryProfile)}
+                  onSelectRoutineChild={(childId) => requestRoutine(childId)}
                   strings={strings}
                   profileMap={profileMap}
                   routineForm={state.routineForm}
@@ -4914,6 +4916,8 @@ function startAmbientSound(soundMode) {
 
 function RoutineSection({
   activeChild,
+  allChildren = [],
+  onSelectRoutineChild,
   strings,
   profileMap,
   routineForm,
@@ -5154,6 +5158,38 @@ function RoutineSection({
             {strings.backToChildren}
           </button>
         </div>
+        {allChildren.length > 1 ? (
+          <div style={{ marginBottom: 4 }}>
+            <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>Para quien es la rutina de hoy?</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {allChildren.map((child) => {
+                const isActive = child.id === activeChild?.id;
+                return (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => onSelectRoutineChild?.(child.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 14px", borderRadius: 14, cursor: "pointer",
+                      background: isActive ? "rgba(244,231,178,.12)" : "var(--navy-700)",
+                      border: isActive ? "1.5px solid var(--moon)" : "1.5px solid transparent",
+                      color: "var(--ink)", textAlign: "left",
+                    }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--navy-600)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                      {child.name?.[0] || "?"}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{child.name}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>{profileMap?.[child.primaryProfile]?.name || child.primaryProfile}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
         <form className="stack" onSubmit={onGenerateRoutine}>
           <label className="stack compact">
             <span>{strings.wakeTime}</span>
