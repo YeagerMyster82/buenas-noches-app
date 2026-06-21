@@ -5,3 +5,4 @@ node_modules
 .next
 out
 dist
+public/audio/*.mp3
