@@ -37,7 +37,7 @@ export async function POST(request) {
     return Response.json({ ok: true, reply });
   }
 
-  // Default: return messages list only (no KPIs, no user data)
+  // Return messages + users (no KPIs, no income, no raw purchases)
   const data = await getAdminDashboardData();
-  return Response.json({ messages: data.messages || [] });
+  return Response.json({ messages: data.messages || [], users: data.users || [] });
 }

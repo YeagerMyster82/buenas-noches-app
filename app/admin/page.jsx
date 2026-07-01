@@ -17,6 +17,7 @@ const ADMIN_TABS = [
 const ASSISTANT_TABS = [
   { id: "messages",      label: "Mensajes" },
   { id: "subscriptions", label: "Suscripciones" },
+  { id: "users",         label: "Usuarios" },
 ];
 
 const MONTHLY_PRICE = 9.99;
@@ -82,7 +83,7 @@ export default function AdminPage() {
       setSavedCode(code);
       setSavedRole("assistant");
       setRole("assistant");
-      setData({ messages: payload.messages || [] });
+      setData({ messages: payload.messages || [], users: payload.users || [] });
       setAuthed(true);
       return;
     }
@@ -105,7 +106,7 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assistantCode: savedCode }),
       });
-      if (res.ok) setData({ messages: (await res.json()).messages || [] });
+      if (res.ok) { const p = await res.json(); setData({ messages: p.messages || [], users: p.users || [] }); }
     }
   }
 
