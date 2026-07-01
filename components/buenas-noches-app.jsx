@@ -269,6 +269,7 @@ const copy = {
     menuLabel: "Menú",
     readyRoom: "Alista su cuarto",
     contactUs: "Contáctanos",
+    mySubscription: "Mi Suscripción",
     editProfile: "Editar perfil",
     editChildProfile: "Editar perfil de",
     saveProfile: "Guardar cambios",
@@ -456,6 +457,7 @@ const copy = {
     menuLabel: "Menu",
     readyRoom: "Prep their room",
     contactUs: "Contact us",
+    mySubscription: "My Subscription",
     editProfile: "Edit profile",
     editChildProfile: "Edit profile for",
     saveProfile: "Save changes",
@@ -1284,6 +1286,7 @@ export default function BuenasNochesApp() {
     { id: "videos", label: strings.sections.videos },
     { id: "wins", label: strings.sections.reviews },
     { id: "contact", label: strings.contactUs, badge: unreadReplies },
+    ...(isVerifiedPremiumState(state) ? [{ id: "subscription", label: strings.mySubscription }] : []),
     ...(adminVisible ? [{ id: "admin", label: strings.sections.admin }] : []),
   ];
   const profileMap = getProfileMap(state.language);
@@ -3055,6 +3058,15 @@ export default function BuenasNochesApp() {
               activeChild={activeChild}
               parentName={state.parentName}
               parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
+            />
+          ) : state.activeSection === "subscription" ? (
+            <SubscriptionScreen
+              language={state.language}
+              strings={strings}
+              userEmail={userEmail}
+              hasPremiumAccess={hasPremiumAccess}
+              onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))}
+              onClose={() => setState((current) => ({ ...current, activeSection: "home" }))}
             />
           ) : state.activeSection === "admin" ? (
             <AdminSection strings={strings} language={state.language} onHome={() => setState((current) => ({ ...current, activeSection: "home" }))} />
@@ -7481,6 +7493,96 @@ function translateAvoidSource(value) {
       "National Sleep Foundation: consistency improves sleep latency.",
   };
   return map[value] || value;
+}
+
+function SubscriptionScreen({ language, strings, userEmail, hasPremiumAccess, onUpgrade, onClose }) {
+  const [subInfo, setSubInfo] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userEmail) { setLoading(false); return; }
+    import(/* webpackIgnore: true */ "@revenuecat/purchases-capacitor")
+      .then(({ Purchases }) => Purchases.getCustomerInfo())
+      .then(({ customerInfo }) => {
+        const active = customerInfo?.entitlements?.active?.["Premium Buenas Noches"];
+        const product = customerInfo?.activeSubscriptions?.[0] || null;
+        setSubInfo({ active: !!active, product, expirationDate: active?.expirationDate || null });
+      })
+      .catch(() => setSubInfo(null))
+      .finally(() => setLoading(false));
+  }, [userEmail]);
+
+  const isAnnual = subInfo?.product?.includes("anual");
+  const expiresAt = subInfo?.expirationDate ? new Date(subInfo.expirationDate).toLocaleDateString(language === "en" ? "en-US" : "es-MX", { year: "numeric", month: "long", day: "numeric" }) : null;
+
+  return (
+    <div style={{ padding: "24px 20px", maxWidth: 420, margin: "0 auto" }}>
+      <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--cream)", fontSize: 22, cursor: "pointer", marginBottom: 12 }}>←</button>
+      <h2 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 22, color: "var(--cream)", margin: "0 0 20px" }}>
+        {language === "en" ? "My Subscription" : "Mi Suscripción"}
+      </h2>
+
+      {loading ? (
+        <p style={{ color: "var(--slate)" }}>Cargando...</p>
+      ) : hasPremiumAccess ? (
+        <div style={{ background: "var(--navy-800)", borderRadius: 16, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 28 }}>⭐</span>
+            <div>
+              <div style={{ fontWeight: 700, color: "var(--cream)", fontSize: 16 }}>
+                {subInfo?.active
+                  ? (isAnnual ? (language === "en" ? "Annual Plan" : "Plan Anual") : (language === "en" ? "Monthly Plan" : "Plan Mensual"))
+                  : (language === "en" ? "Lifetime Access" : "Acceso de por vida")}
+              </div>
+              <div style={{ color: "var(--sage)", fontSize: 13 }}>{language === "en" ? "Premium · Active" : "Premium · Activo"}</div>
+            </div>
+          </div>
+
+          {expiresAt && (
+            <p style={{ color: "var(--slate)", fontSize: 13, margin: "0 0 12px" }}>
+              {language === "en" ? `Renews: ${expiresAt}` : `Renueva: ${expiresAt}`}
+            </p>
+          )}
+
+          {subInfo?.active && !isAnnual && (
+            <button
+              onClick={onUpgrade}
+              style={{ width: "100%", background: "var(--coral)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 0", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 12 }}
+            >
+              {language === "en" ? "Upgrade to Annual — Save 45%" : "Cambiar a Plan Anual — Ahorra 45%"}
+            </button>
+          )}
+
+          <a
+            href="https://apps.apple.com/account/subscriptions"
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: "block", textAlign: "center", color: "var(--slate)", fontSize: 13, marginTop: 4 }}
+          >
+            {language === "en" ? "Manage or cancel in App Store →" : "Administrar o cancelar en App Store →"}
+          </a>
+        </div>
+      ) : (
+        <div style={{ background: "var(--navy-800)", borderRadius: 16, padding: 20 }}>
+          <p style={{ color: "var(--slate)", marginBottom: 16 }}>
+            {language === "en" ? "You don't have an active subscription yet." : "No tienes una suscripción activa aún."}
+          </p>
+          <button
+            onClick={onUpgrade}
+            style={{ width: "100%", background: "var(--coral)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 0", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+          >
+            {language === "en" ? "View Plans" : "Ver Planes"}
+          </button>
+        </div>
+      )}
+
+      <p style={{ color: "var(--slate)", fontSize: 12, textAlign: "center", marginTop: 16 }}>
+        {language === "en"
+          ? "Subscriptions are managed through Apple. To cancel, visit your App Store account."
+          : "Las suscripciones se administran a través de Apple. Para cancelar, visita tu cuenta en el App Store."}
+      </p>
+    </div>
+  );
 }
 
 function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
