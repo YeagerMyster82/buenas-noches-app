@@ -1,5 +1,6 @@
 import { listSupportMessagesForEmail, saveSupportMessage, saveSupportReply } from "../../../lib/community-data";
 import { notifyAdmins } from "../../../lib/push-notifications";
+import { sendAdminEmail } from "../../../lib/email";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -35,8 +36,18 @@ export async function POST(request) {
           url: "/?section=admin",
         });
       } catch {
-        // The reply should still be saved even if push is not configured yet.
+        // push optional
       }
+
+      await sendAdminEmail({
+        subject: "💬 Respuesta de usuario — Buenas Noches",
+        html: `
+          <h2>Un usuario respondió en Contáctanos</h2>
+          <p><strong>Mensaje:</strong></p>
+          <blockquote>${payload.message || "—"}</blockquote>
+          <p><a href="https://app.quirokids.com/?section=admin">Ver en el panel de admin →</a></p>
+        `,
+      }).catch(() => {});
 
       return Response.json({ ok: true, reply });
     }
@@ -56,8 +67,22 @@ export async function POST(request) {
         url: "/?section=admin",
       });
     } catch {
-      // The message should still be saved even if push is not configured yet.
+      // push optional
     }
+
+    await sendAdminEmail({
+      subject: `💬 Nuevo mensaje — ${payload.parentName || payload.email || "Usuario"}`,
+      html: `
+        <h2>Nuevo mensaje de soporte</h2>
+        <p><strong>Nombre:</strong> ${payload.parentName || "—"}</p>
+        <p><strong>Email:</strong> ${payload.email || "—"}</p>
+        <p><strong>Niño:</strong> ${payload.childName || "—"}</p>
+        <p><strong>Tema:</strong> ${payload.topic || "—"}</p>
+        <p><strong>Mensaje:</strong></p>
+        <blockquote>${payload.message || "—"}</blockquote>
+        <p><a href="https://app.quirokids.com/?section=admin">Ver en el panel de admin →</a></p>
+      `,
+    }).catch(() => {});
 
     return Response.json({ ok: true, message });
   } catch (error) {
