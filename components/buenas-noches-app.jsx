@@ -1117,6 +1117,8 @@ export default function BuenasNochesApp() {
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
   const lastPremiumRefreshAttemptRef = useRef(0);
   const [adminVisible, setAdminVisible] = useState(false);
+  const [unreadReplies, setUnreadReplies] = useState(0);
+  const lastSeenContactRef = useRef(0);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
@@ -1237,6 +1239,33 @@ export default function BuenasNochesApp() {
     };
   }, [state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus, state.premiumAccess]);
 
+  // Poll for unread admin replies every 60s
+  useEffect(() => {
+    const email = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
+    if (!email) return;
+
+    function checkUnread() {
+      fetch(`/api/support-message?email=${encodeURIComponent(email)}`)
+        .then((r) => r.json())
+        .then((payload) => {
+          const messages = payload.messages || [];
+          const count = messages.reduce((n, thread) => {
+            const adminReplies = (thread.replies || []).filter((r) => r.sender === "admin");
+            const latestAdmin = adminReplies[adminReplies.length - 1];
+            if (!latestAdmin) return n;
+            const replyTime = new Date(latestAdmin.created_at).getTime();
+            return replyTime > lastSeenContactRef.current ? n + 1 : n;
+          }, 0);
+          setUnreadReplies(count);
+        })
+        .catch(() => {});
+    }
+
+    checkUnread();
+    const interval = window.setInterval(checkUnread, 60000);
+    return () => window.clearInterval(interval);
+  }, [state.verifiedEmail, state.parentEmail, state.purchaseEmail]);
+
   const childSlots = useMemo(() => getChildSlots(state.premiumAccess), [state.premiumAccess]);
   const strings = copy[state.language] || copy.es;
   const bottomMenuOptions = [
@@ -1254,7 +1283,7 @@ export default function BuenasNochesApp() {
     { id: "child", label: strings.sections.child },
     { id: "videos", label: strings.sections.videos },
     { id: "wins", label: strings.sections.reviews },
-    { id: "contact", label: strings.contactUs },
+    { id: "contact", label: strings.contactUs, badge: unreadReplies },
     ...(adminVisible ? [{ id: "admin", label: strings.sections.admin }] : []),
   ];
   const profileMap = getProfileMap(state.language);
@@ -1348,6 +1377,10 @@ export default function BuenasNochesApp() {
       return;
     }
 
+    if (value === "contact") {
+      lastSeenContactRef.current = Date.now();
+      setUnreadReplies(0);
+    }
     setState((current) => ({ ...current, activeSection: value }));
   }
 
@@ -3659,7 +3692,16 @@ function BottomAppNav({ options, activeSection, onSelect }) {
             className={active ? "bottom-app-nav__item is-active" : "bottom-app-nav__item"}
             onClick={() => onSelect(option.id)}
           >
-            <NavIcon id={option.id} />
+            <span style={{ position: "relative", display: "inline-flex" }}>
+              <NavIcon id={option.id} />
+              {option.badge > 0 && (
+                <span style={{
+                  position: "absolute", top: -3, right: -5,
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: "var(--coral)", border: "1.5px solid var(--navy-950)",
+                }} />
+              )}
+            </span>
             <small>{option.label}</small>
           </button>
         );
