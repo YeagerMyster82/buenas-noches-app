@@ -807,6 +807,7 @@ const initialState = {
   sleepWindowOpen: false,
   sleepWindowCompleted: false,
   premiumRoutineGateOpen: false,
+  showPaywall: false,
   quickSleepTimer: {
     startedAt: "",
     running: false,
@@ -1343,17 +1344,7 @@ export default function BuenasNochesApp() {
     }
 
     if (value === "purchase") {
-      const nextState = {
-        ...state,
-        activeSection: "home",
-        premiumRoutineGateOpen: false,
-        routinePreviewOpen: false,
-        sleepWindowOpen: false,
-        accountLookupOpen: false,
-      };
-      window.localStorage.setItem(storageKey, JSON.stringify(nextState));
-      setState(nextState);
-      window.location.href = SALES_FUNNEL_URL;
+      setState((current) => ({ ...current, showPaywall: true }));
       return;
     }
 
@@ -1443,8 +1434,7 @@ export default function BuenasNochesApp() {
       revealedResult: null,
     };
     window.localStorage.setItem(storageKey, JSON.stringify(nextState));
-    setState(nextState);
-    window.location.href = SALES_FUNNEL_URL;
+    setState({ ...nextState, showPaywall: true });
   }
 
   function saveParentSettings(event) {
@@ -2528,8 +2518,22 @@ export default function BuenasNochesApp() {
     ? /ronquidos|respirar|convuls|dolor|regresi|insomnio|autoles/i.test(activeChild.logs[0].notes)
     : false;
 
+  const userEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail || "";
+
   return (
     <main className="shell app-shell">
+      {state.showPaywall ? (
+        <PaywallScreen
+          language={state.language}
+          userEmail={userEmail}
+          onClose={() => setState((current) => ({ ...current, showPaywall: false }))}
+          onPurchaseSuccess={() => {
+            setState((current) => ({ ...current, showPaywall: false }));
+            checkPremiumAccessForEmail(userEmail, { silent: false });
+          }}
+        />
+      ) : null}
+
       {editingChild ? (
         <EditProfileModal
           activeChild={editingChild}
@@ -7435,4 +7439,171 @@ function translateAvoidSource(value) {
       "National Sleep Foundation: consistency improves sleep latency.",
   };
   return map[value] || value;
+}
+
+function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
+  const isEs = language !== "en";
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [restoring, setRestoring] = useState(false);
+  const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
+
+  async function handlePurchase(type) {
+    if (!isNative) {
+      window.location.href = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      const offering = await getOfferings();
+      if (!offering) throw new Error("No hay ofertas disponibles");
+      const pkg = offering.availablePackages?.find((p) =>
+        type === "annual" ? p.packageType === "ANNUAL" : p.packageType === "MONTHLY"
+      );
+      if (!pkg) throw new Error("Producto no encontrado");
+      const info = await purchasePackage(pkg);
+      if (hasEntitlement(info)) {
+        onPurchaseSuccess?.();
+      }
+    } catch (e) {
+      if (!String(e?.message).includes("userCancelled")) {
+        setError(isEs ? "No se pudo completar la compra. Intenta de nuevo." : "Purchase could not be completed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRestore() {
+    if (!isNative) return;
+    setRestoring(true);
+    setError("");
+    try {
+      const { restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
+      const info = await restorePurchases();
+      if (hasEntitlement(info)) {
+        onPurchaseSuccess?.();
+      } else {
+        setError(isEs ? "No encontramos una compra activa para restaurar." : "No active purchase found to restore.");
+      }
+    } catch {
+      setError(isEs ? "Error al restaurar. Intenta de nuevo." : "Restore failed. Please try again.");
+    } finally {
+      setRestoring(false);
+    }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9000, background: "var(--navy-950)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "20px 20px 0", display: "flex", justifyContent: "flex-end" }}>
+        {onClose && (
+          <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "var(--ink-soft)", cursor: "pointer", padding: 8 }}>
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      <div style={{ flex: 1, padding: "12px 20px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 420, margin: "0 auto", width: "100%" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>🌙</div>
+          <h1 style={{ fontFamily: "Baloo 2, sans-serif", fontSize: 26, fontWeight: 800, color: "var(--moon)", margin: "0 0 8px" }}>
+            {isEs ? "Buenas Noches Premium" : "Buenas Noches Premium"}
+          </h1>
+          <p style={{ color: "var(--ink-soft)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+            {isEs
+              ? "Rutinas personalizadas, videos de expertos y seguimiento del sueno de tu hijo cada noche."
+              : "Personalized routines, expert videos, and your child's sleep tracked every night."}
+          </p>
+        </div>
+
+        {/* Features */}
+        {[
+          { icon: "✨", text: isEs ? "Rutina guiada paso a paso cada noche" : "Step-by-step guided routine every night" },
+          { icon: "📊", text: isEs ? "Reportes de sueno y latencia" : "Sleep reports and latency tracking" },
+          { icon: "🎬", text: isEs ? "Videos de expertos en sueno infantil" : "Expert pediatric sleep videos" },
+          { icon: "👶", text: isEs ? "Hasta 3 perfiles de ninos" : "Up to 3 child profiles" },
+          { icon: "💬", text: isEs ? "Acceso a la comunidad de padres" : "Access to parent community" },
+        ].map((f) => (
+          <div key={f.text} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>{f.icon}</span>
+            <span style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}>{f.text}</span>
+          </div>
+        ))}
+
+        {/* Price cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Annual */}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handlePurchase("annual")}
+            style={{
+              background: "linear-gradient(135deg, rgba(244,231,178,.18), rgba(244,231,178,.08))",
+              border: "2px solid var(--moon)",
+              borderRadius: 16,
+              padding: "16px 18px",
+              cursor: "pointer",
+              textAlign: "left",
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            <div style={{ position: "absolute", top: -10, right: 14, background: "var(--moon)", color: "#16222e", fontSize: 11, fontWeight: 800, borderRadius: 20, padding: "2px 10px" }}>
+              {isEs ? "MEJOR VALOR" : "BEST VALUE"}
+            </div>
+            <div style={{ fontFamily: "Baloo 2, sans-serif", fontWeight: 700, fontSize: 17, color: "var(--moon)", marginBottom: 2 }}>
+              {isEs ? "Plan Anual" : "Annual Plan"}
+            </div>
+            <div style={{ color: "var(--ink-soft)", fontSize: 13 }}>
+              $66 / {isEs ? "ano" : "year"} &middot; <span style={{ color: "var(--green)" }}>{isEs ? "Ahorra 45%" : "Save 45%"}</span>
+            </div>
+          </button>
+
+          {/* Monthly */}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handlePurchase("monthly")}
+            style={{
+              background: "var(--navy-800)",
+              border: "1.5px solid rgba(255,248,239,.15)",
+              borderRadius: 16,
+              padding: "16px 18px",
+              cursor: "pointer",
+              textAlign: "left",
+              width: "100%",
+            }}
+          >
+            <div style={{ fontFamily: "Baloo 2, sans-serif", fontWeight: 700, fontSize: 17, color: "var(--ink)", marginBottom: 2 }}>
+              {isEs ? "Plan Mensual" : "Monthly Plan"}
+            </div>
+            <div style={{ color: "var(--ink-soft)", fontSize: 13 }}>
+              $9.99 / {isEs ? "mes" : "month"}
+            </div>
+          </button>
+        </div>
+
+        {error ? <p style={{ color: "var(--coral)", fontSize: 13, textAlign: "center", margin: 0 }}>{error}</p> : null}
+        {loading ? <p style={{ color: "var(--ink-soft)", fontSize: 13, textAlign: "center", margin: 0 }}>{isEs ? "Procesando..." : "Processing..."}</p> : null}
+
+        {/* Restore */}
+        {isNative && (
+          <button type="button" onClick={handleRestore} disabled={restoring} style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, cursor: "pointer", textDecoration: "underline", textAlign: "center" }}>
+            {restoring ? (isEs ? "Restaurando..." : "Restoring...") : (isEs ? "Restaurar compra anterior" : "Restore previous purchase")}
+          </button>
+        )}
+
+        <p style={{ color: "var(--ink-soft)", fontSize: 11, textAlign: "center", lineHeight: 1.6, margin: 0 }}>
+          {isEs
+            ? "Se renueva automaticamente. Cancela cuando quieras desde Ajustes > Suscripciones en tu iPhone."
+            : "Auto-renews. Cancel anytime from Settings > Subscriptions on your iPhone."}
+        </p>
+      </div>
+    </div>
+  );
 }
