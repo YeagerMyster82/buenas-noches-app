@@ -756,6 +756,8 @@ const initialState = {
   persistenceMessage: "",
   ratingPromptShown: false,
   showRatingPrompt: false,
+  cancelFeedbackCount: 0,
+  showCancellationModal: false,
   parentName: "",
   parentLastName: "",
   parentEmail: "",
@@ -2653,6 +2655,21 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
+      {state.showCancellationModal ? (
+        <CancellationModal
+          isFirstCancel={state.cancelFeedbackCount === 0}
+          userEmail={state.verifiedEmail || state.parentEmail}
+          onClose={() => setState((cur) => ({ ...cur, showCancellationModal: false }))}
+          onCancelComplete={(acceptedFreeMonth) => {
+            setState((cur) => ({
+              ...cur,
+              showCancellationModal: false,
+              cancelFeedbackCount: cur.cancelFeedbackCount + 1,
+            }));
+          }}
+        />
+      ) : null}
+
       {!hasPremiumAccess ? (
         <section className="gate-shell">
           <AppTopBar
@@ -3043,9 +3060,11 @@ export default function BuenasNochesApp() {
               hasPremiumAccess={hasPremiumAccess}
               language={state.language}
               userEmail={state.verifiedEmail || state.parentEmail}
+              cancelFeedbackCount={state.cancelFeedbackCount}
               onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
               onSave={saveParentSettings}
               onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))}
+              onCancelSubscription={() => setState((current) => ({ ...current, showCancellationModal: true }))}
             />
           ) : state.activeSection === "tips" ? (
             <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
@@ -3479,9 +3498,11 @@ export default function BuenasNochesApp() {
                   hasPremiumAccess={hasPremiumAccess}
                   language={state.language}
                   userEmail={state.verifiedEmail || state.parentEmail}
+                  cancelFeedbackCount={state.cancelFeedbackCount}
                   onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
                   onSave={saveParentSettings}
                   onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))}
+                  onCancelSubscription={() => setState((current) => ({ ...current, showCancellationModal: true }))}
                 />
               ) : null}
 
@@ -4245,7 +4266,158 @@ function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
   );
 }
 
-function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, onUpgrade }) {
+const CANCEL_REASONS = [
+  "No lo uso",
+  "No funcionó",
+  "No me gusta la app",
+  "Muy caro",
+  "Otro",
+];
+
+function CancellationModal({ isFirstCancel, userEmail, onClose, onCancelComplete }) {
+  const [step, setStep] = useState("feedback"); // "feedback" | "offer" | "thankyou"
+  const [reason, setReason] = useState("");
+  const [otherText, setOtherText] = useState("");
+  const [suggestions, setSuggestions] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    const finalReason = reason === "Otro" ? `Otro: ${otherText}` : reason;
+    try {
+      await fetch("/api/cancellation-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, reason: finalReason, suggestions, isFirstCancel }),
+      });
+    } catch {
+      // non-blocking
+    }
+    setSubmitting(false);
+
+    if (isFirstCancel && suggestions.trim()) {
+      setStep("offer");
+    } else {
+      setStep("thankyou");
+    }
+  }
+
+  function openAppStoreSubscriptions() {
+    const url = "https://apps.apple.com/account/subscriptions";
+    if (typeof window !== "undefined") window.open(url, "_blank");
+  }
+
+  const overlay = { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(10,8,20,.85)", display: "flex", alignItems: "flex-end", justifyContent: "center" };
+  const sheet = { background: "var(--navy-800)", borderRadius: "20px 20px 0 0", padding: "28px 20px 40px", width: "100%", maxWidth: 480 };
+
+  if (step === "offer") {
+    return (
+      <div style={overlay}>
+        <div style={sheet}>
+          <div style={{ fontSize: 40, marginBottom: 12, textAlign: "center" }}>🎁</div>
+          <h2 style={{ textAlign: "center", marginBottom: 8, fontSize: 18, color: "var(--cream)" }}>¡Gracias por tus sugerencias!</h2>
+          <p style={{ color: "var(--ink-soft)", fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+            Nos ayudan a mejorar la app. Como agradecimiento, te regalamos un mes gratis.
+          </p>
+          <button className="button button-primary" type="button" style={{ width: "100%", marginBottom: 14 }}
+            onClick={() => { onCancelComplete(true); onClose(); }}>
+            Aceptar mi mes gratis
+          </button>
+          <div style={{ textAlign: "center" }}>
+            <button type="button"
+              style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => { openAppStoreSubscriptions(); onCancelComplete(false); onClose(); }}>
+              No, gracias — cancelar igual
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "thankyou") {
+    return (
+      <div style={overlay}>
+        <div style={sheet}>
+          <div style={{ fontSize: 40, marginBottom: 12, textAlign: "center" }}>💜</div>
+          <h2 style={{ textAlign: "center", marginBottom: 8, fontSize: 18, color: "var(--cream)" }}>Gracias por tu tiempo con nosotros</h2>
+          <p style={{ color: "var(--ink-soft)", fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+            {isFirstCancel
+              ? "Gracias por tus comentarios. Si cambias de opinión, aquí estaremos."
+              : "Gracias por tu retroalimentación. Estamos aquí si nos necesitas en el futuro."}
+          </p>
+          <button className="button button-secondary" type="button" style={{ width: "100%", marginBottom: 14 }}
+            onClick={() => { openAppStoreSubscriptions(); onCancelComplete(false); onClose(); }}>
+            Ir al App Store para cancelar
+          </button>
+          <button type="button" className="button" style={{ width: "100%", background: "transparent", color: "var(--ink-soft)", fontSize: 13 }}
+            onClick={onClose}>
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={overlay}>
+      <div style={{ ...sheet, maxHeight: "85vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 17, color: "var(--cream)", margin: 0 }}>Cancelar suscripción</h2>
+          <button type="button" onClick={onClose}
+            style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        <p style={{ color: "var(--ink-soft)", fontSize: 14, marginBottom: 16 }}>
+          Nos apena verte ir. ¿Puedes contarnos por qué?
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {CANCEL_REASONS.map((r) => (
+            <button key={r} type="button"
+              onClick={() => setReason(r)}
+              style={{
+                textAlign: "left", padding: "12px 14px", borderRadius: 10, cursor: "pointer", fontSize: 14,
+                background: reason === r ? "rgba(244,231,178,.15)" : "var(--navy-900)",
+                border: reason === r ? "1px solid rgba(244,231,178,.4)" : "1px solid var(--border)",
+                color: reason === r ? "var(--moon)" : "var(--cream)",
+              }}>
+              {r}
+            </button>
+          ))}
+        </div>
+        {reason === "Otro" && (
+          <textarea
+            placeholder="Cuéntanos más..."
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+            rows={2}
+            style={{ width: "100%", marginBottom: 16, borderRadius: 10, padding: "10px 12px", background: "var(--navy-900)", border: "1px solid var(--border)", color: "var(--cream)", fontSize: 14, resize: "none", boxSizing: "border-box" }}
+          />
+        )}
+        <label style={{ display: "block", fontSize: 13, color: "var(--ink-soft)", marginBottom: 6 }}>
+          ¿Cómo podríamos mejorar la app? (opcional)
+        </label>
+        <textarea
+          placeholder="Tus sugerencias nos ayudan a mejorar..."
+          value={suggestions}
+          onChange={(e) => setSuggestions(e.target.value)}
+          rows={3}
+          style={{ width: "100%", marginBottom: 20, borderRadius: 10, padding: "10px 12px", background: "var(--navy-900)", border: "1px solid var(--border)", color: "var(--cream)", fontSize: 14, resize: "none", boxSizing: "border-box" }}
+        />
+        <button className="button button-primary" type="button" style={{ width: "100%", marginBottom: 10 }}
+          disabled={!reason || submitting}
+          onClick={handleSubmit}>
+          {submitting ? "Enviando..." : "Continuar"}
+        </button>
+        <button type="button" className="button" style={{ width: "100%", background: "transparent", color: "var(--ink-soft)", fontSize: 13 }}
+          onClick={onClose}>
+          Volver — mantener mi suscripción
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, cancelFeedbackCount, onUpgrade, onCancelClick }) {
   const [subInfo, setSubInfo] = useState(undefined);
 
   useEffect(() => {
@@ -4309,11 +4481,19 @@ function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, onUpgra
           </button>
         ) : null}
       </div>
+      {subInfo?.active ? (
+        <div style={{ marginTop: 12, textAlign: "right" }}>
+          <button type="button" onClick={onCancelClick}
+            style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+            Cancelar suscripción
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, parentPhotoUrl, hasPremiumAccess, language, userEmail, onChange, onSave, onUpgrade }) {
+function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, parentPhotoUrl, hasPremiumAccess, language, userEmail, cancelFeedbackCount, onChange, onSave, onUpgrade, onCancelSubscription }) {
   function handlePhotoChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -4346,7 +4526,9 @@ function ParentSettingsSection({ strings, parentName, parentLastName, parentEmai
         hasPremiumAccess={hasPremiumAccess}
         language={language}
         userEmail={userEmail}
+        cancelFeedbackCount={cancelFeedbackCount}
         onUpgrade={onUpgrade}
+        onCancelClick={onCancelSubscription}
       />
       <form className="stack" onSubmit={onSave} style={{ marginTop: 20 }}>
         <label className="stack compact">
