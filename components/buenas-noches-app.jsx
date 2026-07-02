@@ -2930,37 +2930,6 @@ export default function BuenasNochesApp() {
                 );
               })() : null}
 
-              {/* Trust card */}
-              <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14 }}>
-                <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por que confiar en Buenas Noches</h3>
-                {[
-                  {
-                    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4.4-2.3 8-6 8-11V6l-8-4-8 4v4c0 5 3.6 8.7 8 11Z" />,
-                    title: "Unico centro de quiropractica neurologica pediatrica en Peru",
-                    body: "Buenas Noches nace de la experiencia clinica real de QuiroKids con cientos de familias."
-                  },
-                  {
-                    icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z" />,
-                    title: "Cada rutina esta respaldada por evidencia",
-                    body: "Las recomendaciones citan fuentes como Harvard Medical School y la American Academy of Sleep Medicine."
-                  }
-                ].map((row, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(244,231,178,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
-                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" width="15" height="15">{row.icon}</svg>
-                    </div>
-                    <div>
-                      <strong style={{ fontSize: 12.5, display: "block", marginBottom: 2 }}>{row.title}</strong>
-                      <span style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{row.body}</span>
-                    </div>
-                  </div>
-                ))}
-                <blockquote style={{ margin: 0, padding: "13px 14px", borderRadius: 13, background: "rgba(15,22,38,.35)", fontSize: 12, fontStyle: "italic", color: "rgba(255,248,239,.8)", lineHeight: 1.6, borderLeft: "2px solid var(--moon)" }}>
-                  Llevamos anos ayudando a familias a entender el sistema nervioso de sus hijos en consulta. Cree esta app para que esa misma guia este disponible cada noche, no solo una vez al mes.
-                  <div style={{ marginTop: 8, fontStyle: "normal", fontSize: 11, fontWeight: 700, color: "var(--moon)" }}>- Joline Yeager, fundadora de QuiroKids</div>
-                </blockquote>
-              </article>
-
               {/* Upsell card */}
               {activeChild && !state.premiumRoutineGateOpen ? (
                 <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
@@ -3292,25 +3261,6 @@ export default function BuenasNochesApp() {
                       </article>
                     );
                   })() : null}
-                  {/* Trust card */}
-                  <article className="card card--feature" style={{ background: "linear-gradient(155deg, rgba(244,231,178,.1), rgba(158,207,210,.06))", border: "1px solid rgba(244,231,178,.2)", gap: 14 }}>
-                    <h3 style={{ fontFamily: "'Baloo 2', sans-serif", marginBottom: 0 }}>Por que confiar en Buenas Noches</h3>
-                    {[
-                      { icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c4.4-2.3 8-6 8-11V6l-8-4-8 4v4c0 5 3.6 8.7 8 11Z" />, title: "Unico centro de quiropractica neurologica pediatrica en Peru", body: "Buenas Noches nace de la experiencia clinica real de QuiroKids con cientos de familias." },
-                      { icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z" />, title: "Cada rutina esta respaldada por evidencia", body: "Las recomendaciones citan fuentes como Harvard Medical School y la American Academy of Sleep Medicine." }
-                    ].map((row, i) => (
-                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                        <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(244,231,178,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
-                          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" width="15" height="15">{row.icon}</svg>
-                        </div>
-                        <div><strong style={{ fontSize: 12.5, display: "block", marginBottom: 2 }}>{row.title}</strong><span style={{ fontSize: 11.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>{row.body}</span></div>
-                      </div>
-                    ))}
-                    <blockquote style={{ margin: 0, padding: "13px 14px", borderRadius: 13, background: "rgba(15,22,38,.35)", fontSize: 12, fontStyle: "italic", color: "rgba(255,248,239,.8)", lineHeight: 1.6, borderLeft: "2px solid var(--moon)" }}>
-                      Llevamos anos ayudando a familias a entender el sistema nervioso de sus hijos en consulta. Cree esta app para que esa misma guia este disponible cada noche.
-                      <div style={{ marginTop: 8, fontStyle: "normal", fontSize: 11, fontWeight: 700, color: "var(--moon)" }}>- Joline Yeager, fundadora de QuiroKids</div>
-                    </blockquote>
-                  </article>
                   {/* Upsell card */}
                   <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
                     <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(244,231,178,.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
@@ -3382,16 +3332,25 @@ export default function BuenasNochesApp() {
 
               {state.activeSection === "routine" ? (
                 <>
-                  {/* Segmented control — matches mockup: Esta noche / Facilitar / Evitar / Alimentos */}
-                  <div style={{ display: "flex", background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 13, padding: 4, marginBottom: 16, gap: 3 }}>
-                    {[["tonight", "Esta noche"], ["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
-                      <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: id }))}
-                        style={{ flex: 1, textAlign: "center", padding: "9px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-                          background: state.routineSubTab === id ? "var(--moon)" : "transparent",
-                          color: state.routineSubTab === id ? "var(--navy-950)" : "var(--ink-soft)" }}>
-                        {label}
-                      </button>
-                    ))}
+                  {/* Segmented control — Esta noche is primary, rest are secondary */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                    <button type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: "tonight" }))}
+                      style={{ width: "100%", textAlign: "center", padding: "12px", borderRadius: 13, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none",
+                        background: state.routineSubTab === "tonight" ? "var(--moon)" : "var(--navy-800)",
+                        color: state.routineSubTab === "tonight" ? "var(--navy-950)" : "var(--ink-soft)",
+                        borderColor: "var(--border)", borderWidth: 1, borderStyle: "solid" }}>
+                      🌙 Esta noche
+                    </button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
+                        <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: id }))}
+                          style={{ flex: 1, textAlign: "center", padding: "7px 4px", borderRadius: 10, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
+                            background: state.routineSubTab === id ? "var(--navy-700)" : "transparent",
+                            color: state.routineSubTab === id ? "var(--cream)" : "var(--ink-soft)" }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {state.routineSubTab === "tonight" ? <RoutineSection
                   activeChild={activeChild}
@@ -3665,17 +3624,6 @@ function AppTopBar({
         </div>
       </div>
 
-      {/* Trust strip */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 6, padding: "6px 14px 8px",
-        fontSize: 10.5, color: "var(--moon)", fontWeight: 700, letterSpacing: ".01em",
-        borderTop: "1px solid var(--border)"
-      }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-        Creado por especialistas en sistema nervioso infantil · QuiroKids® Lima, Perú
-      </div>
     </header>
   );
 }
@@ -5898,17 +5846,7 @@ function RoutineSection({
                   <div className="rating-card" key={step.id}>
                     <strong>{step.selectedActivity.displayName}</strong>
                     <span className="muted">{step.label}</span>
-                    <label className="stack compact">
-                      <span>¿Tu hijo disfrutó esta actividad?</span>
-                      <select name={`enjoyed-${step.id}`} defaultValue="yes">
-                        <option value="yes">Sí</option>
-                        <option value="no">No</option>
-                      </select>
-                    </label>
-                    <details>
-                      <summary>Si no le gustó, ¿qué parte no le gustó?</summary>
-                      <textarea name={`dislike-reason-${step.id}`} placeholder="Ejemplo: no le gustó la presión, el cuento, la canción o la posición." />
-                    </details>
+                    <input type="hidden" name={`enjoyed-${step.id}`} value="yes" />
                   </div>
                 ))}
 
@@ -5946,9 +5884,15 @@ function VideoThumb({ video, isLocked, lockLabel }) {
   }
   if (playing) {
     return (
-      <div className="embedded-video">
-        <iframe src={video.embedUrl.replace("autoplay=false", "autoplay=true")} title={video.title}
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+      <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }}>
+        <button onClick={() => setPlaying(false)} style={{ position: "absolute", top: 16, right: 16, zIndex: 10000, background: "rgba(0,0,0,.6)", border: "none", color: "#fff", fontSize: 22, width: 40, height: 40, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <iframe
+          src={video.embedUrl.replace("autoplay=false", "autoplay=true")}
+          title={video.title}
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          style={{ width: "100%", height: "100%", border: "none" }}
+        />
       </div>
     );
   }
@@ -6098,7 +6042,6 @@ function FoodsSection({ strings, onBack }) {
         ) : null}
       </div>
       <div className="tip-detail-grid">
-        <FoodList title={strings.foodsToAvoid} items={foodAvoidItems} />
         <FoodList title={strings.foodsForSleep} items={foodSleepItems} />
       </div>
     </article>
