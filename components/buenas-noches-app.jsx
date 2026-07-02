@@ -5507,13 +5507,40 @@ function RoutineSection({
             </div>
           </div>
 
+          {/* Dinner conflict warning */}
+          {currentPlan.dinnerConflict ? (
+            <div style={{ background: "rgba(244,231,178,.12)", border: "1px solid rgba(244,231,178,.35)", borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--moon)", marginBottom: 6 }}>
+                🍽️ La cena cae dentro de la rutina
+              </div>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
+                Haz el baño y el pijama <strong>antes de cenar</strong>. Después de la cena, continúa con los dientes, gárgaras y lo que sigue. La hora de dormir se ajustó automáticamente.
+              </p>
+            </div>
+          ) : null}
+
           {/* Step cards */}
-          {currentPlan.steps.map((step) => {
+          {currentPlan.steps.map((step, stepIdx) => {
             const isPersonalized = !!step.selectedActivity;
             const videos = getRoutineVideosForStep(step, currentPlan.profile);
+            const beforeDinnerPhases = ["mover", "conectar", "bano_tibio", "ponerse_pijama", "banarse_y_pijamas", "preparar_para_dormir"];
+            const prevStep = currentPlan.steps[stepIdx - 1];
+            const showDinnerDivider = currentPlan.dinnerConflict
+              && prevStep && beforeDinnerPhases.includes(prevStep.phaseKey)
+              && !beforeDinnerPhases.includes(step.phaseKey);
             const accentColor = isPersonalized ? "var(--moon)" : "var(--aqua)";
             return (
-              <div key={step.id} style={{
+              <React.Fragment key={step.id}>
+              {showDinnerDivider ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, background: "rgba(244,231,178,.25)" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--moon)", whiteSpace: "nowrap" }}>
+                    🍽️ Cena · {fmt12(currentPlan.dinnerTime)}
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(244,231,178,.25)" }} />
+                </div>
+              ) : null}
+              <div style={{
                 background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 16,
                 padding: "15px 16px", borderLeft: `3px solid ${accentColor}`,
               }}>
@@ -5569,6 +5596,7 @@ function RoutineSection({
                   </div>
                 ) : null}
               </div>
+              </React.Fragment>
             );
           })}
 
