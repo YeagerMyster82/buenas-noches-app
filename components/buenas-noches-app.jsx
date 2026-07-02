@@ -754,6 +754,8 @@ const initialState = {
   accessMessage: "",
   premiumAccess: null,
   persistenceMessage: "",
+  ratingPromptShown: false,
+  showRatingPrompt: false,
   parentName: "",
   parentLastName: "",
   parentEmail: "",
@@ -1360,6 +1362,22 @@ export default function BuenasNochesApp() {
     state.parentName,
     state.parentProfileSaved,
   ]);
+
+  // Auto-dismiss persistence message after 5 seconds
+  useEffect(() => {
+    if (!state.persistenceMessage) return;
+    const t = setTimeout(() => setState((cur) => ({ ...cur, persistenceMessage: "" })), 5000);
+    return () => clearTimeout(t);
+  }, [state.persistenceMessage]);
+
+  // Show NPS rating prompt after 7 logged nights
+  useEffect(() => {
+    if (state.ratingPromptShown || state.showRatingPrompt) return;
+    const totalLogs = (state.children || []).reduce((sum, c) => sum + (c.logs?.length || 0), 0);
+    if (totalLogs >= 7) {
+      setState((cur) => ({ ...cur, showRatingPrompt: true, ratingPromptShown: true }));
+    }
+  }, [state.children, state.ratingPromptShown, state.showRatingPrompt]);
 
   function updateChild(childId, updater) {
     setState((current) => ({
@@ -2629,6 +2647,12 @@ export default function BuenasNochesApp() {
         />
       ) : null}
 
+      {state.showRatingPrompt ? (
+        <RatingPromptModal
+          onClose={() => setState((cur) => ({ ...cur, showRatingPrompt: false }))}
+        />
+      ) : null}
+
       {!hasPremiumAccess ? (
         <section className="gate-shell">
           <AppTopBar
@@ -2968,7 +2992,7 @@ export default function BuenasNochesApp() {
                 </article>
               ) : null}
 
-              {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+              {state.persistenceMessage && (state.activeSection === "home" || state.activeSection === "reports" || state.activeSection === "routine") ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
           ) : state.activeSection === "reports" || state.activeSection === "child" ? (
             <>
@@ -2999,7 +3023,7 @@ export default function BuenasNochesApp() {
                 onUpdateActivityEnjoyment={updateActivityEnjoyment}
                 onAddChild={startAddChild}
               />
-              {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+              {state.persistenceMessage && (state.activeSection === "home" || state.activeSection === "reports" || state.activeSection === "routine") ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
             </>
           ) : state.activeSection === "sleep" ? (
             <SleepTrackerSection
@@ -3251,17 +3275,22 @@ export default function BuenasNochesApp() {
           ) : (
             <section className="app-panel">
 
-              {state.persistenceMessage ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
+              {state.persistenceMessage && (state.activeSection === "home" || state.activeSection === "reports" || state.activeSection === "routine") ? <p className="status-message status-success">{state.persistenceMessage}</p> : null}
 
               {state.activeSection === "home" ? (
                 <>
                   {/* Hero card */}
                   {activeChild ? (() => {
-                    const lastLog = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1)[0];
+                    const sortedLogs = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1);
+                    const lastLog = sortedLogs[0];
                     const lastNightHours = lastLog ? calculateTotalSleepHours(lastLog.sleepTime, lastLog.wakeTime, lastLog.napDuration) : null;
                     const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, activeChild.birthday) : 0;
-                    const debtLabel = sleepDebt <= 0 ? "Al dia" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
+                    const debtLabel = sleepDebt <= 0 ? "Al día" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
                     const debtColor = sleepDebt <= 0 ? "var(--green)" : sleepDebt < 1 ? "var(--moon)" : "var(--coral)";
+                    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                    const recentLogs = sortedLogs.filter(l => l.date >= weekAgo);
+                    const avgLatency = recentLogs.length ? Math.round(recentLogs.reduce((s, l) => s + (l.latency || 0), 0) / recentLogs.length) : null;
+                    const highDebtNights = sortedLogs.slice(0, 3).filter(l => calculateSleepDebt(calculateTotalSleepHours(l.sleepTime, l.wakeTime, l.napDuration), activeChild.birthday) >= 1).length;
                     return (
                       <article style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px", position: "relative", overflow: "hidden", color: "var(--ink)" }}>
                         <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
@@ -3271,24 +3300,34 @@ export default function BuenasNochesApp() {
                         ) : (
                           <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(1.2rem,5vw,1.6rem)", fontWeight: 600, lineHeight: 1.2, marginBottom: 6, color: "var(--ink-soft)" }}>Configura la hora en el perfil</div>
                         )}
-                        <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", marginBottom: 14 }}>Meta de sueno para {activeChild.name}</div>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
-                          Deuda de sueno: {debtLabel}
+                        <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", marginBottom: 14 }}>Meta de sueño para {activeChild.name}</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
+                            Deuda de sueño: {debtLabel}
+                          </div>
+                          {recentLogs.length > 0 ? (
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,248,239,.08)", color: "rgba(255,248,239,.7)", border: "1px solid rgba(255,248,239,.15)", padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                              🌙 {recentLogs.length} noche{recentLogs.length !== 1 ? "s" : ""} esta semana
+                            </div>
+                          ) : null}
+                          {avgLatency !== null ? (
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,248,239,.08)", color: "rgba(255,248,239,.7)", border: "1px solid rgba(255,248,239,.15)", padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                              ⏱ Latencia prom: {avgLatency} min
+                            </div>
+                          ) : null}
                         </div>
+                        {highDebtNights >= 2 ? (
+                          <div style={{ background: "rgba(255,107,107,.15)", border: "1px solid rgba(255,107,107,.3)", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "var(--coral)", marginBottom: 14 }}>
+                            ⚠️ {activeChild.name} acumula deuda de sueño. Adelanta la hora de dormir 15–20 min esta semana.
+                          </div>
+                        ) : null}
+                        <button className="button button-primary" type="button" style={{ width: "100%" }} onClick={() => requestRoutine(activeChild?.id)}>
+                          🌙 Generar Rutina personalizada
+                        </button>
                       </article>
                     );
                   })() : null}
-                  {/* Upsell card */}
-                  <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(244,231,178,.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--moon)" }}>
-                      <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.4.3.6.8.6 1.3V16h6v-.8c0-.5.2-1 .6-1.3A6 6 0 0 0 12 3Z" /></svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ fontSize: 13, display: "block", marginBottom: 6, lineHeight: 1.4 }}>Quieres una rutina paso a paso para que {activeChild?.name || "tu hijo"} se duerma mas rapido?</strong>
-                      <button className="button button-primary" style={{ minHeight: 36, padding: "0 14px", fontSize: 12 }} type="button" onClick={() => requestRoutine(activeChild?.id)}>Ver rutina premium</button>
-                    </div>
-                  </article>
                 </>
               ) : null}
 
@@ -3357,7 +3396,7 @@ export default function BuenasNochesApp() {
                         background: state.routineSubTab === "tonight" ? "var(--moon)" : "var(--navy-800)",
                         color: state.routineSubTab === "tonight" ? "var(--navy-950)" : "var(--ink-soft)",
                         borderColor: "var(--border)", borderWidth: 1, borderStyle: "solid" }}>
-                      🌙 Esta noche
+                      🌙 Generar Rutina personalizada
                     </button>
                     <div style={{ display: "flex", gap: 6 }}>
                       {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
@@ -3385,7 +3424,7 @@ export default function BuenasNochesApp() {
                   onClose={() =>
                     setState((current) => ({
                       ...current,
-                      activeSection: "home",
+                      activeSection: "reports",
                       expandedChildId: activeChild?.id || current.expandedChildId,
                       savedLogDate: "",
                     }))
@@ -3571,9 +3610,9 @@ function AppTopBar({
   const avatar = activeChild?.avatar ? avatarMap[activeChild.avatar] : null;
 
   return (
-    <header style={{ background: "var(--navy-950)", borderBottom: "1px solid var(--border)" }}>
+    <header style={{ background: "var(--navy-950)", borderBottom: "1px solid var(--border)", paddingTop: "env(safe-area-inset-top, 0px)" }}>
       {/* Main bar */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10, padding: "10px 14px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto", alignItems: "center", gap: 8, padding: "10px 14px" }}>
 
         {/* Child switcher pill */}
         <div style={{ position: "relative" }}>
@@ -3614,7 +3653,6 @@ function AppTopBar({
 
         {/* Wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
-          <img src="/icons/buenas-noches-icon.svg" alt="" style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0 }} />
           <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
             <span style={{ color: "var(--moon)" }}>BUENAS</span>
             {" "}
@@ -3652,7 +3690,7 @@ function NavIcon({ id }) {
   if (id === "home") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6" /></svg>;
   if (id === "reports") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M3 13h2v8H3v-8Zm5-5h2v13H8V8Zm5-4h2v17h-2V4Zm5 6h2v11h-2v-11Z" /></svg>;
   if (id === "routine") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>;
-  if (id === "child") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-5 0-8 2.24-8 4v1h16v-1c0-1.76-3-4-8-4Z" /></svg>;
+  if (id === "child") return <img src="/ui-icons/icon-child.png" alt="" style={{ ...s, objectFit: "contain" }} />;
   if (id === "videos") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m15 10 4.55-2.55A1 1 0 0 1 21 8.39v7.22a1 1 0 0 1-1.45.9L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z" /></svg>;
   if (id === "purchase") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" /></svg>;
   return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>;
@@ -3775,6 +3813,79 @@ function AccountLookupModal({ strings, email, status, message, onEmailChange, on
           </button>
         </div>
       </article>
+    </div>
+  );
+}
+
+function RatingPromptModal({ onClose }) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!rating) return;
+    fetch("/api/app-feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, feedback }),
+    }).catch(() => {});
+    setSubmitted(true);
+    if (rating >= 5) {
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.location.href.includes("app.quirokids.com")) {
+          window.open("https://apps.apple.com/app/id/buenas-noches", "_blank");
+        }
+        onClose();
+      }, 1500);
+    } else {
+      setTimeout(onClose, 2000);
+    }
+  }
+
+  return (
+    <div className="profile-modal" role="dialog" aria-modal="true" aria-label="Califica la app">
+      <div className="profile-modal__panel card card--soft" style={{ maxWidth: 360 }}>
+        <button className="routine-modal__close" type="button" onClick={onClose}>×</button>
+        {submitted ? (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>{rating >= 5 ? "🌟" : "💙"}</div>
+            <p style={{ fontWeight: 700 }}>{rating >= 5 ? "¡Gracias! Te llevamos a calificarnos." : "Gracias por tu honestidad. Lo tenemos en cuenta."}</p>
+          </div>
+        ) : (
+          <form className="stack" onSubmit={handleSubmit}>
+            <div className="card-header">
+              <span className="section-label">¿Cómo vamos?</span>
+              <h2>Llevas 7 noches usando Buenas Noches</h2>
+            </div>
+            <p style={{ color: "var(--ink-soft)", fontSize: 14 }}>¿Cuántas estrellas le darías a la app?</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", fontSize: 36 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHovered(star)}
+                  onMouseLeave={() => setHovered(0)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 36, padding: 0, color: (hovered || rating) >= star ? "var(--moon)" : "var(--border)" }}
+                >★</button>
+              ))}
+            </div>
+            {rating > 0 && rating < 5 ? (
+              <label className="stack compact">
+                <span>¿Qué necesitarías ver para darte 5 estrellas?</span>
+                <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tu opinión nos ayuda mucho..." style={{ minHeight: 80 }} />
+              </label>
+            ) : null}
+            {rating > 0 ? (
+              <button className="button button-primary" type="submit">
+                {rating >= 5 ? "Calificar en el App Store ★" : "Enviar opinión"}
+              </button>
+            ) : null}
+          </form>
+        )}
+      </div>
     </div>
   );
 }
@@ -4156,27 +4267,13 @@ function ParentSettingsSection({ strings, parentName, parentLastName, parentEmai
         <h2>{strings.parentSettings}</h2>
       </div>
       <form className="stack" onSubmit={onSave}>
-        <div className="profile-photo-editor">
-          <div className="profile-photo-preview">
-            {parentPhotoUrl ? <img src={parentPhotoUrl} alt="" /> : <span>{parentName?.slice(0, 1) || "?"}</span>}
-          </div>
-          <label className="stack compact">
-            <span>Foto para el muro de logros</span>
-            <input type="file" accept="image/*" onChange={handlePhotoChange} />
-          </label>
-          {parentPhotoUrl ? (
-            <button className="button button-ghost" type="button" onClick={() => onChange("parentPhotoUrl", "")}>
-              Quitar foto
-            </button>
-          ) : null}
-        </div>
         <label className="stack compact">
           <span>{strings.parentName}</span>
           <input type="text" value={parentName} onChange={(event) => onChange("parentName", event.target.value)} required />
         </label>
         <label className="stack compact">
           <span>{strings.parentLastName}</span>
-          <input type="text" value={parentLastName} onChange={(event) => onChange("parentLastName", event.target.value)} />
+          <input type="text" value={parentLastName} onChange={(event) => onChange("parentLastName", event.target.value)} required />
         </label>
         <label className="stack compact">
           <span>{strings.parentEmail}</span>
@@ -5793,97 +5890,15 @@ function RoutineSection({
             </div>
           ) : null}
 
-          <article className="card card--soft">
-            <div className="card-header">
-              <span className="section-label">Resumen de rutina</span>
-              <h2>{savedLogDate ? "Rutina registrada exitosamente" : "Revisa y registra esta rutina"}</h2>
-            </div>
-            {savedLogDate ? (
-              <div className="save-confirmation">
-                <strong>Guardado. Esta noche quedó registrada exitosamente.</strong>
-                <p>
-                  {strings.age === "Age"
-                    ? "Your progress graph has been updated."
-                    : "El gráfico de progreso ya fue actualizado."}
-                </p>
-                <button className="button button-primary" type="button" onClick={onClose}>
-                  {strings.backToChildren}
-                </button>
-              </div>
-            ) : (
-            <form className="stack" onSubmit={onSubmitNightLog}>
-              <div className="content-block content-block--light">
-                <p>
-                  {routineSession.inBedAt
-                    ? `La app registró que entró a la cama a las ${routineSession.inBedAt}.`
-                    : "Cuando termines la rutina guiada, la app registrará automáticamente la hora de cama."}
-                </p>
-                <p className="muted">{strings.editTimesHelp}</p>
-              </div>
-              <details className="avoid-card">
-                <summary>Editar horas registradas</summary>
-                <div className="avoid-card__body">
-                  <label className="stack compact">
-                    <span>{strings.routineStartTime}</span>
-                    <input
-                      name="routineStartTime"
-                      type="time"
-                      value={routineSession.startedAt}
-                      onChange={(event) => onRoutineSessionChange({ startedAt: event.target.value })}
-                    />
-                  </label>
-                  <label className="stack compact">
-                    <span>{strings.bedTime}</span>
-                    <input
-                      name="bedTime"
-                      type="time"
-                      value={routineSession.inBedAt}
-                      onChange={(event) => onRoutineSessionChange({ inBedAt: event.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="stack compact">
-                    <span>{strings.sleepTime}</span>
-                    <input
-                      name="sleepTime"
-                      type="time"
-                      value={routineSession.fellAsleepAt}
-                      onChange={(event) => onRoutineSessionChange({ fellAsleepAt: event.target.value })}
-                      required
-                    />
-                  </label>
-                </div>
-              </details>
-              <label className="stack compact">
-                <span>{strings.date}</span>
-                <input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required />
-              </label>
-              {currentPlan.steps
-                .filter((step) => step.selectedActivity)
-                .map((step) => (
-                  <div className="rating-card" key={step.id}>
-                    <strong>{step.selectedActivity.displayName}</strong>
-                    <span className="muted">{step.label}</span>
-                    <input type="hidden" name={`enjoyed-${step.id}`} value="yes" />
-                  </div>
-                ))}
-
-              <label className="stack compact">
-                <span>{strings.notes}</span>
-                <textarea name="notes" placeholder="¿Algo importante de esta noche?" />
-              </label>
-              <button className="button button-primary" type="submit">
-                {strings.saveResults}
+          {savedLogDate ? (
+            <div className="card card--soft save-confirmation">
+              <strong>Rutina registrada exitosamente.</strong>
+              <p>{strings.age === "Age" ? "Your progress graph has been updated." : "El gráfico de progreso ya fue actualizado."}</p>
+              <button className="button button-primary" type="button" onClick={onClose}>
+                Ver reportes
               </button>
-            </form>
-            )}
-            {safetyTriggered ? (
-              <div className="safety-card">
-                Lo que me estás contando va más allá de lo que esta herramienta puede orientar. Merece una evaluación
-                directa con un profesional que pueda ver a tu hijo en persona.
-              </div>
-            ) : null}
-          </article>
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>
@@ -5903,7 +5918,7 @@ function VideoThumb({ video, isLocked, lockLabel }) {
   if (playing) {
     return (
       <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }}>
-        <button onClick={() => setPlaying(false)} style={{ position: "absolute", top: 16, right: 16, zIndex: 10000, background: "rgba(0,0,0,.6)", border: "none", color: "#fff", fontSize: 22, width: 40, height: 40, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <button onClick={() => setPlaying(false)} style={{ position: "absolute", top: "max(54px, calc(env(safe-area-inset-top, 16px) + 16px))", right: 16, zIndex: 10000, background: "rgba(0,0,0,.6)", border: "none", color: "#fff", fontSize: 22, width: 44, height: 44, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
         <iframe
           src={video.embedUrl.replace("autoplay=false", "autoplay=true")}
           title={video.title}
