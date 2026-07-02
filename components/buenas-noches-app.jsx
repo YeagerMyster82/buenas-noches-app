@@ -5634,7 +5634,7 @@ function RoutineSection({
                         setManualInBedMs(now);
                         onRoutineSessionChange({ inBedAt: getCurrentTimeValue(), routineEndTime: getCurrentTimeValue() });
                       }}>
-                        Ya está en la cama
+                        ✓ Rutina completada — a la cama
                       </button>
                     </div>
                   ) : phase === "inBed" ? (
