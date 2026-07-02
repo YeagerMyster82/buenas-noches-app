@@ -5634,7 +5634,7 @@ function RoutineSection({
                         setManualInBedMs(now);
                         onRoutineSessionChange({ inBedAt: getCurrentTimeValue(), routineEndTime: getCurrentTimeValue() });
                       }}>
-                        ✓ Rutina lista — luces apagadas
+                        ✓ Rutina hecha
                       </button>
                     </div>
                   ) : phase === "inBed" ? (
