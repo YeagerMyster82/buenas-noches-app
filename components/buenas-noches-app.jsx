@@ -777,12 +777,13 @@ const initialState = {
     sleepGoal: "",
     takesNap: "no",
   },
-  onboardingMode: "new-child",
+  onboardingMode: "",
   quizIndex: -1,
   answers: [],
   tieCandidates: null,
   quizResult: null,
   revealedResult: null,
+  hasSeenWelcome: false,
   routineForm: {
     wakeTime: "",
     targetBedtime: "",
@@ -2642,8 +2643,7 @@ export default function BuenasNochesApp() {
 
           {state.activeSection !== "admin" &&
           !state.accountLookupOpen &&
-          ((!state.children.length) ||
-            state.onboardingMode === "new-child" ||
+          (state.onboardingMode === "new-child" ||
             state.onboardingMode === "reveal") ? (
             <>
               <article className="card card--soft card--quiz">
@@ -2881,7 +2881,7 @@ export default function BuenasNochesApp() {
             ) : null}
               </article>
             </>
-          ) : !state.parentProfileSaved && state.activeSection !== "admin" ? (
+          ) : !state.parentProfileSaved && state.children.length > 0 && state.activeSection !== "admin" ? (
             <FreeAccountSetup
               strings={strings}
               parentName={state.parentName}
@@ -2929,6 +2929,24 @@ export default function BuenasNochesApp() {
                   </article>
                 );
               })() : null}
+
+              {/* Welcome card for new users */}
+              {!activeChild && !state.children.length ? (
+                <article style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "28px 22px 24px", textAlign: "center" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🌙</div>
+                  <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 22, color: "var(--cream)", margin: "0 0 10px" }}>
+                    {state.language === "en" ? "Welcome to Buenas Noches" : "Bienvenida a Buenas Noches"}
+                  </h2>
+                  <p style={{ color: "var(--ink-soft)", fontSize: 14, lineHeight: 1.6, margin: "0 0 22px" }}>
+                    {state.language === "en"
+                      ? "Create your child's sleep profile to get a personalized bedtime routine."
+                      : "Crea el perfil de sueño de tu hijo para obtener una rutina personalizada."}
+                  </p>
+                  <button className="button button-primary" type="button" onClick={startAddChild} style={{ width: "100%", fontSize: 15 }}>
+                    {state.language === "en" ? "➕ Add a child" : "➕ Agregar a mi hijo"}
+                  </button>
+                </article>
+              ) : null}
 
               {/* Upsell card */}
               {activeChild && !state.premiumRoutineGateOpen ? (
@@ -3057,7 +3075,7 @@ export default function BuenasNochesApp() {
             onOpenSettings={() => setState((current) => ({ ...current, activeSection: "settings" }))}
           />
 
-          {state.activeSection !== "admin" && (!state.children.length || state.onboardingMode === "new-child") && !state.accountLookupOpen ? (
+          {state.activeSection !== "admin" && state.onboardingMode === "new-child" && !state.accountLookupOpen ? (
             <section className="app-panel">
               <article className="card card--soft card--quiz">
                 {state.children.length > 0 ? (
