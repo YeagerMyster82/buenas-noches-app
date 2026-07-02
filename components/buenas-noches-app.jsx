@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   getProfileMap,
   getQuestions,
@@ -3432,7 +3432,7 @@ export default function BuenasNochesApp() {
                       ))}
                     </div>
                   </div>
-                  {state.routineSubTab === "tonight" ? <RoutineSection
+                  {state.routineSubTab === "tonight" ? <RoutineErrorBoundary onReset={() => setState((c) => ({ ...c, currentPlan: null, routinePreviewOpen: false }))}><RoutineSection
                   activeChild={activeChild}
                   allChildren={state.children.filter(c => c.primaryProfile)}
                   onSelectRoutineChild={(childId) => requestRoutine(childId)}
@@ -3471,7 +3471,7 @@ export default function BuenasNochesApp() {
                   onSaveGuidedRoutine={saveGuidedRoutineLog}
                   safetyTriggered={safetyTriggered}
                   savedLogDate={state.savedLogDate}
-                  /> : null}
+                  /></RoutineErrorBoundary> : null}
                   {state.routineSubTab === "facilitar" ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
                   {state.routineSubTab === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
                   {state.routineSubTab === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
@@ -3658,7 +3658,7 @@ function AppTopBar({
             }}>
               {activeChild?.profileAvatarSrc
                 ? <img src={activeChild.profileAvatarSrc} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} />
-                : <span>{avatar || (activeChild?.name?.[0] || "👶")}</span>}
+                : <span>{avatar || "👶"}</span>}
             </div>
             <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {activeChild?.name || "Niño"}
@@ -5089,27 +5089,6 @@ function HomeSection({
           </>
         )}
 
-        {isReportsMode && lastActivityRatings.length ? (
-          <div className="activity-feedback-card">
-            <strong>¿Le gustaron estas actividades?</strong>
-            <p className="muted">Por defecto quedan como "sí". Si marcas "no", la app evita sugerirla automáticamente en la próxima rutina, pero seguirá disponible en el menú.</p>
-            {lastActivityRatings.map((rating) => (
-              <label className="stack compact" key={`${lastLog.date}-${rating.stepId}`}>
-                <span>
-                  {rating.stepLabel || rating.activity}
-                  {rating.start && rating.end ? ` · ${rating.start} - ${rating.end}` : ""}
-                </span>
-                <select
-                  value={rating.disliked ? "no" : "yes"}
-                  onChange={(event) => onUpdateActivityEnjoyment?.(lastLog.date, rating, event.target.value)}
-                >
-                  <option value="yes">Sí</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-            ))}
-          </div>
-        ) : null}
 
         {isReportsMode ? (
         <section style={{ display: "grid", gap: 18 }}>
@@ -5395,6 +5374,25 @@ function startAmbientSound(soundMode) {
     };
   } catch {
     return null;
+  }
+}
+
+class RoutineErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 24, textAlign: "center" }}>
+          <p style={{ color: "var(--ink-soft)", marginBottom: 16 }}>Ocurrió un error al cargar la rutina.</p>
+          <button className="button button-primary" type="button"
+            onClick={() => { this.setState({ error: null }); this.props.onReset?.(); }}>
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
   }
 }
 
