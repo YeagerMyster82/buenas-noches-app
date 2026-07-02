@@ -3040,8 +3040,12 @@ export default function BuenasNochesApp() {
               parentLastName={state.parentLastName}
               parentEmail={state.parentEmail}
               parentPhotoUrl={state.parentPhotoUrl}
+              hasPremiumAccess={hasPremiumAccess}
+              language={state.language}
+              userEmail={state.verifiedEmail || state.parentEmail}
               onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
               onSave={saveParentSettings}
+              onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))}
             />
           ) : state.activeSection === "tips" ? (
             <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
@@ -3472,8 +3476,12 @@ export default function BuenasNochesApp() {
                   parentLastName={state.parentLastName}
                   parentEmail={state.parentEmail}
                   parentPhotoUrl={state.parentPhotoUrl}
+                  hasPremiumAccess={hasPremiumAccess}
+                  language={state.language}
+                  userEmail={state.verifiedEmail || state.parentEmail}
                   onChange={(field, value) => setState((current) => ({ ...current, [field]: value }))}
                   onSave={saveParentSettings}
+                  onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))}
                 />
               ) : null}
 
@@ -4237,7 +4245,75 @@ function SleepTrackerSection({ strings, activeChild, timer, onStart, onStop }) {
   );
 }
 
-function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, parentPhotoUrl, onChange, onSave }) {
+function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, onUpgrade }) {
+  const [subInfo, setSubInfo] = useState(undefined);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    if (typeof window === "undefined" || !window.Purchases) {
+      setSubInfo(null);
+      return;
+    }
+    window.Purchases.getSharedInstance()
+      .getCustomerInfo()
+      .then(({ customerInfo }) => {
+        const active = customerInfo?.entitlements?.active?.["Premium Buenas Noches"];
+        const product = customerInfo?.activeSubscriptions?.[0] || null;
+        setSubInfo({ active: !!active, product, expirationDate: active?.expirationDate || null });
+      })
+      .catch(() => setSubInfo(null));
+  }, [userEmail]);
+
+  const isAnnual = subInfo?.product?.includes("anual");
+  const expiresAt = subInfo?.expirationDate
+    ? new Date(subInfo.expirationDate).toLocaleDateString(language === "en" ? "en-US" : "es-PE", { year: "numeric", month: "long", day: "numeric" })
+    : null;
+
+  if (!hasPremiumAccess) {
+    return (
+      <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <span style={{ fontSize: 22 }}>🔓</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--cream)" }}>Plan Gratuito</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>Perfil de sueño + tips básicos</div>
+          </div>
+        </div>
+        <button className="button button-primary" type="button" style={{ width: "100%", fontSize: 13 }} onClick={onUpgrade}>
+          Desbloquear Premium
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: "linear-gradient(135deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.3)", borderRadius: 14, padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 22 }}>⭐</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--moon)" }}>
+            {subInfo === undefined
+              ? "Cargando..."
+              : subInfo?.active
+                ? (isAnnual ? "Plan Anual · Premium" : "Plan Mensual · Premium")
+                : "Acceso Premium"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>
+            {expiresAt ? `Renueva: ${expiresAt}` : "Activo"}
+          </div>
+        </div>
+        {subInfo?.active && !isAnnual ? (
+          <button type="button" onClick={onUpgrade}
+            style={{ fontSize: 11, fontWeight: 700, color: "var(--moon)", background: "rgba(244,231,178,.15)", border: "1px solid rgba(244,231,178,.3)", borderRadius: 20, padding: "5px 10px", cursor: "pointer" }}>
+            Anual →
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ParentSettingsSection({ strings, parentName, parentLastName, parentEmail, parentPhotoUrl, hasPremiumAccess, language, userEmail, onChange, onSave, onUpgrade }) {
   function handlePhotoChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -4266,7 +4342,13 @@ function ParentSettingsSection({ strings, parentName, parentLastName, parentEmai
         <span className="section-label">Cuenta</span>
         <h2>{strings.parentSettings}</h2>
       </div>
-      <form className="stack" onSubmit={onSave}>
+      <SubscriptionStatusCard
+        hasPremiumAccess={hasPremiumAccess}
+        language={language}
+        userEmail={userEmail}
+        onUpgrade={onUpgrade}
+      />
+      <form className="stack" onSubmit={onSave} style={{ marginTop: 20 }}>
         <label className="stack compact">
           <span>{strings.parentName}</span>
           <input type="text" value={parentName} onChange={(event) => onChange("parentName", event.target.value)} required />
