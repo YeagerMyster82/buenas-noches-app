@@ -5607,7 +5607,7 @@ function RoutineSection({
                       </div>
                       {routineSession.inBedAt ? (
                         <div style={{ flex: 1, background: "rgba(244,231,178,.14)", borderRadius: 12, padding: "8px 12px", border: "1px solid rgba(244,231,178,.3)" }}>
-                          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: ".06em", color: "rgba(244,231,178,.7)", marginBottom: 4 }}>Tiempo para dormir</div>
+                          <div style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: ".06em", color: "rgba(244,231,178,.7)", marginBottom: 4 }}>Latencia de sueño</div>
                           <div className="routine-countdown routine-countdown--manual" style={{ color: "var(--moon)" }}>{manualInBedMs ? fmtSec(bedElapsedSec) : "--:--"}</div>
                         </div>
                       ) : null}
@@ -5627,20 +5627,20 @@ function RoutineSection({
                     <div className="stack compact">
                       <div className="content-block content-block--light">
                         <strong>Rutina iniciada a las {routineSession.startedAt}</strong>
-                        <p className="muted">Sigue los pasos de la rutina. Cuando tu hijo esté en la cama, toca el botón.</p>
+                        <p className="muted">Sigue los pasos de la rutina. Cuando termines el último paso y apagues las luces, toca el botón.</p>
                       </div>
                       <button className="button button-primary" type="button" onClick={() => {
                         const now = Date.now();
                         setManualInBedMs(now);
                         onRoutineSessionChange({ inBedAt: getCurrentTimeValue(), routineEndTime: getCurrentTimeValue() });
                       }}>
-                        ✓ Rutina completada — a la cama
+                        ✓ Rutina lista — luces apagadas
                       </button>
                     </div>
                   ) : phase === "inBed" ? (
                     <div className="sleep-readiness-card sleep-readiness-card--blue">
-                      <strong>En cama desde las {routineSession.inBedAt}</strong>
-                      <p>El cronómetro de arriba muestra el tiempo desde que entró a la cama. Cuando se duerma, toca el botón.</p>
+                      <strong>Luces apagadas a las {routineSession.inBedAt}</strong>
+                      <p>El cronómetro de arriba muestra el tiempo desde que terminó la rutina. Cuando se duerma, toca el botón.</p>
                       <button className="button button-primary" type="button" onClick={() => {
                         const sessionPatch = {
                           inBedAt: routineSession.inBedAt,
