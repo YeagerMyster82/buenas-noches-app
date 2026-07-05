@@ -5592,7 +5592,7 @@ function RoutineSection({
 
   function beginGuidedRoutine() {
     const startedAt = routineSession.startedAt || getCurrentTimeValue();
-    onRoutineSessionChange({ startedAt });
+    onRoutineSessionChange({ startedAt, timerMode: "timed" });
     setRoutineStepIndex(0);
     setIsPaused(false);
     setPausedAt(0);
