@@ -2933,43 +2933,41 @@ export default function BuenasNochesApp() {
             />
           ) : state.activeSection === "home" ? (
             <>
-              {/* Hero card — ideal bedtime window */}
-              {activeChild ? (() => {
-                const lastLog = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1)[0];
+              {/* Hero cards — one per child */}
+              {state.children.length > 0 ? state.children.map((child) => {
+                const lastLog = [...(child.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1)[0];
                 const lastNightHours = lastLog ? calculateTotalSleepHours(lastLog.sleepTime, lastLog.wakeTime, lastLog.napDuration) : null;
-                const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, activeChild.birthday) : 0;
-                const debtLabel = sleepDebt <= 0 ? "Al dia" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
+                const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, child.birthday) : 0;
+                const debtLabel = sleepDebt <= 0 ? "Al día" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
                 const debtColor = sleepDebt <= 0 ? "var(--green)" : sleepDebt < 1 ? "var(--moon)" : "var(--coral)";
-                const displayTime = activeChild.sleepGoal || null;
+                const displayTime = child.sleepGoal || null;
                 return (
-                  <article style={{
+                  <article key={child.id} style={{
                     background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)",
                     border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px",
                     position: "relative", overflow: "hidden", color: "var(--ink)"
                   }}>
                     <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
-                    <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 4 }}>
                       Hora ideal para dormir hoy
                     </div>
+                    <div style={{ fontSize: 12, color: "rgba(255,248,239,.5)", marginBottom: 4, fontWeight: 600 }}>{child.name}</div>
                     {displayTime ? (
                       <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, lineHeight: 1, marginBottom: 6 }}>
                         {displayTime}
                       </div>
                     ) : (
                       <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(1.4rem,6vw,2rem)", fontWeight: 600, lineHeight: 1.2, marginBottom: 6, color: "var(--ink-soft)" }}>
-                        Configura la hora en el perfil de {activeChild.name}
+                        Configura la hora en el perfil
                       </div>
                     )}
-                    <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", marginBottom: 14 }}>
-                      {displayTime ? `Meta de sueño para ${activeChild.name}` : "Ve a Nino > Editar perfil > Hora de dormir"}
-                    </div>
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
                       <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
-                      Deuda de sueno: {debtLabel}
+                      Deuda de sueño: {debtLabel}
                     </div>
                   </article>
                 );
-              })() : null}
+              }) : null}
 
               {/* Welcome card for new users */}
               {!activeChild && !state.children.length ? (
@@ -3646,24 +3644,15 @@ function AppTopBar({
         {/* Child switcher pill */}
         <div style={{ position: "relative" }}>
           <div style={{
-            display: "flex", alignItems: "center", gap: 8,
+            display: "flex", alignItems: "center", gap: 6,
             background: "var(--navy-800)", border: "1px solid var(--border)",
-            padding: "6px 12px 6px 8px", borderRadius: 30, pointerEvents: "none",
+            padding: "6px 12px", borderRadius: 30, pointerEvents: "none",
             position: "absolute", inset: 0, zIndex: 1
           }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%", background: "var(--navy-700)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, flexShrink: 0, overflow: "hidden"
-            }}>
-              {activeChild?.profileAvatarSrc
-                ? <img src={activeChild.profileAvatarSrc} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} />
-                : <span>{avatar || "👶"}</span>}
-            </div>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
               {activeChild?.name || "Niño"}
             </span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255,248,239,.5)", flexShrink: 0, marginLeft: "auto" }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255,248,239,.5)", flexShrink: 0 }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
             </svg>
           </div>
@@ -3719,7 +3708,7 @@ function NavIcon({ id }) {
   if (id === "home") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6" /></svg>;
   if (id === "reports") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M3 13h2v8H3v-8Zm5-5h2v13H8V8Zm5-4h2v17h-2V4Zm5 6h2v11h-2v-11Z" /></svg>;
   if (id === "routine") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>;
-  if (id === "child") return <img src="/ui-icons/icon-child.png" alt="" style={{ ...s, objectFit: "contain" }} />;
+  if (id === "child") return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="7" r="4" {...p} /><path {...p} d="M5.5 21c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" /></svg>;
   if (id === "videos") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="m15 10 4.55-2.55A1 1 0 0 1 21 8.39v7.22a1 1 0 0 1-1.45.9L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z" /></svg>;
   if (id === "purchase") return <svg viewBox="0 0 24 24" style={s}><path {...p} d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" /></svg>;
   return <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>;
@@ -4474,17 +4463,16 @@ function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, cancelF
             {expiresAt ? `Renueva: ${expiresAt}` : "Activo"}
           </div>
         </div>
-        {subInfo?.active && !isAnnual ? (
-          <button type="button" onClick={onUpgrade}
-            style={{ fontSize: 11, fontWeight: 700, color: "var(--moon)", background: "rgba(244,231,178,.15)", border: "1px solid rgba(244,231,178,.3)", borderRadius: 20, padding: "5px 10px", cursor: "pointer" }}>
-            Anual →
-          </button>
-        ) : null}
       </div>
       {subInfo?.active ? (
-        <div style={{ marginTop: 12, textAlign: "right" }}>
+        <div style={{ marginTop: 14, display: "flex", gap: 8, flexDirection: "column" }}>
+          {!isAnnual ? (
+            <button className="button button-primary" type="button" style={{ width: "100%", fontSize: 13 }} onClick={onUpgrade}>
+              Cambiar a Plan Anual · Ahorra 30%
+            </button>
+          ) : null}
           <button type="button" onClick={onCancelClick}
-            style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+            style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12, cursor: "pointer", textDecoration: "underline", alignSelf: "center" }}>
             Cancelar suscripción
           </button>
         </div>
