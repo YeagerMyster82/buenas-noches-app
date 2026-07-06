@@ -3300,28 +3300,28 @@ export default function BuenasNochesApp() {
 
               {state.activeSection === "home" ? (
                 <>
-                  {/* Hero card */}
-                  {activeChild ? (() => {
-                    const sortedLogs = [...(activeChild.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1);
+                  {/* Hero cards — one per child */}
+                  {state.children.map((child) => {
+                    const sortedLogs = [...(child.logs || [])].filter(l => l.date).sort((a,b) => a.date < b.date ? 1 : -1);
                     const lastLog = sortedLogs[0];
                     const lastNightHours = lastLog ? calculateTotalSleepHours(lastLog.sleepTime, lastLog.wakeTime, lastLog.napDuration) : null;
-                    const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, activeChild.birthday) : 0;
+                    const sleepDebt = lastNightHours !== null ? calculateSleepDebt(lastNightHours, child.birthday) : 0;
                     const debtLabel = sleepDebt <= 0 ? "Al día" : sleepDebt < 1 ? "Baja" : sleepDebt < 3 ? "Moderada" : "Alta";
                     const debtColor = sleepDebt <= 0 ? "var(--green)" : sleepDebt < 1 ? "var(--moon)" : "var(--coral)";
                     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
                     const recentLogs = sortedLogs.filter(l => l.date >= weekAgo);
                     const avgLatency = recentLogs.length ? Math.round(recentLogs.reduce((s, l) => s + (l.latency || 0), 0) / recentLogs.length) : null;
-                    const highDebtNights = sortedLogs.slice(0, 3).filter(l => calculateSleepDebt(calculateTotalSleepHours(l.sleepTime, l.wakeTime, l.napDuration), activeChild.birthday) >= 1).length;
+                    const highDebtNights = sortedLogs.slice(0, 3).filter(l => calculateSleepDebt(calculateTotalSleepHours(l.sleepTime, l.wakeTime, l.napDuration), child.birthday) >= 1).length;
                     return (
-                      <article style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px", position: "relative", overflow: "hidden", color: "var(--ink)" }}>
+                      <article key={child.id} style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px", position: "relative", overflow: "hidden", color: "var(--ink)" }}>
                         <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
-                        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 6 }}>Hora ideal para dormir hoy</div>
-                        {activeChild.sleepGoal ? (
-                          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, lineHeight: 1, marginBottom: 6 }}>{activeChild.sleepGoal}</div>
+                        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 4 }}>Hora ideal para dormir hoy</div>
+                        <div style={{ fontSize: 12, color: "rgba(255,248,239,.5)", marginBottom: 4, fontWeight: 600 }}>{child.name}</div>
+                        {child.sleepGoal ? (
+                          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, lineHeight: 1, marginBottom: 6 }}>{child.sleepGoal}</div>
                         ) : (
                           <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(1.2rem,5vw,1.6rem)", fontWeight: 600, lineHeight: 1.2, marginBottom: 6, color: "var(--ink-soft)" }}>Configura la hora en el perfil</div>
                         )}
-                        <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", marginBottom: 14 }}>Meta de sueño para {activeChild.name}</div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
                             <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
@@ -3340,15 +3340,15 @@ export default function BuenasNochesApp() {
                         </div>
                         {highDebtNights >= 2 ? (
                           <div style={{ background: "rgba(255,107,107,.15)", border: "1px solid rgba(255,107,107,.3)", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "var(--coral)", marginBottom: 14 }}>
-                            ⚠️ {activeChild.name} acumula deuda de sueño. Adelanta la hora de dormir 15–20 min esta semana.
+                            ⚠️ {child.name} acumula deuda de sueño. Adelanta la hora de dormir 15–20 min esta semana.
                           </div>
                         ) : null}
-                        <button className="button button-primary" type="button" style={{ width: "100%" }} onClick={() => requestRoutine(activeChild?.id)}>
+                        <button className="button button-primary" type="button" style={{ width: "100%" }} onClick={() => requestRoutine(child.id)}>
                           🌙 Generar Rutina personalizada
                         </button>
                       </article>
                     );
-                  })() : null}
+                  })}
                 </>
               ) : null}
 
@@ -4464,19 +4464,17 @@ function SubscriptionStatusCard({ hasPremiumAccess, language, userEmail, cancelF
           </div>
         </div>
       </div>
-      {subInfo?.active ? (
-        <div style={{ marginTop: 14, display: "flex", gap: 8, flexDirection: "column" }}>
-          {!isAnnual ? (
-            <button className="button button-primary" type="button" style={{ width: "100%", fontSize: 13 }} onClick={onUpgrade}>
-              Cambiar a Plan Anual · Ahorra 30%
-            </button>
-          ) : null}
-          <button type="button" onClick={onCancelClick}
-            style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12, cursor: "pointer", textDecoration: "underline", alignSelf: "center" }}>
-            Cancelar suscripción
+      <div style={{ marginTop: 14, display: "flex", gap: 8, flexDirection: "column" }}>
+        {!isAnnual ? (
+          <button className="button button-primary" type="button" style={{ width: "100%", fontSize: 13 }} onClick={onUpgrade}>
+            Cambiar a Plan Anual · Ahorra 30%
           </button>
-        </div>
-      ) : null}
+        ) : null}
+        <button type="button" onClick={onCancelClick}
+          style={{ background: "none", border: "none", color: "var(--ink-soft)", fontSize: 12, cursor: "pointer", textDecoration: "underline", alignSelf: "center" }}>
+          Cancelar suscripción
+        </button>
+      </div>
     </div>
   );
 }
