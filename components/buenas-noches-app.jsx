@@ -45,6 +45,35 @@ function toYouTubeEmbedUrl(url) {
   return url;
 }
 
+const SUPABASE_MUSIC_BASE = "https://wcmpbgcrglduwguxytui.supabase.co/storage/v1/object/public/music";
+
+// Profile-specific 10-min tracks (play once, then chain to lullaby)
+const profileMusicTracks = {
+  incansable: `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-45-36-104Z.mp3`,
+  vigilante: `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-46-30-638Z.mp3`,
+  negociador: `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-47-39-131Z.mp3`,
+  volcan: `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-48-30-509Z.mp3`,
+  explorador: `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-49-22-147Z.mp3`,
+};
+const LULLABY_URL = `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-49-50-432Z.mp3`;
+
+// Map primaryProfile slug → profileMusicTracks key
+const PROFILE_MUSIC_MAP = {
+  incansable: "incansable",
+  "el-incansable": "incansable",
+  vigilante: "vigilante",
+  "el-vigilante-nocturno": "vigilante",
+  "vigilante-nocturno": "vigilante",
+  negociador: "negociador",
+  "el-negociador": "negociador",
+  volcan: "volcan",
+  "volcan-emocional": "volcan",
+  "el-volcan-emocional": "volcan",
+  explorador: "explorador",
+  "el-explorador-nocturno": "explorador",
+  "explorador-nocturno": "explorador",
+};
+
 const routineMusicTracks = {
   calm: {
     label: "Música 1",
@@ -57,6 +86,10 @@ const routineMusicTracks = {
   track3: {
     label: "Música 3",
     audioUrl: "https://player.mediadelivery.net/play/640174/306bc86b-b6c1-4dcd-8097-44cf87351538",
+  },
+  profile: {
+    label: "Música del perfil",
+    audioUrl: null, // resolved dynamically from child's primaryProfile
   },
 };
 
@@ -5342,8 +5375,40 @@ function playTransitionTone(soundMode) {
   }
 }
 
-function startAmbientSound(soundMode) {
+function startAmbientSound(soundMode, childProfile) {
   if (!soundMode || soundMode === "silent" || soundMode === "transition") return null;
+
+  // Profile mode: play the child's 10-min track once, then loop the lullaby
+  if (soundMode === "profile") {
+    const profileKey = PROFILE_MUSIC_MAP[childProfile?.toLowerCase?.()];
+    const profileUrl = profileKey ? profileMusicTracks[profileKey] : null;
+    if (!profileUrl) return null;
+    try {
+      const profileAudio = new Audio(profileUrl);
+      profileAudio.loop = false;
+      profileAudio.volume = 0.34;
+      let lullabyAudio = null;
+      profileAudio.addEventListener("ended", () => {
+        try {
+          lullabyAudio = new Audio(LULLABY_URL);
+          lullabyAudio.loop = true;
+          lullabyAudio.volume = 0.34;
+          lullabyAudio.play().catch(() => undefined);
+        } catch {}
+      });
+      profileAudio.play().catch(() => undefined);
+      return {
+        stop() {
+          profileAudio.pause();
+          profileAudio.currentTime = 0;
+          if (lullabyAudio) { lullabyAudio.pause(); lullabyAudio.currentTime = 0; }
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   const track = routineMusicTracks[soundMode];
   if (!track?.audioUrl) return null;
 
@@ -5421,7 +5486,9 @@ function RoutineSection({
   const wakeLockRef = useRef(null);
   const playerStep = currentPlan?.steps?.[routineStepIndex] || null;
   const playerStepVideos = getRoutineVideosForStep(playerStep, currentPlan?.profile);
-  const activeMusicTrack = routineMusicTracks[routineSession.soundMode] || null;
+  const activeMusicTrack = routineSession.soundMode === "profile"
+    ? { label: "Música del perfil" }
+    : (routineMusicTracks[routineSession.soundMode] || null);
   const isLastRoutineStep = currentPlan?.steps ? routineStepIndex >= currentPlan.steps.length - 1 : false;
   const untimedRoutinePhases = [
     "banarse_y_pijamas",
@@ -5546,7 +5613,7 @@ function RoutineSection({
 
   function restartAmbientSound(soundMode = routineSession.soundMode) {
     stopAmbientSound();
-    ambientSoundRef.current = startAmbientSound(soundMode);
+    ambientSoundRef.current = startAmbientSound(soundMode, activeChild?.primaryProfile);
   }
 
   if (!activeChild) return null;
@@ -5847,6 +5914,38 @@ function RoutineSection({
               </React.Fragment>
             );
           })}
+
+          {/* Sound mode picker */}
+          <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Música de fondo</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {activeChild?.primaryProfile && PROFILE_MUSIC_MAP[activeChild.primaryProfile?.toLowerCase?.()] ? (
+                <button type="button" onClick={() => onRoutineSessionChange({ soundMode: "profile" })}
+                  style={{ fontSize: 12, padding: "6px 12px", borderRadius: 20, cursor: "pointer", transition: "all .15s",
+                    background: routineSession.soundMode === "profile" ? "var(--moon)" : "var(--navy-700)",
+                    color: routineSession.soundMode === "profile" ? "#1a1333" : "var(--ink)",
+                    border: routineSession.soundMode === "profile" ? "1px solid var(--moon)" : "1px solid var(--border)",
+                    fontWeight: routineSession.soundMode === "profile" ? 700 : 400 }}>
+                  🎵 Música del perfil
+                </button>
+              ) : null}
+              {[
+                { key: "calm", label: "Música 1" },
+                { key: "nature", label: "Música 2" },
+                { key: "track3", label: "Música 3" },
+                { key: "silent", label: "Silencio" },
+              ].map(({ key, label }) => (
+                <button key={key} type="button" onClick={() => onRoutineSessionChange({ soundMode: key })}
+                  style={{ fontSize: 12, padding: "6px 12px", borderRadius: 20, cursor: "pointer", transition: "all .15s",
+                    background: routineSession.soundMode === key ? "var(--moon)" : "var(--navy-700)",
+                    color: routineSession.soundMode === key ? "#1a1333" : "var(--ink)",
+                    border: routineSession.soundMode === key ? "1px solid var(--moon)" : "1px solid var(--border)",
+                    fontWeight: routineSession.soundMode === key ? 700 : 400 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Launch buttons */}
           <div style={{ display: "grid", gap: 8 }}>
