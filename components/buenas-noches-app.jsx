@@ -4995,6 +4995,16 @@ function NightSleepTimelineChart({ days, onEditDay }) {
           </div>
         ))}
       </div>
+      <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 10, flexWrap: "wrap" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-soft)" }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: "linear-gradient(180deg, var(--moon), #dec988)", flexShrink: 0 }} />
+          Rutina en cama
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-soft)" }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: "linear-gradient(180deg, var(--aqua), #6fa9bd)", flexShrink: 0 }} />
+          Tiempo para dormirse
+        </span>
+      </div>
     </div>
   );
 }

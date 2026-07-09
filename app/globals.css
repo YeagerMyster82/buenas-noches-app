@@ -1149,10 +1149,12 @@ img {
 
 .night-timeline-segment--routine {
   background: linear-gradient(180deg, var(--moon), #dec988);
+  border-radius: 999px 999px 2px 2px;
 }
 
 .night-timeline-segment--sleep {
   background: linear-gradient(180deg, var(--aqua), #6fa9bd);
+  border-radius: 2px 2px 999px 999px;
 }
 
 .night-timeline-bar-stack:hover .night-timeline-segment,
