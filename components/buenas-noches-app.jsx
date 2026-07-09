@@ -807,6 +807,9 @@ const initialState = {
   activeChildId: "",
   routineChildId: "",
   routinePlansByChild: {},
+  routineSessionsByChild: {},
+  routinePreviewOpenByChild: {},
+  routineFormsByChild: {},
   expandedChildId: "",
   activeSection: "home",
   childDraft: {
@@ -2009,30 +2012,38 @@ export default function BuenasNochesApp() {
     }));
   }
 
-  async function generateRoutine(event) {
+  async function generateRoutine(event, childId) {
     event.preventDefault();
-    if (!routineActiveChild) return;
+    const targetId = childId || state.routineChildId || state.activeChildId;
+    const targetChild = state.children.find(c => c.id === targetId) || routineActiveChild;
+    if (!targetChild) return;
+    const form = state.routineFormsByChild[targetId] || state.routineForm;
 
     const plan = buildPlan({
-      profile: routineActiveChild.primaryProfile,
-      birthday: routineActiveChild.birthday,
-      wakeTime: state.routineForm.wakeTime,
-      targetBedtime: state.routineForm.targetBedtime,
-      dinnerTime: state.routineForm.dinnerTime,
-      prepareDuration: Number(state.routineForm.prepareDuration) || 25,
-      napTaken: routineActiveChild.takesNap === "yes" && state.routineForm.napTaken === "yes",
-      napWakeTime: routineActiveChild.takesNap === "yes" ? state.routineForm.napWakeTime : "",
-      priorLogs: routineActiveChild.logs,
-      selectedActivities: routineActiveChild.selectedActivities,
-      dislikedCounts: routineActiveChild.dislikedCounts,
+      profile: targetChild.primaryProfile,
+      birthday: targetChild.birthday,
+      wakeTime: form.wakeTime,
+      targetBedtime: form.targetBedtime,
+      dinnerTime: form.dinnerTime,
+      prepareDuration: Number(form.prepareDuration) || 25,
+      napTaken: targetChild.takesNap === "yes" && form.napTaken === "yes",
+      napWakeTime: targetChild.takesNap === "yes" ? form.napWakeTime : "",
+      priorLogs: targetChild.logs,
+      selectedActivities: targetChild.selectedActivities,
+      dislikedCounts: targetChild.dislikedCounts,
     });
 
-    updateChild(routineActiveChild.id, () => ({ lastPlan: plan }));
+    updateChild(targetChild.id, () => ({ lastPlan: plan }));
     setState((current) => ({
       ...current,
       currentPlan: plan,
-      routinePlansByChild: { ...current.routinePlansByChild, [current.routineChildId || current.activeChildId]: plan },
+      routinePlansByChild: { ...current.routinePlansByChild, [targetId]: plan },
+      routinePreviewOpenByChild: { ...current.routinePreviewOpenByChild, [targetId]: true },
       routinePreviewOpen: true,
+      routineSessionsByChild: {
+        ...current.routineSessionsByChild,
+        [targetId]: current.routineSessionsByChild[targetId] || { startedAt: "", inBedAt: "", routineEndTime: "", fellAsleepAt: "", timerMode: "timed", soundMode: "profile" },
+      },
       routineSession: {
         startedAt: "",
         inBedAt: "",
@@ -2129,16 +2140,19 @@ export default function BuenasNochesApp() {
     });
   }
 
-  async function saveGuidedRoutineLog(sessionPatch = {}) {
-    if (!routineActiveChild || !state.currentPlan) return;
+  async function saveGuidedRoutineLog(sessionPatch = {}, childId) {
+    const targetId = childId || state.routineChildId || state.activeChildId;
+    const targetChild = state.children.find(c => c.id === targetId) || routineActiveChild;
+    const targetPlan = state.routinePlansByChild[targetId] || state.currentPlan;
+    if (!targetChild || !targetPlan) return;
 
-    const session = { ...state.routineSession, ...sessionPatch };
+    const session = { ...(state.routineSessionsByChild[targetId] || state.routineSession), ...sessionPatch };
     const bedTime = session.inBedAt || getCurrentTimeValue();
     const routineEndTime = session.routineEndTime || bedTime;
     const sleepTime = session.fellAsleepAt || getCurrentTimeValue();
     const nextLog = {
       date: new Date().toISOString().slice(0, 10),
-      routineStartTime: session.startedAt || state.currentPlan.routineStart || "",
+      routineStartTime: session.startedAt || targetPlan.routineStart || "",
       bedTime,
       routineEndTime,
       sleepTime,
@@ -2146,11 +2160,8 @@ export default function BuenasNochesApp() {
       nightWakings: "pending",
       notes: "Registrado desde la rutina guiada.",
       ratings: [
-        {
-          type: "routine_timing",
-          routineEndTime,
-        },
-        ...state.currentPlan.steps
+        { type: "routine_timing", routineEndTime },
+        ...targetPlan.steps
           .filter((step) => step.selectedActivity)
           .map((step) => ({
             stepId: step.id,
@@ -2166,11 +2177,11 @@ export default function BuenasNochesApp() {
       ],
     };
 
-    const updatedLogs = [nextLog, ...routineActiveChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
+    const updatedLogs = [nextLog, ...targetChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
       left.date < right.date ? 1 : -1
     );
 
-    updateChild(routineActiveChild.id, () => ({
+    updateChild(targetChild.id, () => ({
       logs: updatedLogs,
     }));
 
@@ -3470,59 +3481,57 @@ export default function BuenasNochesApp() {
                       ))}
                     </div>
                   </div>
-                  {state.routineSubTab === "tonight" ? <RoutineErrorBoundary onReset={() => setState((c) => ({ ...c, currentPlan: null, routinePreviewOpen: false }))}><RoutineSection
-                  activeChild={routineActiveChild}
-                  allChildren={state.children.filter(c => c.primaryProfile)}
-                  onSelectRoutineChild={(childId) => {
-                    setState((current) => ({
-                      ...current,
-                      routineChildId: childId,
-                      // cache current plan for the child we're leaving
-                      routinePlansByChild: current.currentPlan
-                        ? { ...current.routinePlansByChild, [current.routineChildId || current.activeChildId]: current.currentPlan }
-                        : current.routinePlansByChild,
-                      // restore plan for the child we're switching to (null = show form)
-                      currentPlan: current.routinePlansByChild[childId] ?? null,
-                      routinePreviewOpen: !!(current.routinePlansByChild[childId]),
-                      routineSession: { startedAt: "", inBedAt: "", routineEndTime: "", fellAsleepAt: "", timerMode: "timed", soundMode: "profile" },
-                    }));
-                  }}
-                  strings={strings}
-                  profileMap={profileMap}
-                  routineForm={state.routineForm}
-                  currentPlan={state.currentPlan}
-                  routinePreviewOpen={state.routinePreviewOpen}
-                  routineSession={state.routineSession}
-                  onRoutineFieldChange={updateRoutineField}
-                  onGenerateRoutine={generateRoutine}
-                  onClose={() =>
-                    setState((current) => ({
-                      ...current,
-                      activeSection: "reports",
-                      expandedChildId: activeChild?.id || current.expandedChildId,
-                      savedLogDate: "",
-                    }))
-                  }
-                  onClosePreview={() => setState((current) => ({ ...current, routinePreviewOpen: false }))}
-                  onRoutineSessionChange={(patch) =>
-                    setState((current) => ({
-                      ...current,
-                      routineSession: { ...current.routineSession, ...patch },
-                    }))
-                  }
-                  onChangeActivity={changeActivity}
-                  expandedSwapStep={state.expandedSwapStep}
-                  onToggleSwapStep={(stepId) =>
-                    setState((current) => ({
-                      ...current,
-                      expandedSwapStep: current.expandedSwapStep === stepId ? "" : stepId,
-                    }))
-                  }
-                  onSubmitNightLog={submitNightLog}
-                  onSaveGuidedRoutine={saveGuidedRoutineLog}
-                  safetyTriggered={safetyTriggered}
-                  savedLogDate={state.savedLogDate}
-                  /></RoutineErrorBoundary> : null}
+                  {state.routineSubTab === "tonight" ? (
+                    state.children.filter(c => c.primaryProfile).map((child) => {
+                      const cid = child.id;
+                      const isActive = cid === state.routineChildId;
+                      const childPlan = state.routinePlansByChild[cid] ?? null;
+                      const childSession = state.routineSessionsByChild[cid] ?? { startedAt: "", inBedAt: "", routineEndTime: "", fellAsleepAt: "", timerMode: "timed", soundMode: "profile" };
+                      const childPreviewOpen = state.routinePreviewOpenByChild[cid] ?? false;
+                      const childForm = state.routineFormsByChild[cid] || state.routineForm;
+                      return (
+                        <div key={cid} style={isActive ? {} : { display: "none" }}>
+                          <RoutineErrorBoundary onReset={() => setState((c) => ({ ...c, routinePlansByChild: { ...c.routinePlansByChild, [cid]: null }, routinePreviewOpenByChild: { ...c.routinePreviewOpenByChild, [cid]: false } }))}>
+                            <RoutineSection
+                              activeChild={child}
+                              allChildren={state.children.filter(c => c.primaryProfile)}
+                              onSelectRoutineChild={(newChildId) => setState((current) => ({ ...current, routineChildId: newChildId }))}
+                              strings={strings}
+                              profileMap={profileMap}
+                              routineForm={childForm}
+                              currentPlan={childPlan}
+                              routinePreviewOpen={childPreviewOpen}
+                              routineSession={childSession}
+                              onRoutineFieldChange={(field, value) =>
+                                setState((current) => ({
+                                  ...current,
+                                  routineFormsByChild: { ...current.routineFormsByChild, [cid]: { ...(current.routineFormsByChild[cid] || current.routineForm), [field]: value } },
+                                  routineForm: { ...current.routineForm, [field]: value },
+                                }))
+                              }
+                              onGenerateRoutine={(e) => generateRoutine(e, cid)}
+                              onClose={() => setState((current) => ({ ...current, activeSection: "reports", expandedChildId: activeChild?.id || current.expandedChildId, savedLogDate: "" }))}
+                              onClosePreview={() => setState((current) => ({ ...current, routinePreviewOpenByChild: { ...current.routinePreviewOpenByChild, [cid]: false } }))}
+                              onRoutineSessionChange={(patch) =>
+                                setState((current) => ({
+                                  ...current,
+                                  routineSessionsByChild: { ...current.routineSessionsByChild, [cid]: { ...(current.routineSessionsByChild[cid] || {}), ...patch } },
+                                  routineSession: { ...(current.routineSession || {}), ...patch },
+                                }))
+                              }
+                              onChangeActivity={changeActivity}
+                              expandedSwapStep={state.expandedSwapStep}
+                              onToggleSwapStep={(stepId) => setState((current) => ({ ...current, expandedSwapStep: current.expandedSwapStep === stepId ? "" : stepId }))}
+                              onSubmitNightLog={submitNightLog}
+                              onSaveGuidedRoutine={(sessionPatch) => saveGuidedRoutineLog(sessionPatch, cid)}
+                              safetyTriggered={safetyTriggered}
+                              savedLogDate={state.savedLogDate}
+                            />
+                          </RoutineErrorBoundary>
+                        </div>
+                      );
+                    })
+                  ) : null}
                   {state.routineSubTab === "facilitar" ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
                   {state.routineSubTab === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
                   {state.routineSubTab === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
