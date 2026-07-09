@@ -5950,7 +5950,7 @@ function RoutineSection({
                 </div>
               ) : null}
               <button type="button" onClick={() => setExpandedStepId(isExpanded ? null : step.id)}
-                style={{ width: "100%", textAlign: "left", background: "var(--navy-800)", border: "1px solid var(--border)", borderLeft: `3px solid ${accentColor}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
+                style={{ width: "100%", minWidth: 0, textAlign: "left", background: "var(--navy-800)", border: "1px solid var(--border)", borderLeft: `3px solid ${accentColor}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer", boxSizing: "border-box" }}>
                 {/* Collapsed row — always visible */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div style={{ minWidth: 0 }}>
