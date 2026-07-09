@@ -837,7 +837,7 @@ const initialState = {
     routineEndTime: "",
     fellAsleepAt: "",
     timerMode: "timed",
-    soundMode: "transition",
+    soundMode: "profile",
   },
   expandedSwapStep: "",
   editingChildId: "",
@@ -2032,7 +2032,7 @@ export default function BuenasNochesApp() {
         routineEndTime: "",
         fellAsleepAt: "",
         timerMode: current.routineSession?.timerMode || "timed",
-        soundMode: current.routineSession?.soundMode || "transition",
+        soundMode: current.routineSession?.soundMode || "profile",
       },
       expandedSwapStep: "",
       savedLogDate: "",
@@ -5918,25 +5918,13 @@ function RoutineSection({
           {/* Sound mode picker */}
           <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 }}>Música de fondo</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-              {activeChild?.primaryProfile && PROFILE_MUSIC_MAP[activeChild.primaryProfile?.toLowerCase?.()] ? (
-                <button type="button" onClick={() => onRoutineSessionChange({ soundMode: "profile" })}
-                  style={{ fontSize: 12, padding: "6px 12px", borderRadius: 20, cursor: "pointer", transition: "all .15s",
-                    background: routineSession.soundMode === "profile" ? "var(--moon)" : "var(--navy-700)",
-                    color: routineSession.soundMode === "profile" ? "#1a1333" : "var(--ink)",
-                    border: routineSession.soundMode === "profile" ? "1px solid var(--moon)" : "1px solid var(--border)",
-                    fontWeight: routineSession.soundMode === "profile" ? 700 : 400 }}>
-                  🎵 Música del perfil
-                </button>
-              ) : null}
+            <div style={{ display: "flex", gap: 7 }}>
               {[
-                { key: "calm", label: "Música 1" },
-                { key: "nature", label: "Música 2" },
-                { key: "track3", label: "Música 3" },
-                { key: "silent", label: "Silencio" },
+                { key: "profile", label: "🎵 Música" },
+                { key: "silent", label: "🔇 Silencio" },
               ].map(({ key, label }) => (
                 <button key={key} type="button" onClick={() => onRoutineSessionChange({ soundMode: key })}
-                  style={{ fontSize: 12, padding: "6px 12px", borderRadius: 20, cursor: "pointer", transition: "all .15s",
+                  style={{ fontSize: 12, padding: "6px 14px", borderRadius: 20, cursor: "pointer",
                     background: routineSession.soundMode === key ? "var(--moon)" : "var(--navy-700)",
                     color: routineSession.soundMode === key ? "#1a1333" : "var(--ink)",
                     border: routineSession.soundMode === key ? "1px solid var(--moon)" : "1px solid var(--border)",
@@ -6238,29 +6226,16 @@ function RoutineSection({
                 {/* In-player sound picker */}
                 <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>
-                    🎵 {activeMusicTrack ? `Reproduciendo: ${activeMusicTrack.label}` : "Música de fondo"}
+                    {activeMusicTrack && routineSession.soundMode !== "silent" ? "🎵 Reproduciendo música" : "Música de fondo"}
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {activeChild?.primaryProfile && PROFILE_MUSIC_MAP[activeChild.primaryProfile?.toLowerCase?.()] ? (
-                      <button type="button"
-                        onClick={() => { onRoutineSessionChange({ soundMode: "profile" }); restartAmbientSound("profile"); }}
-                        style={{ fontSize: 11, padding: "5px 10px", borderRadius: 20, cursor: "pointer",
-                          background: routineSession.soundMode === "profile" ? "var(--moon)" : "var(--navy-700)",
-                          color: routineSession.soundMode === "profile" ? "#1a1333" : "var(--ink)",
-                          border: routineSession.soundMode === "profile" ? "1px solid var(--moon)" : "1px solid var(--border)",
-                          fontWeight: routineSession.soundMode === "profile" ? 700 : 400 }}>
-                        Perfil
-                      </button>
-                    ) : null}
+                  <div style={{ display: "flex", gap: 6 }}>
                     {[
-                      { key: "calm", label: "M1" },
-                      { key: "nature", label: "M2" },
-                      { key: "track3", label: "M3" },
-                      { key: "silent", label: "🔇" },
+                      { key: "profile", label: "🎵 Música" },
+                      { key: "silent", label: "🔇 Silencio" },
                     ].map(({ key, label }) => (
                       <button key={key} type="button"
                         onClick={() => { onRoutineSessionChange({ soundMode: key }); restartAmbientSound(key); }}
-                        style={{ fontSize: 11, padding: "5px 10px", borderRadius: 20, cursor: "pointer",
+                        style={{ fontSize: 11, padding: "5px 12px", borderRadius: 20, cursor: "pointer",
                           background: routineSession.soundMode === key ? "var(--moon)" : "var(--navy-700)",
                           color: routineSession.soundMode === key ? "#1a1333" : "var(--ink)",
                           border: routineSession.soundMode === key ? "1px solid var(--moon)" : "1px solid var(--border)",
