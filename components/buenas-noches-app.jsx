@@ -5598,6 +5598,7 @@ function RoutineSection({
   const [routineStepIndex, setRoutineStepIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [videoModal, setVideoModal] = useState(null);
+  const [expandedStepId, setExpandedStepId] = useState(null);
   const [stepStartedAt, setStepStartedAt] = useState(0);
   const [pausedAt, setPausedAt] = useState(0);
   const [pausedTotalMs, setPausedTotalMs] = useState(0);
@@ -5927,7 +5928,7 @@ function RoutineSection({
             </div>
           ) : null}
 
-          {/* Step cards */}
+          {/* Step cards — collapsed by default, tap to expand */}
           {currentPlan.steps.map((step, stepIdx) => {
             const isPersonalized = !!step.selectedActivity;
             const videos = getRoutineVideosForStep(step, currentPlan.profile);
@@ -5937,73 +5938,82 @@ function RoutineSection({
               && prevStep && beforeDinnerPhases.includes(prevStep.phaseKey)
               && !beforeDinnerPhases.includes(step.phaseKey);
             const accentColor = isPersonalized ? "var(--moon)" : "var(--aqua)";
+            const isExpanded = expandedStepId === step.id;
+            const activityName = step.selectedActivity?.displayName || step.guidance?.title || step.preparationItems?.map(i => i.displayName).join(" + ");
             return (
               <React.Fragment key={step.id}>
               {showDinnerDivider ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1, height: 1, background: "rgba(244,231,178,.25)" }} />
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--moon)", whiteSpace: "nowrap" }}>
-                    🍽️ Cena · {fmt12(currentPlan.dinnerTime)}
-                  </span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--moon)", whiteSpace: "nowrap" }}>🍽️ Cena · {fmt12(currentPlan.dinnerTime)}</span>
                   <div style={{ flex: 1, height: 1, background: "rgba(244,231,178,.25)" }} />
                 </div>
               ) : null}
-              <div style={{
-                background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 16,
-                padding: "15px 16px", borderLeft: `3px solid ${accentColor}`,
-              }}>
-                {/* Phase tag + time */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 7 }}>
-                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700, color: accentColor }}>{step.label}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ink-soft)", whiteSpace: "nowrap" }}>
-                    {fmt12(step.start)}{step.end && step.end !== step.start ? ` – ${fmt12(step.end)}` : ""}
-                  </span>
+              <button type="button" onClick={() => setExpandedStepId(isExpanded ? null : step.id)}
+                style={{ width: "100%", textAlign: "left", background: "var(--navy-800)", border: "1px solid var(--border)", borderLeft: `3px solid ${accentColor}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
+                {/* Collapsed row — always visible */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700, color: accentColor, marginBottom: 2 }}>{step.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{activityName}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ink-soft)" }}>
+                      {fmt12(step.start)}{step.end && step.end !== step.start ? `–${fmt12(step.end)}` : ""}
+                    </span>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "var(--ink-soft)", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </div>
                 </div>
-                {/* Activity title */}
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
-                  {step.selectedActivity?.displayName || step.guidance?.title || step.preparationItems?.map(i => i.displayName).join(" + ")}
-                </div>
-                {/* Instructions */}
-                <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.75)", lineHeight: 1.55, marginBottom: 6 }}>
-                  {step.selectedActivity?.instructions || step.guidance?.guidance || step.preparationItems?.map(i => i.instructions).join(" ")}
-                </div>
-                {/* Purpose italic */}
-                {step.purpose ? <div style={{ fontSize: 11.5, color: "var(--ink-soft)", fontStyle: "italic", lineHeight: 1.5 }}>{step.purpose}</div> : null}
-                {/* Video chips */}
-                {videos.length ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                    {videos.map(v => (
-                      <button key={v.title} type="button" onClick={() => setVideoModal(v)} style={{
-                        display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px",
-                        borderRadius: 20, background: "rgba(158,207,210,.16)", color: "var(--aqua)",
-                        fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer",
-                      }}>
-                        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                        {v.title}
-                      </button>
-                    ))}
+                {/* Expanded detail */}
+                {isExpanded ? (
+                  <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 12 }} onClick={e => e.stopPropagation()}>
+                    {(step.selectedActivity?.instructions || step.guidance?.guidance || step.preparationItems?.map(i => i.instructions).join(" ")) ? (
+                      <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.75)", lineHeight: 1.6, marginBottom: 6 }}>
+                        {step.selectedActivity?.instructions || step.guidance?.guidance || step.preparationItems?.map(i => i.instructions).join(" ")}
+                      </div>
+                    ) : null}
+                    {step.purpose ? <div style={{ fontSize: 11.5, color: "var(--ink-soft)", fontStyle: "italic", lineHeight: 1.5, marginBottom: 8 }}>{step.purpose}</div> : null}
+                    {/* Alternatives */}
+                    {step.alternatives?.length > 1 ? (
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Cambiar actividad</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {step.alternatives.map(a => (
+                            <button key={a.id} type="button" onClick={(e) => { e.stopPropagation(); onChangeActivity(step.id, a.id); }}
+                              style={{ fontSize: 11, padding: "5px 11px", borderRadius: 20, cursor: "pointer",
+                                background: a.id === step.selectedActivityId ? "var(--moon)" : "var(--navy-700)",
+                                color: a.id === step.selectedActivityId ? "var(--navy-950)" : "rgba(255,248,239,.72)",
+                                border: a.id === step.selectedActivityId ? "1px solid var(--moon)" : "1px solid var(--border)",
+                                fontWeight: a.id === step.selectedActivityId ? 700 : 400 }}>
+                              {a.displayName}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                    {/* Videos */}
+                    {videos.length ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                        {videos.map(v => (
+                          <button key={v.title} type="button" onClick={(e) => { e.stopPropagation(); setVideoModal(v); }}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 20, background: "rgba(158,207,210,.16)", color: "var(--aqua)", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer" }}>
+                            <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            {v.title}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {isPersonalized ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: "var(--moon)", marginTop: 10 }}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>
+                        Elegido para {activeChild.name}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
-                {/* Personalized tag */}
-                {isPersonalized ? (
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: "var(--moon)", marginTop: 9 }}>
-                    <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" /></svg>
-                    Elegido para {activeChild.name}
-                  </div>
-                ) : null}
-                {/* Alternative activity chips */}
-                {step.alternatives?.length > 1 ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                    {step.alternatives.filter(a => a.id !== step.selectedActivityId).slice(0, 4).map(a => (
-                      <button key={a.id} type="button" onClick={() => onChangeActivity(step.id, a.id)} style={{
-                        fontSize: 10.5, padding: "5px 10px", borderRadius: 20,
-                        background: "var(--navy-700)", color: "rgba(255,248,239,.72)",
-                        border: "1px solid var(--border)", cursor: "pointer",
-                      }}>{a.displayName}</button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+              </button>
               </React.Fragment>
             );
           })}
