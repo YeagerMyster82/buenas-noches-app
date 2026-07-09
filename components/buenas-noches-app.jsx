@@ -2137,6 +2137,7 @@ export default function BuenasNochesApp() {
             : entry
         ),
         currentPlan: rebuiltPlan,
+        routinePlansByChild: { ...current.routinePlansByChild, [child.id]: rebuiltPlan },
         routinePreviewOpen: true,
         expandedSwapStep: "",
         persistenceMessage:
@@ -6211,18 +6212,6 @@ function RoutineSection({
                   </div>
                 ) : null}
 
-                {/* Sleep readiness — calmar: single shortcut button, no "No todavia" */}
-                {playerStep.phaseKey === "calmar_el_cuerpo" ? (
-                  <div className="sleep-readiness-card" style={{ marginTop: 12, textAlign: "left" }}>
-                    <strong>Senales de sueno</strong>
-                    <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "4px 0 10px" }}>Ojos pesados, cuerpo relajado, menos movimiento, respiracion mas lenta.</p>
-                    <button className="button button-primary" style={{ width: "100%" }} type="button" onClick={() => {
-                      const dormirIndex = currentPlan.steps.findIndex((s) => s.phaseKey === "dormir");
-                      playTransitionTone(routineSession.soundMode);
-                      setRoutineStepIndex(dormirIndex >= 0 ? dormirIndex : currentPlan.steps.length - 1);
-                    }}>Ya esta listo — ir al final</button>
-                  </div>
-                ) : null}
 
                 {/* Dormir state — only show the fell-asleep button on the last step */}
                 {playerStep.phaseKey === "dormir" && isLastRoutineStep ? (
