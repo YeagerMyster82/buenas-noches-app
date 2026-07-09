@@ -3490,8 +3490,13 @@ export default function BuenasNochesApp() {
                             <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 4 }}>{formatAgeLabel(activeChild.birthday, state.language)} · {childGenderLabel(activeChild.gender, state.language)}</div>
                             {activeChild.primaryProfile ? <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "var(--aqua)", background: "rgba(126,200,227,.12)", border: "1px solid rgba(126,200,227,.25)", borderRadius: 6, padding: "3px 9px" }}>{profileMap[activeChild.primaryProfile]?.name || activeChild.primaryProfile}</div> : null}
                           </div>
-                          <button type="button" onClick={() => setState(cur => ({ ...cur, editingChildId: activeChild.id }))} style={{ marginLeft: "auto", fontSize: 12, color: "var(--ink-soft)", background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>Editar</button>
+                          <button type="button" onClick={() => setState(cur => ({ ...cur, editingChildId: activeChild.id }))} style={{ marginLeft: "auto", alignSelf: "flex-start", fontSize: 12, color: "var(--ink-soft)", background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>Editar</button>
                         </div>
+                        {activeChild.primaryProfile && profileMap[activeChild.primaryProfile]?.description ? (
+                          <p style={{ fontSize: 13, color: "rgba(255,248,239,.7)", lineHeight: 1.6, margin: "0 0 14px" }}>
+                            {profileMap[activeChild.primaryProfile].description}
+                          </p>
+                        ) : null}
                         <div style={{ display: "flex", gap: 8 }}>
                           {activeChild.sleepGoal ? <div style={{ background: "var(--navy-700)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--ink-soft)" }}>Duerme a las <strong style={{ color: "var(--moon)" }}>{activeChild.sleepGoal}</strong></div> : null}
                           {avgLatency !== null ? <div style={{ background: "var(--navy-700)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--ink-soft)" }}>Latencia: <strong style={{ color: "var(--ink)" }}>{avgLatency} min</strong></div> : null}
@@ -3756,44 +3761,13 @@ function AppTopBar({
 
   return (
     <header style={{ background: "var(--navy-950)", borderBottom: "1px solid var(--border)", paddingTop: "env(safe-area-inset-top, 0px)" }}>
-      {/* Main bar */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto", alignItems: "center", gap: 8, padding: "10px 14px" }}>
-
-        {/* Child switcher pill */}
-        <div style={{ position: "relative" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: "var(--navy-800)", border: "1px solid var(--border)",
-            padding: "6px 12px", borderRadius: 30, pointerEvents: "none",
-            position: "absolute", inset: 0, zIndex: 1
-          }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
-              {activeChild?.name || "Niño"}
-            </span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255,248,239,.5)", flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
-          <select
-            value={activeChild?.id || ""}
-            onChange={(e) => e.target.value === "add" ? onAddChild() : onSelectChild(e.target.value)}
-            aria-label="Seleccionar niño"
-            style={{ opacity: 0, position: "relative", zIndex: 2, width: "100%", minHeight: 44, cursor: "pointer" }}
-          >
-            {children.length ? children.map((c) => (
-              <option key={c.id} value={c.id}>{c.name || "Niño"}</option>
-            )) : <option value="">Niño</option>}
-            <option value="add">+ Agregar niño</option>
-          </select>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 8, padding: "10px 14px" }}>
 
         {/* Wordmark */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
-          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-            <span style={{ color: "var(--moon)" }}>BUENAS</span>
-            {" "}
-            <span style={{ color: "var(--aqua)" }}>NOCHES</span>
-          </div>
+        <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+          <span style={{ color: "var(--moon)" }}>BUENAS</span>
+          {" "}
+          <span style={{ color: "var(--aqua)" }}>NOCHES</span>
         </div>
 
         {/* Action icons */}
