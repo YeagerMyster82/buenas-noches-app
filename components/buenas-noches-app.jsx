@@ -3933,7 +3933,7 @@ function AppTopBar({
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 8, padding: "10px 14px" }}>
 
         {/* Wordmark */}
-        <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+        <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: ".02em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
           <span style={{ color: "var(--moon)" }}>BUENAS</span>
           {" "}
           <span style={{ color: "var(--aqua)" }}>NOCHES</span>
