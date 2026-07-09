@@ -5809,7 +5809,6 @@ function RoutineSection({
                 <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora te gustaría que se duerma?</span>
                 <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%", boxSizing: "border-box", WebkitAppearance: "none", appearance: "none", display: "block" }} />
               </label>
-              </label>
               {/* Sleep window warning/confirmation */}
               {windowWarning ? (
                 <div style={{
