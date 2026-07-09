@@ -5803,11 +5803,16 @@ function RoutineSection({
             <form onSubmit={onGenerateRoutine} style={{ display: "grid", gap: 14 }}>
               <label style={{ display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora se despertó hoy?</span>
-                <input type="time" value={routineForm.wakeTime} onChange={e => onRoutineFieldChange("wakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", boxSizing: "border-box", width: "100%" }} />
+                <div style={{ overflow: "hidden", borderRadius: 8 }}>
+                  <input type="time" value={routineForm.wakeTime} onChange={e => onRoutineFieldChange("wakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%", boxSizing: "border-box" }} />
+                </div>
               </label>
               <label style={{ display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora te gustaría que se duerma?</span>
-                <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", boxSizing: "border-box", width: "100%" }} />
+                <div style={{ overflow: "hidden", borderRadius: 8 }}>
+                  <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%", boxSizing: "border-box" }} />
+                </div>
+              </label>
               </label>
               {/* Sleep window warning/confirmation */}
               {windowWarning ? (
@@ -5824,7 +5829,9 @@ function RoutineSection({
               ) : null}
               <label style={{ display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora cenan hoy?</span>
-                <input type="time" value={routineForm.dinnerTime} onChange={e => onRoutineFieldChange("dinnerTime", e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", boxSizing: "border-box", width: "100%" }} />
+                <div style={{ overflow: "hidden", borderRadius: 8 }}>
+                  <input type="time" value={routineForm.dinnerTime} onChange={e => onRoutineFieldChange("dinnerTime", e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%", boxSizing: "border-box" }} />
+                </div>
               </label>
               <label style={{ display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿Cuántos minutos suele tardar en prepararse? (baño, pijama, etc.)</span>
