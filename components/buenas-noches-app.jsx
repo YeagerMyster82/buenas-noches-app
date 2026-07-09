@@ -5801,17 +5801,14 @@ function RoutineSection({
             <h3 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 17, fontWeight: 600, marginBottom: 4 }}>Mapear la noche de {activeChild.name}</h3>
             <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 18 }}>Estos datos calculan su rutina y horario ideal de hoy.</p>
             <form onSubmit={onGenerateRoutine} style={{ display: "grid", gap: 14 }}>
-              {/* Side-by-side time inputs */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <label style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora se desperto hoy?</span>
-                  <input type="time" value={routineForm.wakeTime} onChange={e => onRoutineFieldChange("wakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
-                </label>
-                <label style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora te gustaria que se duerma?</span>
-                  <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
-                </label>
-              </div>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora se despertó hoy?</span>
+                <input type="time" value={routineForm.wakeTime} onChange={e => onRoutineFieldChange("wakeTime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%" }} />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora te gustaría que se duerma?</span>
+                <input type="time" value={routineForm.targetBedtime} onChange={e => onRoutineFieldChange("targetBedtime", e.target.value)} required style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%" }} />
+              </label>
               {/* Sleep window warning/confirmation */}
               {windowWarning ? (
                 <div style={{
@@ -5826,12 +5823,12 @@ function RoutineSection({
                 </div>
               ) : null}
               <label style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>A que hora cenan hoy?</span>
-                <input type="time" value={routineForm.dinnerTime} onChange={e => onRoutineFieldChange("dinnerTime", e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark" }} />
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿A qué hora cenan hoy?</span>
+                <input type="time" value={routineForm.dinnerTime} onChange={e => onRoutineFieldChange("dinnerTime", e.target.value)} style={{ fontFamily: "'JetBrains Mono', monospace", colorScheme: "dark", width: "100%" }} />
               </label>
               <label style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Cuantos minutos suele tardar en prepararse? (bano, pijama, etc.)</span>
-                <input type="number" min="5" max="90" step="5" value={routineForm.prepareDuration} onChange={e => onRoutineFieldChange("prepareDuration", e.target.value)} required />
+                <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>¿Cuántos minutos suele tardar en prepararse? (baño, pijama, etc.)</span>
+                <input type="number" min="5" max="90" step="5" value={routineForm.prepareDuration} onChange={e => onRoutineFieldChange("prepareDuration", e.target.value)} required style={{ width: "100%" }} />
               </label>
               {activeChild.takesNap === "yes" ? (
                 <label style={{ display: "grid", gap: 6 }}>
