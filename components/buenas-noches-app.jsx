@@ -855,6 +855,7 @@ const initialState = {
   editingChildId: "",
   savedLogDate: "",
   routineSubTab: "tonight",
+  ninoTipTab: "facilitar",
   wakingPromptLogDate: "",
   sleepWindowOpen: false,
   sleepWindowCompleted: false,
@@ -3374,38 +3375,49 @@ export default function BuenasNochesApp() {
                     const avgLatency = recentLogs.length ? Math.round(recentLogs.reduce((s, l) => s + (l.latency || 0), 0) / recentLogs.length) : null;
                     const highDebtNights = sortedLogs.slice(0, 3).filter(l => calculateSleepDebt(calculateTotalSleepHours(l.sleepTime, l.wakeTime, l.napDuration), child.birthday) >= 1).length;
                     return (
-                      <article key={child.id} style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "22px 22px 20px", position: "relative", overflow: "hidden", color: "var(--ink)" }}>
-                        <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.2), transparent 70%)" }} />
-                        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--moon)", fontWeight: 700, marginBottom: 4 }}>Hora ideal para dormir hoy</div>
-                        <div style={{ fontSize: 12, color: "rgba(255,248,239,.5)", marginBottom: 4, fontWeight: 600 }}>{child.name}</div>
-                        {child.sleepGoal ? (
-                          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(2.4rem,12vw,3.6rem)", fontWeight: 600, lineHeight: 1, marginBottom: 6 }}>{child.sleepGoal}</div>
-                        ) : (
-                          <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "clamp(1.2rem,5vw,1.6rem)", fontWeight: 600, lineHeight: 1.2, marginBottom: 6, color: "var(--ink-soft)" }}>Configura la hora en el perfil</div>
-                        )}
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${debtColor}22`, color: debtColor, border: `1px solid ${debtColor}44`, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: debtColor, display: "inline-block" }} />
-                            Deuda de sueño: {debtLabel}
+                      <article key={child.id} style={{ background: "linear-gradient(150deg, #2B2342 0%, #1F2A47 55%, #1A2C3D 100%)", border: "1px solid var(--border)", borderRadius: 22, padding: "20px 20px 18px", position: "relative", overflow: "hidden", color: "var(--ink)" }}>
+                        <div style={{ position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(244,231,178,.15), transparent 70%)" }} />
+                        {/* Profile badge */}
+                        {child.primaryProfile ? (
+                          <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "var(--aqua)", background: "rgba(126,200,227,.12)", border: "1px solid rgba(126,200,227,.25)", borderRadius: 6, padding: "3px 9px", marginBottom: 8, letterSpacing: ".04em" }}>
+                            {profileMap[child.primaryProfile]?.name || child.primaryProfile}
                           </div>
-                          {recentLogs.length > 0 ? (
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,248,239,.08)", color: "rgba(255,248,239,.7)", border: "1px solid rgba(255,248,239,.15)", padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                              🌙 {recentLogs.length} noche{recentLogs.length !== 1 ? "s" : ""} esta semana
+                        ) : null}
+                        {/* Big child name */}
+                        <div style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 26, fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>{child.name}</div>
+                        {/* Ideal bedtime */}
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12, marginTop: 8 }}>
+                          <span style={{ fontSize: 11, color: "rgba(255,248,239,.4)", textTransform: "uppercase", letterSpacing: ".07em" }}>Hora ideal</span>
+                          {child.sleepGoal ? (
+                            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: 32, fontWeight: 700, color: "var(--moon)", lineHeight: 1 }}>{child.sleepGoal}</span>
+                          ) : (
+                            <span style={{ fontSize: 13, color: "rgba(255,248,239,.4)" }}>Configura en perfil</span>
+                          )}
+                        </div>
+                        {/* Stats row */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                          <div style={{ background: `${debtColor}18`, color: debtColor, border: `1px solid ${debtColor}33`, padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: debtColor }} />
+                            {debtLabel}
+                          </div>
+                          {avgLatency !== null ? (
+                            <div style={{ background: "rgba(255,248,239,.06)", color: "rgba(255,248,239,.6)", border: "1px solid rgba(255,248,239,.12)", padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600 }}>
+                              {avgLatency} min prom
                             </div>
                           ) : null}
-                          {avgLatency !== null ? (
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,248,239,.08)", color: "rgba(255,248,239,.7)", border: "1px solid rgba(255,248,239,.15)", padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                              ⏱ Latencia prom: {avgLatency} min
+                          {recentLogs.length > 0 ? (
+                            <div style={{ background: "rgba(255,248,239,.06)", color: "rgba(255,248,239,.6)", border: "1px solid rgba(255,248,239,.12)", padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600 }}>
+                              {recentLogs.length} noche{recentLogs.length !== 1 ? "s" : ""} esta semana
                             </div>
                           ) : null}
                         </div>
                         {highDebtNights >= 2 ? (
-                          <div style={{ background: "rgba(255,107,107,.15)", border: "1px solid rgba(255,107,107,.3)", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "var(--coral)", marginBottom: 14 }}>
-                            ⚠️ {child.name} acumula deuda de sueño. Adelanta la hora de dormir 15–20 min esta semana.
+                          <div style={{ background: "rgba(255,107,107,.12)", border: "1px solid rgba(255,107,107,.25)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "var(--coral)", marginBottom: 12 }}>
+                            {child.name} acumula deuda de sueño. Adelanta 15–20 min esta semana.
                           </div>
                         ) : null}
                         <button className="button button-primary" type="button" style={{ width: "100%" }} onClick={() => requestRoutine(child.id)}>
-                          🌙 Generar Rutina personalizada
+                          🌙 Iniciar rutina
                         </button>
                       </article>
                     );
@@ -3443,55 +3455,77 @@ export default function BuenasNochesApp() {
               ) : null}
 
               {state.activeSection === "child" ? (
-                <ChildHomeGrid
-                  children={state.children}
-                  activeChildId={state.activeChildId}
-                  expandedChildId={state.expandedChildId}
-                  canAddChild={canAddChild}
-                  strings={strings}
-                  language={state.language}
-                  profileMap={profileMap}
-                  parentName={state.parentName}
-                  parentEmail={state.verifiedEmail || state.parentEmail || state.purchaseEmail}
-                  mode="child"
-                  onToggleChild={(childId) =>
-                    setState((current) => ({
-                      ...current,
-                      activeChildId: childId,
-                      expandedChildId: current.expandedChildId === childId ? "" : childId,
-                    }))
-                  }
-                  onCreateRoutine={(childId) => requestRoutine(childId)}
-                  onEditProfile={(childId) => setState((current) => ({ ...current, editingChildId: childId }))}
-                  onUpdateLog={updateSavedNightLog}
-                  onUpdateActivityEnjoyment={updateActivityEnjoyment}
-                  onAddChild={startAddChild}
-                />
-              ) : null}
-
-              {state.activeSection === "routine" ? (
                 <>
-                  {/* Segmented control — Esta noche is primary, rest are secondary */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                    <button type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: "tonight" }))}
-                      style={{ width: "100%", textAlign: "center", padding: "12px", borderRadius: 13, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none",
-                        background: state.routineSubTab === "tonight" ? "var(--moon)" : "var(--navy-800)",
-                        color: state.routineSubTab === "tonight" ? "var(--navy-950)" : "var(--ink-soft)",
-                        borderColor: "var(--border)", borderWidth: 1, borderStyle: "solid" }}>
-                      🌙 Generar Rutina personalizada
-                    </button>
-                    <div style={{ display: "flex", gap: 6 }}>
+                  {/* Child selector tabs */}
+                  {state.children.filter(c => c.primaryProfile).length > 1 ? (
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      {state.children.filter(c => c.primaryProfile).map((child) => {
+                        const isActive = child.id === state.activeChildId;
+                        return (
+                          <button key={child.id} type="button"
+                            onClick={() => setState(cur => ({ ...cur, activeChildId: child.id }))}
+                            style={{ flex: 1, padding: "10px 8px", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                              background: isActive ? "var(--moon)" : "var(--navy-800)",
+                              color: isActive ? "var(--navy-950)" : "var(--ink-soft)",
+                              border: `1.5px solid ${isActive ? "var(--moon)" : "var(--border)"}` }}>
+                            {child.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  {/* Profile card for active child */}
+                  {activeChild ? (() => {
+                    const av = getProfileAvatar(activeChild.primaryProfile);
+                    const sortedLogs = [...(activeChild.logs || [])].sort((a,b) => a.date < b.date ? 1 : -1);
+                    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+                    const recentLogs = sortedLogs.filter(l => l.date >= weekAgo);
+                    const avgLatency = recentLogs.length ? Math.round(recentLogs.reduce((s,l) => s+(l.latency||0),0)/recentLogs.length) : null;
+                    return (
+                      <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: 18, marginBottom: 16 }}>
+                        <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14 }}>
+                          {av ? <img src={av.src} alt={av.alt} style={{ width: 56, height: 56, objectFit: "contain" }} /> : <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--navy-700)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700 }}>{activeChild.name?.[0]}</div>}
+                          <div>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>{activeChild.name}</div>
+                            <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 4 }}>{formatAgeLabel(activeChild.birthday, state.language)} · {childGenderLabel(activeChild.gender, state.language)}</div>
+                            {activeChild.primaryProfile ? <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "var(--aqua)", background: "rgba(126,200,227,.12)", border: "1px solid rgba(126,200,227,.25)", borderRadius: 6, padding: "3px 9px" }}>{profileMap[activeChild.primaryProfile]?.name || activeChild.primaryProfile}</div> : null}
+                          </div>
+                          <button type="button" onClick={() => setState(cur => ({ ...cur, editingChildId: activeChild.id }))} style={{ marginLeft: "auto", fontSize: 12, color: "var(--ink-soft)", background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>Editar</button>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {activeChild.sleepGoal ? <div style={{ background: "var(--navy-700)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--ink-soft)" }}>Duerme a las <strong style={{ color: "var(--moon)" }}>{activeChild.sleepGoal}</strong></div> : null}
+                          {avgLatency !== null ? <div style={{ background: "var(--navy-700)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--ink-soft)" }}>Latencia: <strong style={{ color: "var(--ink)" }}>{avgLatency} min</strong></div> : null}
+                        </div>
+                      </div>
+                    );
+                  })() : null}
+                  {/* Tips moved here from Rutina */}
+                  {activeChild?.primaryProfile ? (
+                    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
                       {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
-                        <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, routineSubTab: id }))}
-                          style={{ flex: 1, textAlign: "center", padding: "7px 4px", borderRadius: 10, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
-                            background: state.routineSubTab === id ? "var(--navy-700)" : "transparent",
-                            color: state.routineSubTab === id ? "var(--cream)" : "var(--ink-soft)" }}>
+                        <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, ninoTipTab: id }))}
+                          style={{ flex: 1, textAlign: "center", padding: "8px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
+                            background: (state.ninoTipTab || "facilitar") === id ? "var(--navy-700)" : "transparent",
+                            color: (state.ninoTipTab || "facilitar") === id ? "var(--cream)" : "var(--ink-soft)" }}>
                           {label}
                         </button>
                       ))}
                     </div>
-                  </div>
-                  {state.routineSubTab === "tonight" && state.children.filter(c => c.primaryProfile).length > 1 ? (
+                  ) : null}
+                  {(state.ninoTipTab || "facilitar") === "facilitar" && activeChild ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
+                  {(state.ninoTipTab || "facilitar") === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
+                  {(state.ninoTipTab || "facilitar") === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
+                  {canAddChild ? (
+                    <button type="button" onClick={startAddChild} style={{ width: "100%", padding: "13px", borderRadius: 12, background: "var(--navy-800)", border: "1px dashed var(--border)", color: "var(--ink-soft)", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 8 }}>
+                      + Agregar otro niño
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+
+              {state.activeSection === "routine" ? (
+                <>
+                  {state.children.filter(c => c.primaryProfile).length > 1 ? (
                     <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                       {state.children.filter(c => c.primaryProfile).map((child) => {
                         const isActive = child.id === state.routineChildId;
@@ -3508,8 +3542,7 @@ export default function BuenasNochesApp() {
                       })}
                     </div>
                   ) : null}
-                  {state.routineSubTab === "tonight" ? (
-                    state.children.filter(c => c.primaryProfile).map((child) => {
+                  {state.children.filter(c => c.primaryProfile).map((child) => {
                       const cid = child.id;
                       const isActive = cid === state.routineChildId;
                       const childPlan = state.routinePlansByChild[cid] ?? null;
@@ -3557,11 +3590,7 @@ export default function BuenasNochesApp() {
                           </RoutineErrorBoundary>
                         </div>
                       );
-                    })
-                  ) : null}
-                  {state.routineSubTab === "facilitar" ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
-                  {state.routineSubTab === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
-                  {state.routineSubTab === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
+                  })}
                 </>
               ) : null}
 
@@ -6110,6 +6139,24 @@ function RoutineSection({
                   ×
                 </button>
 
+                {/* Mini child switcher — visible while player is open */}
+                {allChildren.length > 1 ? (
+                  <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 }}>
+                    {allChildren.map((child) => {
+                      const isActive = child.id === activeChild?.id;
+                      return (
+                        <button key={child.id} type="button"
+                          onClick={() => onSelectRoutineChild?.(child.id)}
+                          style={{ padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                            background: isActive ? "var(--moon)" : "rgba(255,255,255,.07)",
+                            color: isActive ? "var(--navy-950)" : "var(--ink-soft)",
+                            border: `1px solid ${isActive ? "var(--moon)" : "transparent"}` }}>
+                          {child.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 {/* Progress + phase */}
                 <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink-soft)", marginBottom: 6 }}>
                   PASO {routineStepIndex + 1} DE {currentPlan.steps.length}
