@@ -805,6 +805,8 @@ const initialState = {
   accountLookupMessage: "",
   children: [],
   activeChildId: "",
+  routineChildId: "",
+  routinePlansByChild: {},
   expandedChildId: "",
   activeSection: "home",
   childDraft: {
@@ -1195,6 +1197,7 @@ export default function BuenasNochesApp() {
     setState((current) => ({
       ...current,
       activeChildId: current.children[0]?.id || "",
+      routineChildId: current.routineChildId || current.children[0]?.id || "",
     }));
   }, [state.children, state.activeChildId]);
 
@@ -1330,6 +1333,7 @@ export default function BuenasNochesApp() {
   const profileMap = getProfileMap(state.language);
   const questions = getQuestions(state.language);
   const activeChild = state.children.find((child) => child.id === state.activeChildId) || null;
+  const routineActiveChild = state.children.find((child) => child.id === state.routineChildId) || activeChild;
   const editingChild = state.children.find((child) => child.id === state.editingChildId) || null;
   const resultCopy = state.quizResult ? buildResultCopy(state.quizResult, state.language) : null;
   const revealedResultCopy = state.revealedResult ? buildResultCopy(state.revealedResult, state.language) : null;
@@ -1499,16 +1503,18 @@ export default function BuenasNochesApp() {
   }
 
   function requestRoutine(childId = state.activeChildId) {
-    if (childId) {
-      setState((current) => ({ ...current, activeChildId: childId }));
-    }
-
     if (!hasPremiumAccess) {
       setState((current) => ({ ...current, premiumRoutineGateOpen: true }));
       return;
     }
-
-    setState((current) => ({ ...current, activeChildId: childId || current.activeChildId, activeSection: "routine" }));
+    setState((current) => ({
+      ...current,
+      activeSection: "routine",
+      routineChildId: childId || current.routineChildId || current.activeChildId,
+      // restore cached plan for this child if available
+      currentPlan: current.routinePlansByChild[childId] ?? null,
+      routinePreviewOpen: !!(current.routinePlansByChild[childId]),
+    }));
   }
 
   function goToSalesFunnelFromRoutineGate(event) {
@@ -2005,26 +2011,27 @@ export default function BuenasNochesApp() {
 
   async function generateRoutine(event) {
     event.preventDefault();
-    if (!activeChild) return;
+    if (!routineActiveChild) return;
 
     const plan = buildPlan({
-      profile: activeChild.primaryProfile,
-      birthday: activeChild.birthday,
+      profile: routineActiveChild.primaryProfile,
+      birthday: routineActiveChild.birthday,
       wakeTime: state.routineForm.wakeTime,
       targetBedtime: state.routineForm.targetBedtime,
       dinnerTime: state.routineForm.dinnerTime,
       prepareDuration: Number(state.routineForm.prepareDuration) || 25,
-      napTaken: activeChild.takesNap === "yes" && state.routineForm.napTaken === "yes",
-      napWakeTime: activeChild.takesNap === "yes" ? state.routineForm.napWakeTime : "",
-      priorLogs: activeChild.logs,
-      selectedActivities: activeChild.selectedActivities,
-      dislikedCounts: activeChild.dislikedCounts,
+      napTaken: routineActiveChild.takesNap === "yes" && state.routineForm.napTaken === "yes",
+      napWakeTime: routineActiveChild.takesNap === "yes" ? state.routineForm.napWakeTime : "",
+      priorLogs: routineActiveChild.logs,
+      selectedActivities: routineActiveChild.selectedActivities,
+      dislikedCounts: routineActiveChild.dislikedCounts,
     });
 
-    updateChild(activeChild.id, () => ({ lastPlan: plan }));
+    updateChild(routineActiveChild.id, () => ({ lastPlan: plan }));
     setState((current) => ({
       ...current,
       currentPlan: plan,
+      routinePlansByChild: { ...current.routinePlansByChild, [current.routineChildId || current.activeChildId]: plan },
       routinePreviewOpen: true,
       routineSession: {
         startedAt: "",
@@ -2075,10 +2082,10 @@ export default function BuenasNochesApp() {
   }
 
   function changeActivity(stepId, activityId) {
-    if (!activeChild || !state.currentPlan) return;
+    if (!routineActiveChild || !state.currentPlan) return;
 
     setState((current) => {
-      const child = current.children.find((entry) => entry.id === current.activeChildId);
+      const child = current.children.find((entry) => entry.id === (current.routineChildId || current.activeChildId));
       if (!child) return current;
 
       const nextSelectedActivities = {
@@ -2123,7 +2130,7 @@ export default function BuenasNochesApp() {
   }
 
   async function saveGuidedRoutineLog(sessionPatch = {}) {
-    if (!activeChild || !state.currentPlan) return;
+    if (!routineActiveChild || !state.currentPlan) return;
 
     const session = { ...state.routineSession, ...sessionPatch };
     const bedTime = session.inBedAt || getCurrentTimeValue();
@@ -2159,11 +2166,11 @@ export default function BuenasNochesApp() {
       ],
     };
 
-    const updatedLogs = [nextLog, ...activeChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
+    const updatedLogs = [nextLog, ...routineActiveChild.logs.filter((entry) => entry.date !== nextLog.date)].sort((left, right) =>
       left.date < right.date ? 1 : -1
     );
 
-    updateChild(activeChild.id, () => ({
+    updateChild(routineActiveChild.id, () => ({
       logs: updatedLogs,
     }));
 
@@ -3464,9 +3471,22 @@ export default function BuenasNochesApp() {
                     </div>
                   </div>
                   {state.routineSubTab === "tonight" ? <RoutineErrorBoundary onReset={() => setState((c) => ({ ...c, currentPlan: null, routinePreviewOpen: false }))}><RoutineSection
-                  activeChild={activeChild}
+                  activeChild={routineActiveChild}
                   allChildren={state.children.filter(c => c.primaryProfile)}
-                  onSelectRoutineChild={(childId) => requestRoutine(childId)}
+                  onSelectRoutineChild={(childId) => {
+                    setState((current) => ({
+                      ...current,
+                      routineChildId: childId,
+                      // cache current plan for the child we're leaving
+                      routinePlansByChild: current.currentPlan
+                        ? { ...current.routinePlansByChild, [current.routineChildId || current.activeChildId]: current.currentPlan }
+                        : current.routinePlansByChild,
+                      // restore plan for the child we're switching to (null = show form)
+                      currentPlan: current.routinePlansByChild[childId] ?? null,
+                      routinePreviewOpen: !!(current.routinePlansByChild[childId]),
+                      routineSession: { startedAt: "", inBedAt: "", routineEndTime: "", fellAsleepAt: "", timerMode: "timed", soundMode: "profile" },
+                    }));
+                  }}
                   strings={strings}
                   profileMap={profileMap}
                   routineForm={state.routineForm}
