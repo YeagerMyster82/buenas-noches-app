@@ -6238,12 +6238,17 @@ function RoutineSection({
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".05em" }}>A la cama</span>
                         <input type="time" value={routineSession.inBedAt || ""} onChange={(e) => onRoutineSessionChange({ inBedAt: e.target.value })}
-                          style={{ background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", color: "var(--ink)", fontSize: 16, fontFamily: "'JetBrains Mono', monospace", width: "100%" }} />
+                          style={{ background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", color: "var(--ink)", fontSize: 16, fontFamily: "'JetBrains Mono', monospace", width: "100%", WebkitAppearance: "none", appearance: "none" }} />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".05em" }}>Luces apagadas</span>
+                        <input type="time" value={routineSession.routineEndTime || ""} onChange={(e) => onRoutineSessionChange({ routineEndTime: e.target.value })}
+                          style={{ background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", color: "var(--ink)", fontSize: 16, fontFamily: "'JetBrains Mono', monospace", width: "100%", WebkitAppearance: "none", appearance: "none" }} />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: ".05em" }}>Se durmió</span>
                         <input type="time" value={routineSession.fellAsleepAt || ""} onChange={(e) => onRoutineSessionChange({ fellAsleepAt: e.target.value })}
-                          style={{ background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", color: "var(--ink)", fontSize: 16, fontFamily: "'JetBrains Mono', monospace", width: "100%" }} />
+                          style={{ background: "var(--navy-700)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", color: "var(--ink)", fontSize: 16, fontFamily: "'JetBrains Mono', monospace", width: "100%", WebkitAppearance: "none", appearance: "none" }} />
                       </label>
                     </div>
                     <button className="button button-primary" type="button" style={{ width: "100%" }} onClick={saveChildAsleep}>
