@@ -2160,6 +2160,7 @@ export default function BuenasNochesApp() {
     const sleepTime = session.fellAsleepAt || getCurrentTimeValue();
     const nextLog = {
       date: new Date().toISOString().slice(0, 10),
+      morningWakeTime: targetPlan.wakeTime || "",
       routineStartTime: session.startedAt || targetPlan.routineStart || "",
       bedTime,
       routineEndTime,
@@ -2473,12 +2474,13 @@ export default function BuenasNochesApp() {
     const wakeTime = String(formData.get("wakeTime") || existingLog.wakeTime || "");
     const updatedLog = {
       date: String(formData.get("date") || originalDate),
+      morningWakeTime: String(formData.get("morningWakeTime") || existingLog.morningWakeTime || ""),
       routineStartTime: String(formData.get("routineStartTime") || ""),
       routineEndTime: String(formData.get("routineEndTime") || existingLog.routineEndTime || ""),
       bedTime,
       sleepTime,
       wakeTime,
-      latency: calculateLatency(bedTime, sleepTime),
+      latency: calculateLatency(String(formData.get("routineEndTime") || existingLog.routineEndTime || bedTime), sleepTime),
       nightWakings: String(formData.get("nightWakings") || "0"),
       notes: String(formData.get("notes") || ""),
       napStart: existingLog.napStart || "",
@@ -5304,23 +5306,27 @@ function HomeSection({
                 <input name="date" type="date" defaultValue={editingLog.date} required />
               </label>
               <label className="stack compact">
-                <span>{strings.routineStartTime}</span>
-                <input name="routineStartTime" type="time" defaultValue={editingLog.routineStartTime || ""} />
+                <span>Se despertó esa mañana</span>
+                <input name="morningWakeTime" type="time" defaultValue={editingLog.morningWakeTime || ""} />
               </label>
               <label className="stack compact">
-                <span>Luces apagadas</span>
-                <input name="routineEndTime" type="time" defaultValue={editingLog.routineEndTime || ""} />
+                <span>{strings.routineStartTime}</span>
+                <input name="routineStartTime" type="time" defaultValue={editingLog.routineStartTime || ""} />
               </label>
               <label className="stack compact">
                 <span>{strings.bedTime}</span>
                 <input name="bedTime" type="time" defaultValue={editingLog.bedTime} required />
               </label>
               <label className="stack compact">
+                <span>Luces apagadas</span>
+                <input name="routineEndTime" type="time" defaultValue={editingLog.routineEndTime || ""} />
+              </label>
+              <label className="stack compact">
                 <span>{strings.sleepTime}</span>
                 <input name="sleepTime" type="time" defaultValue={editingLog.sleepTime} required />
               </label>
               <label className="stack compact">
-                <span>Hora de despertar</span>
+                <span>Se despertó al día siguiente</span>
                 <input name="wakeTime" type="time" defaultValue={editingLog.wakeTime || ""} />
               </label>
               <label className="stack compact">
