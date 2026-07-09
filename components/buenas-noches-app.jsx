@@ -59,6 +59,13 @@ const LULLABY_URL = `${SUPABASE_MUSIC_BASE}/music_2026-07-09T14-49-50-432Z.mp3`;
 
 // Map primaryProfile slug → profileMusicTracks key
 const PROFILE_MUSIC_MAP = {
+  // DB keys (uppercase)
+  el_inagotable: "incansable",
+  el_desvelado: "vigilante",
+  el_negociador: "negociador",
+  el_berrinche: "volcan",
+  el_sonambulo: "explorador",
+  // lowercase slug variants
   incansable: "incansable",
   "el-incansable": "incansable",
   vigilante: "vigilante",
