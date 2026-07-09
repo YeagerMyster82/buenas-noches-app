@@ -6178,16 +6178,19 @@ function RoutineSection({
                   </div>
                 ) : null}
 
-                {/* Dormir state */}
-                {playerStep.phaseKey === "dormir" ? (
+                {/* Dormir state — only show the fell-asleep button on the last step */}
+                {playerStep.phaseKey === "dormir" && isLastRoutineStep ? (
                   <div className="sleep-readiness-card sleep-readiness-card--blue" style={{ textAlign: "left", marginTop: 12 }}>
                     <strong>Tiempo en cama</strong>
-                    <p>Cuando tu hijo se duerma, toca <strong>Siguiente paso</strong> para registrar esta noche.</p>
+                    <p>Cuando tu hijo se duerma, toca el botón para registrar esta noche.</p>
                     <div className="summary-grid" style={{ marginTop: 10 }}>
                       <Stat label={strings.bedTime} value={routineSession.inBedAt || "--:--"} />
-                      <div className="stat-card">
+                      <div className="stat-card sleep-save-stat">
                         <span>{strings.sleepTime}</span>
                         <strong>{routineSession.fellAsleepAt || "--:--"}</strong>
+                        <button className="button button-primary" type="button" onClick={saveChildAsleep}>
+                          Ya se durmió
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -6223,7 +6226,6 @@ function RoutineSection({
                         playTransitionTone(routineSession.soundMode);
                         if (playerStep.phaseKey === "a_la_cama") onRoutineSessionChange({ inBedAt: routineSession.inBedAt || getCurrentTimeValue() });
                         if (currentPlan.steps[routineStepIndex + 1]?.phaseKey === "dormir") onRoutineSessionChange({ routineEndTime: routineSession.routineEndTime || getCurrentTimeValue() });
-                        if (playerStep.phaseKey === "dormir") onRoutineSessionChange({ fellAsleepAt: routineSession.fellAsleepAt || getCurrentTimeValue() });
                         setStepStartedAt(Date.now());
                         setPausedAt(0); setPausedTotalMs(0); setExtendedSeconds(0);
                         setTimerNow(Date.now()); setIsPaused(false);
