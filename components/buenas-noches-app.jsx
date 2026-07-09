@@ -3491,6 +3491,23 @@ export default function BuenasNochesApp() {
                       ))}
                     </div>
                   </div>
+                  {state.routineSubTab === "tonight" && state.children.filter(c => c.primaryProfile).length > 1 ? (
+                    <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                      {state.children.filter(c => c.primaryProfile).map((child) => {
+                        const isActive = child.id === state.routineChildId;
+                        return (
+                          <button key={child.id} type="button"
+                            onClick={() => setState(cur => ({ ...cur, routineChildId: child.id }))}
+                            style={{ flex: 1, padding: "10px 8px", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                              background: isActive ? "var(--moon)" : "var(--navy-800)",
+                              color: isActive ? "var(--navy-950)" : "var(--ink-soft)",
+                              border: `1.5px solid ${isActive ? "var(--moon)" : "var(--border)"}` }}>
+                            {child.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                   {state.routineSubTab === "tonight" ? (
                     state.children.filter(c => c.primaryProfile).map((child) => {
                       const cid = child.id;
@@ -5791,34 +5808,6 @@ function RoutineSection({
       {/* ── STATE 1: Form ── */}
       {!currentPlan ? (
         <>
-          {/* Child toggle */}
-          {allChildren.length > 1 ? (
-            <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: 18 }}>
-              <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 12 }}>Para quien es la rutina de hoy?</p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {allChildren.map((child) => {
-                  const av = getProfileAvatar(child.primaryProfile);
-                  const isActive = child.id === activeChild?.id;
-                  return (
-                    <button key={child.id} type="button" onClick={() => onSelectRoutineChild?.(child.id)} style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14,
-                      background: isActive ? "rgba(244,231,178,.12)" : "var(--navy-700)",
-                      border: `1.5px solid ${isActive ? "var(--moon)" : "transparent"}`,
-                      color: "var(--ink)", cursor: "pointer", textAlign: "left",
-                    }}>
-                      <div style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--navy-600)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {av ? <img src={av.src} alt="" style={{ width: "140%", objectFit: "contain", marginTop: "14%" }} /> : <span style={{ fontWeight: 700, fontSize: 14 }}>{child.name?.[0]}</span>}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>{child.name}</div>
-                        <div style={{ fontSize: 11, color: isActive ? "var(--moon)" : "var(--ink-soft)" }}>{profileMap?.[child.primaryProfile]?.name || child.primaryProfile}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
 
           {/* Form card */}
           <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 18, padding: "18px 18px 18px 18px", boxSizing: "border-box" }}>
