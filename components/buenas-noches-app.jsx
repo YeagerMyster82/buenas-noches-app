@@ -786,6 +786,147 @@ const foodSleepItems = [
   ["Leche tibia", "Aporta triptófano y una sensación emocionalmente reconfortante."],
 ];
 
+const PROFILE_TIPS = {
+  EL_INAGOTABLE: {
+    tagline: "El niño que parece activarse justo cuando debería estar cansado.",
+    nervousSystem: "Lo que su sistema nervioso necesita: Menos estimulación.",
+    nervousSystemColor: "#F4A44B",
+    whatHappens: "Estos niños a menudo parecen llenos de energía, pero fisiológicamente pueden estar experimentando un 'segundo aire'. La presión de sueño es alta, pero los sistemas de alerta siguen activos. Saltarse la ventana ideal de sueño puede elevar el cortisol y la activación simpática, haciendo que el niño parezca más despierto en lugar de más cansado.",
+    facilitar: [
+      { title: "Iluminación cálida y tenue", copy: "Empieza a bajar las luces 60–90 minutos antes de dormir. La luz brillante retrasa la melatonina." },
+      { title: "Muy poca estimulación visual", copy: "Sin pantallas brillantes, sin juguetes activos. El sistema nervioso necesita señales de que el día terminó." },
+      { title: "Sin juegos bruscos después de cenar", copy: "Las cosquillas, las persecuciones y los juegos físicos intensos activan el sistema nervioso en el peor momento." },
+      { title: "Actividades repetitivas y tranquilas", copy: "Colorear, armar rompecabezas, leer. La repetición tiene un efecto calmante en el sistema nervioso." },
+      { title: "Habitación ligeramente fresca", copy: "18–21°C es el rango ideal. El cuerpo necesita bajar su temperatura para iniciar el sueño." },
+    ],
+    evitar: [
+      { item: "Cosquillas o juegos de persecución", why: "Aumentan la activación fisiológica justo antes de dormir." },
+      { item: "Luces LED brillantes", why: "Suprimen la melatonina y envían señales de 'es de día' al cerebro." },
+      { item: "Televisión o videos estimulantes", why: "La luz azul y el contenido activo aumentan el estado de alerta." },
+      { item: "Música rápida", why: "El ritmo cardíaco tiende a sincronizarse con el ritmo del ambiente." },
+      { item: "Azúcar en las 2 horas antes de dormir", why: "Los picos de glucosa aumentan la energía y dificultan la calma." },
+      { item: '"Un juego más"', why: "Cada prórroga refuerza que la negociación funciona y retrasa el sueño." },
+    ],
+    alimentos: [
+      { item: "Plátano", note: "Magnesio, potasio y triptófano. Ideal como snack pre-rutina." },
+      { item: "Avena", note: "Carbohidratos complejos que estabilizan el azúcar en sangre." },
+      { item: "Yogur natural", note: "Triptófano y calcio que apoyan la producción de melatonina." },
+      { item: "Pavo o pollo", note: "Rico en triptófano, apoya la serotonina." },
+      { item: "Kiwi", note: "Algunos estudios pediátricos sugieren que mejora la calidad del sueño." },
+      { item: "Semillas de calabaza (pequeña cantidad)", note: "Fuente de magnesio." },
+    ],
+    avoid_foods: ["Azúcar en las 2 horas antes de dormir", "Jugos de frutas azucarados", "Chocolates o dulces"],
+  },
+  EL_DESVELADO: {
+    tagline: "El cuerpo está quieto, pero el cerebro sigue vigilando.",
+    nervousSystem: "Lo que su sistema nervioso necesita: Más señales de seguridad.",
+    nervousSystemColor: "#7EC8E3",
+    whatHappens: "Estos niños no necesitan menos estimulación — necesitan más señales de seguridad. La neurociencia del desarrollo sugiere que las rutinas predecibles y la presencia de los padres reducen la hipervigilancia. Su sistema nervioso está en modo alerta silenciosa esperando confirmar que todo está bien.",
+    facilitar: [
+      { title: "Hora de dormir consistente cada noche", copy: "La previsibilidad le dice al sistema nervioso que el mundo es seguro. Incluso 15 minutos de variación pueden dificultar el inicio del sueño." },
+      { title: "Ruido blanco o sonido continuo", copy: "Cubre los sonidos inesperados que activan el reflejo de alerta. Ayuda al cerebro a 'soltar' la vigilancia." },
+      { title: "Manta pesada si es apropiado", copy: "La presión profunda puede activar el sistema nervioso parasimpático. Consulta con el pediatra antes de usarla." },
+      { title: "Presencia tranquila del padre/madre", copy: "Sentarse en silencio cerca reduce la hipervigilancia sin reforzar la dependencia." },
+      { title: "El mismo guión de buenas noches cada noche", copy: "Las mismas palabras, el mismo orden, la misma duración. La consistencia es la medicina." },
+    ],
+    evitar: [
+      { item: "Hablar sobre los planes de mañana", why: "Activa el pensamiento anticipatorio justo cuando el cerebro necesita desconectarse." },
+      { item: "Hacer muchas preguntas", why: "Requiere procesamiento cognitivo que mantiene el cerebro alerta." },
+      { item: "Resolver problemas de último momento", why: "El modo resolución de problemas es incompatible con el modo descanso." },
+      { item: "Pantallas", why: "La luz azul y el contenido visual mantienen el sistema de alerta activo." },
+      { item: "Cambios repentinos en la rutina", why: "La incertidumbre activa los mecanismos de vigilancia." },
+      { item: "Discusiones o tensión emocional cerca de la hora de dormir", why: "El sistema nervioso necesita señales de calma, no de amenaza." },
+    ],
+    alimentos: [
+      { item: "Yogur griego", note: "Estabiliza el azúcar en sangre y aporta triptófano." },
+      { item: "Tostada integral", note: "Los carbohidratos complejos favorecen la producción de serotonina." },
+      { item: "Queso", note: "Pequeña fuente de triptófano y calcio." },
+      { item: "Mantequilla de almendra", note: "Grasas saludables que estabilizan la energía durante la noche." },
+      { item: "Leche tibia", note: "La calidez y el triptófano tienen un efecto calmante reconocido." },
+    ],
+    avoid_foods: ["Snacks azucarados grandes", "Jugos antes de dormir", "Chocolate (cafeína)"],
+  },
+  EL_NEGOCIADOR: {
+    tagline: "No está buscando otro cuento. Está buscando otra dosis de seguridad.",
+    nervousSystem: "Lo que su sistema nervioso necesita: Conexión predecible antes de dormir.",
+    nervousSystemColor: "#8FBE9E",
+    whatHappens: "La investigación sobre apego y sueño muestra que el refuerzo intermitente puede fortalecer la negociación a la hora de dormir. El objetivo es dar conexión predecible antes de dormir — no conexión interminable después. Un niño que sabe exactamente qué viene después no necesita negociar.",
+    facilitar: [
+      { title: "Tabla visual de la rutina de la noche", copy: "Cuando el niño puede ver lo que sigue, no necesita preguntar ni negociar. La predictibilidad reduce la ansiedad." },
+      { title: "La misma secuencia cada noche", copy: "Baño → dientes → cuento → apagar luz. Sin variaciones. La secuencia predecible reduce la necesidad de negociar." },
+      { title: '"Tiempo especial de conexión" de 10 minutos', copy: "Un tiempo dedicado, sin distracciones, antes de empezar la rutina. Le da al niño la dosis de conexión que necesita antes de soltarse." },
+      { title: "Fotos familiares cerca de la cama", copy: "Un recordatorio visual de que los vínculos no desaparecen al apagar la luz." },
+      { title: "Objeto de confort favorito", copy: "Un peluche o manta especial que 'cuida' al niño mientras duerme." },
+    ],
+    evitar: [
+      { item: "Cambiar las reglas", why: "La inconsistencia enseña que negociar funciona. La consistencia enseña que no es necesario." },
+      { item: "Respuestas inconsistentes a la hora de dormir", why: "Si a veces se cede y a veces no, el niño aprende a seguir intentándolo." },
+      { item: "Conversaciones largas después de apagar la luz", why: "Refuerza que quedarse despierto genera más conexión." },
+      { item: "Nuevas promesas al momento de dormir", why: '"Mañana te dejo quedarte despierto más tarde" crea expectativas que complican las noches siguientes.' },
+    ],
+    alimentos: [
+      { item: "Cenar juntos en familia siempre que sea posible", note: "Las comidas familiares están asociadas con mejor regulación emocional y sentido de pertenencia." },
+      { item: "Snack tranquilo antes de la rutina", note: "Come con el niño, sin pantallas. El ritual compartido da sensación de conexión." },
+    ],
+    avoid_foods: ["Snacks solos o frente a pantallas", "Dulces justo antes de dormir"],
+  },
+  EL_BERRINCHE: {
+    tagline: "Cuando llega la noche, también salen todas las emociones que el cuerpo guardó durante el día.",
+    nervousSystem: "Lo que su sistema nervioso necesita: Descargar emociones antes de intentar descansar.",
+    nervousSystemColor: "#D96B6B",
+    whatHappens: "Muchos niños procesan la carga emocional a la hora de dormir porque las demandas externas finalmente paran. El sistema nervioso agotado ya no tiene recursos para regular emociones. Lo que parece un berrinche es en realidad una señal de que el niño necesita ayuda para aterrizar.",
+    facilitar: [
+      { title: "Luz cálida y suave", copy: "La luz brillante aumenta el estado de alerta. La luz cálida y tenue le dice al sistema nervioso que es hora de bajar la guardia." },
+      { title: "Movimiento rítmico suave", copy: "Mecerse, balancearse lentamente, caminar tranquilo. El ritmo es más regulador que las palabras." },
+      { title: "Voces calmas y poca conversación", copy: "Durante la alta activación emocional, el niño tiene acceso limitado al razonamiento. Menos palabras, más presencia." },
+      { title: "Validación sin amplificación", copy: '"Veo que estás muy cansado" funciona mejor que preguntar "¿Qué te pasa?". Nombrar la emoción ayuda a regularla.' },
+      { title: "Rutina que empiece antes del pico emocional", copy: "Si la rutina empieza cuando el niño ya está desbordado, es demasiado tarde. Empezar 15 minutos antes marca la diferencia." },
+    ],
+    evitar: [
+      { item: "Corregir conductas durante el colapso emocional", why: "El cerebro en alta activación no puede procesar instrucciones. Espera a que baje la temperatura emocional." },
+      { item: "Castigos a la hora de dormir", why: "Añade activación emocional negativa en el peor momento posible." },
+      { item: "Luces brillantes", why: "Aumentan el estado de alerta fisiológico." },
+      { item: "Apresurar la rutina", why: "La prisa crea más tensión. El sistema nervioso necesita tiempo para desacelerarse." },
+      { item: '"¿Qué te pasa?" repetidamente', why: "Hace que el niño tenga que analizar sus propias emociones, lo que puede intensificar el estado emocional." },
+    ],
+    alimentos: [
+      { item: "Aguacate", note: "Grasas saludables y magnesio que apoyan la función del sistema nervioso." },
+      { item: "Avena", note: "Carbohidratos complejos que estabilizan la glucosa y favorecen la serotonina." },
+      { item: "Pavo o huevos", note: "Triptófano que apoya la producción de serotonina." },
+      { item: "Alimentos ricos en magnesio", note: "Semillas, frutos secos, vegetales de hoja verde — el magnesio tiene efecto calmante en el sistema nervioso." },
+    ],
+    avoid_foods: ["Azúcar en grandes cantidades", "Comidas pesadas y abundantes cerca de dormir", "Cafeína (incluyendo chocolate)"],
+  },
+  EL_SONAMBULO: {
+    tagline: "Su cuerpo sigue activo incluso mientras duerme.",
+    nervousSystem: "Lo que su sistema nervioso necesita: Dormir profundo, no solo quedarse dormido.",
+    nervousSystemColor: "#9B8EC4",
+    whatHappens: "Los niños con sueño inquieto pueden verse influenciados por el procesamiento sensorial, la regulación circadiana, la higiene del sueño u otros factores médicos. El problema no es quedarse dormido — es mantenerse dormido. Los síntomas persistentes deben evaluarse con el pediatra.",
+    facilitar: [
+      { title: "Habitación muy oscura", copy: "Cortinas blackout. Cualquier luz, incluso la de aparatos electrónicos, puede fragmentar el sueño." },
+      { title: "Temperatura estable y fresca", copy: "18–21°C. Los cambios de temperatura durante la noche pueden interrumpir los ciclos de sueño." },
+      { title: "Ruido blanco continuo", copy: "Cubre los sonidos inesperados que pueden activar el sistema nervioso durante las transiciones entre ciclos de sueño." },
+      { title: "Horario de sueño estable todos los días", copy: "Incluyendo fines de semana. La inconsistencia en el horario puede fragmentar los ciclos circadianos." },
+      { title: "Pijamas cómodas", note: "Las costuras, etiquetas o telas incómodas pueden provocar microdespertares." },
+    ],
+    evitar: [
+      { item: "Dormir demasiado caliente", why: "El sobrecalentamiento aumenta los despertares nocturnos." },
+      { item: "Siestas tardías", why: "Reducen la presión de sueño necesaria para mantener el sueño profundo durante la noche." },
+      { item: "Hora de dormir irregular", why: "Sin un ritmo consistente, el cuerpo no sabe cuándo prepararse para el sueño profundo." },
+      { item: "Exposición a pantallas en la tarde-noche", why: "La luz azul retrasa la melatonina y afecta la calidad del sueño profundo." },
+      { item: "Cafeína (incluyendo chocolate cerca de dormir)", why: "La cafeína tiene una vida media larga — lo que se consume en la tarde puede afectar el sueño nocturno." },
+    ],
+    alimentos: [
+      { item: "Alimentos ricos en hierro", note: "Si hay deficiencia, debe evaluarse y tratarse con el pediatra. El hierro bajo está relacionado con el movimiento nocturno." },
+      { item: "Proteína en la cena", note: "Ayuda a mantener estable el azúcar en sangre durante la noche." },
+      { item: "Alimentos con magnesio", note: "Espinacas, frijoles, semillas — el magnesio apoya la relajación muscular." },
+      { item: "Vitamina C con alimentos ricos en hierro", note: "Mejora la absorción del hierro." },
+      { item: "Lentejas, carne magra, huevos, espinacas", note: "Fuentes de proteína e hierro de fácil preparación." },
+    ],
+    avoid_foods: ["Comidas tardías y abundantes", "Siestas tarde con merienda azucarada", "Chocolate en la tarde-noche"],
+  },
+};
+
 const initialState = {
   language: "es",
   purchaseEmail: "",
@@ -3504,22 +3645,50 @@ export default function BuenasNochesApp() {
                       </div>
                     );
                   })() : null}
-                  {/* Tips moved here from Rutina */}
+                  {/* Profile-specific tips */}
                   {activeChild?.primaryProfile ? (
-                    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-                      {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
-                        <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, ninoTipTab: id }))}
-                          style={{ flex: 1, textAlign: "center", padding: "8px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
-                            background: (state.ninoTipTab || "facilitar") === id ? "var(--navy-700)" : "transparent",
-                            color: (state.ninoTipTab || "facilitar") === id ? "var(--cream)" : "var(--ink-soft)" }}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {(state.ninoTipTab || "facilitar") === "facilitar" && activeChild ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
-                  {(state.ninoTipTab || "facilitar") === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
-                  {(state.ninoTipTab || "facilitar") === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
+                    <>
+                      {/* Nervous system key */}
+                      {PROFILE_TIPS[activeChild.primaryProfile] ? (
+                        <div style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: PROFILE_TIPS[activeChild.primaryProfile].nervousSystemColor || "var(--moon)", marginBottom: 4 }}>
+                            Sistema nervioso
+                          </div>
+                          <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", lineHeight: 1.5 }}>
+                            {PROFILE_TIPS[activeChild.primaryProfile].nervousSystem}
+                          </div>
+                        </div>
+                      ) : null}
+                      {/* Tab switcher */}
+                      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                        {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
+                          <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, ninoTipTab: id }))}
+                            style={{ flex: 1, textAlign: "center", padding: "8px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
+                              background: (state.ninoTipTab || "facilitar") === id ? "var(--navy-700)" : "transparent",
+                              color: (state.ninoTipTab || "facilitar") === id ? "var(--cream)" : "var(--ink-soft)" }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <ProfileTipsTab profile={activeChild.primaryProfile} tab={state.ninoTipTab || "facilitar"} />
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                        {[["facilitar", "Facilitar"], ["evitar", "Evitar"], ["alimentos", "Alimentos"]].map(([id, label]) => (
+                          <button key={id} type="button" onClick={() => setState(cur => ({ ...cur, ninoTipTab: id }))}
+                            style={{ flex: 1, textAlign: "center", padding: "8px 4px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)",
+                              background: (state.ninoTipTab || "facilitar") === id ? "var(--navy-700)" : "transparent",
+                              color: (state.ninoTipTab || "facilitar") === id ? "var(--cream)" : "var(--ink-soft)" }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {(state.ninoTipTab || "facilitar") === "facilitar" && activeChild ? <SleepAreaSection activeChild={activeChild} strings={strings} onBack={null} checkedCount={checkedCount} sleepAreaResult={sleepAreaResult} onToggleCheck={(checkId) => updateChild(activeChild?.id, (child) => ({ sleepAreaChecks: { ...child.sleepAreaChecks, [checkId]: !child.sleepAreaChecks?.[checkId] } }))} /> : null}
+                      {(state.ninoTipTab || "facilitar") === "evitar" ? <AvoidSection strings={strings} language={state.language} onBack={null} /> : null}
+                      {(state.ninoTipTab || "facilitar") === "alimentos" ? <FoodsSection strings={strings} onBack={null} /> : null}
+                    </>
+                  )}
                   {canAddChild ? (
                     <button type="button" onClick={startAddChild} style={{ width: "100%", padding: "13px", borderRadius: 12, background: "var(--navy-800)", border: "1px dashed var(--border)", color: "var(--ink-soft)", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 8 }}>
                       + Agregar otro niño
@@ -6532,6 +6701,69 @@ function BrandIcon({ type }) {
       {icons[type] || "✦"}
     </span>
   );
+}
+
+function ProfileTipsTab({ profile, tab }) {
+  const tips = PROFILE_TIPS[profile];
+  if (!tips) return null;
+
+  if (tab === "facilitar") {
+    return (
+      <div style={{ display: "grid", gap: 10 }}>
+        {tips.whatHappens ? (
+          <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.6)", fontStyle: "italic", lineHeight: 1.6, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 10 }}>
+            {tips.whatHappens}
+          </div>
+        ) : null}
+        {tips.facilitar.map((item) => (
+          <div key={item.title} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>{item.title}</div>
+            <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.7)", lineHeight: 1.55 }}>{item.copy}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (tab === "evitar") {
+    return (
+      <div style={{ display: "grid", gap: 10 }}>
+        {tips.evitar.map((entry) => (
+          <div key={entry.item} style={{ background: "var(--navy-800)", border: "1px solid rgba(217,150,140,.25)", borderRadius: 12, padding: "13px 14px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--coral)", marginBottom: 4 }}>{entry.item}</div>
+            <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.7)", lineHeight: 1.55 }}>{entry.why}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (tab === "alimentos") {
+    return (
+      <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 8 }}>
+          {tips.alimentos.map((entry) => (
+            <div key={entry.item} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--moon)", marginBottom: 3 }}>{entry.item}</div>
+              <div style={{ fontSize: 12.5, color: "rgba(255,248,239,.7)", lineHeight: 1.5 }}>{entry.note}</div>
+            </div>
+          ))}
+        </div>
+        {tips.avoid_foods?.length ? (
+          <div style={{ background: "rgba(217,150,140,.08)", border: "1px solid rgba(217,150,140,.2)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--coral)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Evitar</div>
+            <div style={{ display: "grid", gap: 4 }}>
+              {tips.avoid_foods.map((f) => (
+                <div key={f} style={{ fontSize: 12.5, color: "rgba(255,248,239,.7)" }}>· {f}</div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function FoodsSection({ strings, onBack }) {
