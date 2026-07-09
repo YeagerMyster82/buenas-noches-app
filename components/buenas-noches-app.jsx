@@ -5227,6 +5227,31 @@ function HomeSection({
             );
           })()}
 
+          {/* Log history with edit buttons */}
+          {!editingLog && sortedLogs.length > 0 ? (
+            <article className="card card--feature" style={{ gap: 0 }}>
+              <div className="card-header" style={{ marginBottom: 12 }}>
+                <h2>Historial de noches</h2>
+              </div>
+              <div style={{ display: "grid", gap: 1 }}>
+                {sortedLogs.slice(0, 14).map((log) => (
+                  <div key={log.date} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 4px", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{log.date}</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-soft)", fontFamily: "'JetBrains Mono', monospace" }}>
+                        Cama {log.bedTime || "--:--"} · Durmió {log.sleepTime || "--:--"} · {log.latency != null ? `${log.latency} min` : "--"}
+                      </span>
+                    </div>
+                    <button type="button" onClick={() => setEditingLogDate(log.date)}
+                      style={{ fontSize: 11, padding: "5px 10px", borderRadius: 14, background: "var(--navy-700)", border: "1px solid var(--border)", color: "var(--ink-soft)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      Editar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : null}
+
           {/* Edit log if open */}
           {editingLog ? (
             <form
