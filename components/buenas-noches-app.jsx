@@ -1810,6 +1810,11 @@ export default function BuenasNochesApp() {
         accessMessage: options.silent ? "" : "Compra verificada. Ya puedes usar el dashboard completo.",
       }));
 
+      // Initialize RevenueCat with the verified email as the user identifier
+      import("../lib/revenuecat").then(({ configureRevenueCat }) => {
+        configureRevenueCat(normalizedEmail).catch(() => {});
+      });
+
       return { hasAccess: true, payload };
     } catch (error) {
       setState((current) => ({

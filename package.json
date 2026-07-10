@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@capacitor/ios": "^8.4.1",
+    "@revenuecat/purchases-capacitor": "^13.2.2",
     "@supabase/supabase-js": "^2.49.8",
     "next": "^15.3.0",
     "react": "^19.0.0",
