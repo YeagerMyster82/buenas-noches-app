@@ -3,21 +3,22 @@ import { createClient } from "../../../lib/supabase-server";
 // RevenueCat webhook — mirrors pattern from captivationhub/route.js
 // Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION, BILLING_ISSUE
 export async function POST(request) {
-  const signature = request.headers.get("x-revenuecat-webhook-signature");
+  const sigHeader = request.headers.get("x-revenuecat-webhook-signature");
   const rawBody = await request.text();
 
-  console.log("[RC webhook] sig header:", signature ? signature.slice(0, 20) + "…" : "MISSING");
-  console.log("[RC webhook] secret set:", !!process.env.REVENUECAT_WEBHOOK_SECRET);
-
-  if (process.env.REVENUECAT_WEBHOOK_SECRET) {
+  if (process.env.REVENUECAT_WEBHOOK_SECRET && sigHeader) {
+    const parts = Object.fromEntries(sigHeader.split(",").map(p => p.split("=")));
+    const timestamp = parts["t"];
+    const v1 = parts["v1"];
     const { createHmac } = await import("crypto");
     const expected = createHmac("sha256", process.env.REVENUECAT_WEBHOOK_SECRET)
-      .update(rawBody)
+      .update(`${timestamp}.${rawBody}`)
       .digest("hex");
-    console.log("[RC webhook] sig match:", signature === expected);
-    if (signature !== expected) {
+    if (v1 !== expected) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
+  } else if (process.env.REVENUECAT_WEBHOOK_SECRET && !sigHeader) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let payload;
