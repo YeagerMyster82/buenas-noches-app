@@ -1,4 +1,4 @@
-import { createClient } from "../../../lib/supabase-server";
+import { getSupabaseServerClient } from "../../../lib/supabase-server";
 
 // RevenueCat webhook — mirrors pattern from captivationhub/route.js
 // Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION, BILLING_ISSUE
@@ -69,7 +69,7 @@ export async function POST(request) {
     : null;
   const renewsAt = event.renewal_number && expiresAt ? expiresAt : null;
 
-  const supabase = createClient();
+  const supabase = getSupabaseServerClient();
 
   // Upsert into app_subscriptions table
   const { error: upsertError } = await supabase
