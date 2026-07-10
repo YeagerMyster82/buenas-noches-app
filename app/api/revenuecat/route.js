@@ -101,6 +101,24 @@ export async function POST(request) {
       });
   }
 
+  // Notify Captivation Hub on purchase/renewal/cancellation
+  const captivationUrl = process.env.CAPTIVATION_HUB_FREE_PROFILE_WEBHOOK_URL;
+  if (captivationUrl && ["INITIAL_PURCHASE", "RENEWAL", "CANCELLATION", "EXPIRATION", "UNCANCELLATION"].includes(eventType)) {
+    const planLabel = isMonthly ? "mensual" : isAnnual ? "anual" : "unknown";
+    fetch(captivationUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        source: "revenuecat_purchase",
+        subscription_status: subscriptionStatus,
+        plan_type: planLabel,
+        event_type: eventType,
+        product_id: productId,
+      }),
+    }).catch((err) => console.error("Captivation Hub notify error", err));
+  }
+
   console.log(`RevenueCat ${eventType} for ${email} → ${subscriptionStatus}`);
   return Response.json({ received: true, status: subscriptionStatus });
 }
