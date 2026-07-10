@@ -6,11 +6,15 @@ export async function POST(request) {
   const signature = request.headers.get("x-revenuecat-webhook-signature");
   const rawBody = await request.text();
 
+  console.log("[RC webhook] sig header:", signature ? signature.slice(0, 20) + "…" : "MISSING");
+  console.log("[RC webhook] secret set:", !!process.env.REVENUECAT_WEBHOOK_SECRET);
+
   if (process.env.REVENUECAT_WEBHOOK_SECRET) {
     const { createHmac } = await import("crypto");
     const expected = createHmac("sha256", process.env.REVENUECAT_WEBHOOK_SECRET)
       .update(rawBody)
       .digest("hex");
+    console.log("[RC webhook] sig match:", signature === expected);
     if (signature !== expected) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
