@@ -3,22 +3,26 @@ import { createClient } from "../../../lib/supabase-server";
 // RevenueCat webhook — mirrors pattern from captivationhub/route.js
 // Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION, BILLING_ISSUE
 export async function POST(request) {
-  const secret = request.headers.get("x-revenuecat-secret");
+  const signature = request.headers.get("x-revenuecat-webhook-signature");
+  const rawBody = await request.text();
 
-  if (!process.env.REVENUECAT_WEBHOOK_SECRET) {
-    return Response.json({ error: "Missing REVENUECAT_WEBHOOK_SECRET env var" }, { status: 500 });
-  }
-
-  if (secret !== process.env.REVENUECAT_WEBHOOK_SECRET) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (process.env.REVENUECAT_WEBHOOK_SECRET) {
+    const { createHmac } = await import("crypto");
+    const expected = createHmac("sha256", process.env.REVENUECAT_WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest("hex");
+    if (signature !== expected) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
+
 
   const event = payload?.event;
   if (!event) {
