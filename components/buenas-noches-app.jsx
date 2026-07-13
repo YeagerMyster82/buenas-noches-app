@@ -7413,7 +7413,7 @@ function AdminSection({ strings, language, onHome }) {
   }, 0);
   const mrrDisplay = mrrUsd.toLocaleString("es", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-  const expectedMrrUsd = activeSubs.reduce((sum, s) => {
+  const expectedMrrUsd = activeSubs.filter(s => s.subscription_status !== "canceled").reduce((sum, s) => {
     if (s.product_id === "buenas_noches_anual") return sum + (66 / 12);
     if (s.product_id === "buenas_noches_mensual") return sum + 9.99;
     return sum;
