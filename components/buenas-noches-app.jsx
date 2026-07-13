@@ -7413,6 +7413,13 @@ function AdminSection({ strings, language, onHome }) {
   }, 0);
   const mrrDisplay = mrrUsd.toLocaleString("es", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+  const expectedMrrUsd = activeSubs.reduce((sum, s) => {
+    if (s.product_id === "buenas_noches_anual") return sum + (66 / 12);
+    if (s.product_id === "buenas_noches_mensual") return sum + 9.99;
+    return sum;
+  }, 0);
+  const expectedMrrDisplay = expectedMrrUsd.toLocaleString("es", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
   const filteredUsers = userGroups.filter(u => {
     const matchesSearch = !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase()) || (u.parentName || "").toLowerCase().includes(userSearch.toLowerCase());
     const matchesFilter = userFilter === "todos" || (userFilter === "premium" && u.isPremium) || (userFilter === "gratis" && !u.isPremium);
@@ -7510,6 +7517,7 @@ function AdminSection({ strings, language, onHome }) {
                 { label: "Premium activos", value: premiumCount, delta: premiumCount > 0 ? `${Math.round(premiumCount/Math.max(totalCount,1)*100)}% del total` : "0%", color: "var(--moon)" },
                 { label: "Gratis", value: freeCount, delta: "sin suscripcion", color: "var(--aqua)" },
                 { label: "Ingresos MRR", value: mrrDisplay, delta: `${activeSubs.length} suscripciones activas`, color: "var(--green)" },
+                { label: "MRR esperado", value: expectedMrrDisplay, delta: "precio completo próx. renovación", color: "var(--green)" },
                 { label: "Mensajes pendientes", value: pendingMessages, delta: "sin respuesta", color: pendingMessages > 0 ? "var(--coral)" : "var(--green)" },
               ].map((kpi, i) => (
                 <div key={i} style={{ background: "var(--navy-800)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
