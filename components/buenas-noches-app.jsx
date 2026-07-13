@@ -7401,12 +7401,17 @@ function AdminSection({ strings, language, onHome }) {
   const newThisMonth = userGroups.filter(u => u.children.some(c => c.created_at?.startsWith(today))).length;
 
   const activeSubs = (data?.subscriptions || []).filter(s => s.is_active);
-  const mrrCents = activeSubs.reduce((sum, s) => {
-    if (s.product_id === "buenas_noches_anual") return sum + Math.round(6600 / 12);
-    if (s.product_id === "buenas_noches_mensual") return sum + 999;
+  const mrrUsd = activeSubs.reduce((sum, s) => {
+    if (s.price_usd != null) {
+      // Actual price paid — annuals convert to monthly equivalent
+      return sum + (s.plan_type === "annual" ? s.price_usd / 12 : s.price_usd);
+    }
+    // Fallback to list price if webhook hasn't sent price yet
+    if (s.product_id === "buenas_noches_anual") return sum + (66 / 12);
+    if (s.product_id === "buenas_noches_mensual") return sum + 9.99;
     return sum;
   }, 0);
-  const mrrDisplay = (mrrCents / 100).toLocaleString("es", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const mrrDisplay = mrrUsd.toLocaleString("es", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
   const filteredUsers = userGroups.filter(u => {
     const matchesSearch = !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase()) || (u.parentName || "").toLowerCase().includes(userSearch.toLowerCase());

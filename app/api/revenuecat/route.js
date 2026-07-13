@@ -72,6 +72,8 @@ export async function POST(request) {
   const supabase = getSupabaseServerClient();
 
   // Upsert into app_subscriptions table
+  const priceUsd = typeof event.price === "number" ? event.price : null;
+
   const { error: upsertError } = await supabase
     .from("app_subscriptions")
     .upsert({
@@ -83,6 +85,7 @@ export async function POST(request) {
       expires_at: expiresAt,
       renews_at: renewsAt,
       revenuecat_event_type: eventType,
+      ...(priceUsd !== null ? { price_usd: priceUsd } : {}),
       updated_at: new Date().toISOString(),
     }, {
       onConflict: "email",
