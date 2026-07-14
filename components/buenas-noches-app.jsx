@@ -8314,7 +8314,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
       const pkg = offering.availablePackages?.find((p) =>
         type === "annual" ? p.packageType === "ANNUAL" : p.packageType === "MONTHLY"
       );
-      if (!pkg) throw new Error("Producto no encontrado");
+      if (!pkg) throw new Error(`Paquete no encontrado. Tipos: ${offering.availablePackages?.map(p=>p.packageType).join(",")}`);
       const info = await purchasePackage(pkg);
       if (hasEntitlement(info)) {
         onPurchaseSuccess?.();
