@@ -8307,7 +8307,8 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setLoading(true);
     setError("");
     try {
-      const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      const { configureRevenueCat, getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      await configureRevenueCat(userEmail || null);
       const offering = await getOfferings();
       if (!offering) throw new Error("No hay ofertas disponibles");
       const pkg = offering.availablePackages?.find((p) =>
@@ -8332,7 +8333,8 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setRestoring(true);
     setError("");
     try {
-      const { restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
+      const { configureRevenueCat, restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
+      await configureRevenueCat(userEmail || null);
       const info = await restorePurchases();
       if (hasEntitlement(info)) {
         onPurchaseSuccess?.();
@@ -8453,6 +8455,16 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
           {isEs
             ? "Se renueva automaticamente. Cancela cuando quieras desde Ajustes > Suscripciones en tu iPhone."
             : "Auto-renews. Cancel anytime from Settings > Subscriptions on your iPhone."}
+        </p>
+
+        <p style={{ color: "var(--ink-soft)", fontSize: 11, textAlign: "center", lineHeight: 1.8, margin: 0 }}>
+          <a href="https://quirokids.com/privacidad" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
+            {isEs ? "Política de Privacidad" : "Privacy Policy"}
+          </a>
+          {" · "}
+          <a href="https://quirokids.com/terminos" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
+            {isEs ? "Términos de Uso" : "Terms of Use"}
+          </a>
         </p>
       </div>
     </div>
