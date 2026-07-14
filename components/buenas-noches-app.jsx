@@ -8314,14 +8314,14 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
       const pkg = offering.availablePackages?.find((p) =>
         type === "annual" ? p.packageType === "ANNUAL" : p.packageType === "MONTHLY"
       );
-      if (!pkg) throw new Error(`Paquete no encontrado. Tipos: ${offering.availablePackages?.map(p=>p.packageType).join(",")}`);
+      if (!pkg) throw new Error("Producto no encontrado");
       const info = await purchasePackage(pkg);
       if (hasEntitlement(info)) {
         onPurchaseSuccess?.();
       }
     } catch (e) {
       if (!String(e?.message).includes("userCancelled")) {
-        setError(String(e?.message || e || "Unknown error"));
+        setError(isEs ? "No se pudo completar la compra. Intenta de nuevo." : "Purchase could not be completed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -8380,7 +8380,6 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
           { icon: "📊", text: isEs ? "Reportes de sueno y latencia" : "Sleep reports and latency tracking" },
           { icon: "🎬", text: isEs ? "Videos de expertos en sueno infantil" : "Expert pediatric sleep videos" },
           { icon: "👶", text: isEs ? "Hasta 3 perfiles de ninos" : "Up to 3 child profiles" },
-          { icon: "💬", text: isEs ? "Acceso a la comunidad de padres" : "Access to parent community" },
         ].map((f) => (
           <div key={f.text} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
             <span style={{ fontSize: 18, flexShrink: 0 }}>{f.icon}</span>
