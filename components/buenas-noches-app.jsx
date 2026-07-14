@@ -8458,11 +8458,11 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
         </p>
 
         <p style={{ color: "var(--ink-soft)", fontSize: 11, textAlign: "center", lineHeight: 1.8, margin: 0 }}>
-          <a href="https://quirokids.com/privacidad" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
+          <a href="https://buenasnoches.quirokids.com/politica-de-privacidad-app" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
             {isEs ? "Política de Privacidad" : "Privacy Policy"}
           </a>
           {" · "}
-          <a href="https://quirokids.com/terminos" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
+          <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "underline" }}>
             {isEs ? "Términos de Uso" : "Terms of Use"}
           </a>
         </p>
