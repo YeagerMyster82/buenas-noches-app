@@ -8321,7 +8321,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
       }
     } catch (e) {
       if (!String(e?.message).includes("userCancelled")) {
-        setError(isEs ? "No se pudo completar la compra. Intenta de nuevo." : "Purchase could not be completed. Please try again.");
+        setError(String(e?.message || e || "Unknown error"));
       }
     } finally {
       setLoading(false);
