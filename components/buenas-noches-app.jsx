@@ -8299,6 +8299,13 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
   const [restoring, setRestoring] = useState(false);
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
 
+  useEffect(() => {
+    if (!isNative) return;
+    import("../lib/revenuecat").then(({ configureRevenueCat }) => {
+      configureRevenueCat(userEmail || null).catch(() => {});
+    });
+  }, [isNative, userEmail]);
+
   async function handlePurchase(type) {
     if (!isNative) {
       window.location.href = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
@@ -8307,8 +8314,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setLoading(true);
     setError("");
     try {
-      const { configureRevenueCat, getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
-      await configureRevenueCat(userEmail || null);
+      const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
       const offering = await getOfferings();
       if (!offering) throw new Error("No hay ofertas disponibles");
       const pkg = offering.availablePackages?.find((p) =>
@@ -8333,8 +8339,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setRestoring(true);
     setError("");
     try {
-      const { configureRevenueCat, restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
-      await configureRevenueCat(userEmail || null);
+      const { restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
       const info = await restorePurchases();
       if (hasEntitlement(info)) {
         onPurchaseSuccess?.();
