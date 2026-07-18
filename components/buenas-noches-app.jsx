@@ -8297,17 +8297,13 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [restoring, setRestoring] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
   const rcReadyRef = React.useRef(null);
 
   useEffect(() => {
-    setDebugInfo(`native=${isNative} key=${!!process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY}`);
     if (!isNative) return;
     rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
-      configureRevenueCat(userEmail || null)
-        .then(() => setDebugInfo(d => d + " rc=ok"))
-        .catch(e => setDebugInfo(d => d + ` rc=err:${e?.message}`))
+      configureRevenueCat(userEmail || null).catch(() => {})
     );
   }, [isNative, userEmail]);
 
@@ -8454,7 +8450,6 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
 
         {error ? <p style={{ color: "var(--coral)", fontSize: 13, textAlign: "center", margin: 0 }}>{error}</p> : null}
         {loading ? <p style={{ color: "var(--ink-soft)", fontSize: 13, textAlign: "center", margin: 0 }}>{isEs ? "Procesando..." : "Processing..."}</p> : null}
-        <p style={{ color: "var(--ink-soft)", fontSize: 10, textAlign: "center", margin: 0, fontFamily: "monospace" }}>{debugInfo}</p>
 
         {/* Restore */}
         {isNative && (
