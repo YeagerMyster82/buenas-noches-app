@@ -8292,19 +8292,22 @@ function SubscriptionScreen({ language, strings, userEmail, hasPremiumAccess, on
   );
 }
 
-function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
+function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initialEmail }) {
   const isEs = language !== "en";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [restoring, setRestoring] = useState(false);
   const [debugStep, setDebugStep] = useState("");
+  const [pendingType, setPendingType] = useState(null);
+  const [emailInput, setEmailInput] = useState("");
+  const [userEmail, setUserEmail] = useState(initialEmail || "");
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
   const rcReadyRef = React.useRef(null);
 
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative || !userEmail) return;
     rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
-      configureRevenueCat(userEmail || null)
+      configureRevenueCat(userEmail)
     );
   }, [isNative, userEmail]);
 
@@ -8313,18 +8316,20 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
       window.location.href = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
       return;
     }
+    if (!userEmail) {
+      setPendingType(type);
+      return;
+    }
     setLoading(true);
     setError("");
-    setDebugStep("iniciando...");
+    setDebugStep("esperando RC...");
     try {
-      setDebugStep("esperando RC...");
       if (rcReadyRef.current) {
         const rcTimeout = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("configure timed out")), 10000)
         );
         await Promise.race([rcReadyRef.current, rcTimeout]);
       }
-      setDebugStep("RC listo");
       const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
       setDebugStep("obteniendo ofertas...");
       const offering = await getOfferings();
@@ -8347,6 +8352,23 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleEmailSubmit() {
+    const email = emailInput.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      setError(isEs ? "Ingresa un email válido." : "Enter a valid email.");
+      return;
+    }
+    setError("");
+    setUserEmail(email);
+    rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
+      configureRevenueCat(email)
+    );
+    if (pendingType) {
+      setPendingType(null);
+      await handlePurchase(pendingType);
     }
   }
 
@@ -8461,6 +8483,27 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
           </button>
         </div>
 
+        {pendingType && !loading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0" }}>
+            <p style={{ color: "var(--ink)", fontSize: 14, textAlign: "center", margin: 0, fontWeight: 600 }}>
+              {isEs ? "¿Cuál es tu email?" : "What's your email?"}
+            </p>
+            <input
+              type="email"
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              placeholder={isEs ? "tu@email.com" : "your@email.com"}
+              style={{ padding: "12px 16px", borderRadius: 12, border: "1.5px solid rgba(255,248,239,.2)", background: "var(--navy-800)", color: "var(--ink)", fontSize: 15, outline: "none" }}
+            />
+            <button
+              type="button"
+              onClick={handleEmailSubmit}
+              style={{ background: "var(--moon)", color: "var(--navy-950)", border: "none", borderRadius: 12, padding: "12px 0", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+            >
+              {isEs ? "Continuar con la compra" : "Continue to purchase"}
+            </button>
+          </div>
+        )}
         {error ? <p style={{ color: "var(--coral)", fontSize: 13, textAlign: "center", margin: 0 }}>{error}</p> : null}
         {loading ? <p style={{ color: "var(--ink-soft)", fontSize: 13, textAlign: "center", margin: 0 }}>{debugStep || (isEs ? "Procesando..." : "Processing...")}</p> : null}
 
