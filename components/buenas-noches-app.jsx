@@ -3314,7 +3314,7 @@ export default function BuenasNochesApp() {
           ) : state.activeSection === "tips" ? (
             <TipsSection strings={strings} language={state.language} onOpen={handleMainMenu} locked />
           ) : state.activeSection === "videos" ? (
-            <VideoSection activeChild={activeChild} strings={strings} locked />
+            <VideoSection activeChild={activeChild} strings={strings} locked onUpgrade={() => setState((current) => ({ ...current, showPaywall: true }))} />
           ) : state.activeSection === "sleep-area" ? (
             <LockedPreviewCard activeSection="sleep-area" language={state.language} />
           ) : state.activeSection === "avoid" ? (
@@ -6675,7 +6675,7 @@ function VideoThumb({ video, isLocked, lockLabel }) {
   );
 }
 
-function VideoSection({ activeChild, strings, locked = false }) {
+function VideoSection({ activeChild, strings, locked = false, onUpgrade }) {
   if (!activeChild) return null;
   const [videoFilter, setVideoFilter] = useState("todos");
   const allVideos = [
@@ -6683,27 +6683,30 @@ function VideoSection({ activeChild, strings, locked = false }) {
     ...educationVideoLibrary.map(v => ({ ...v, isFree: false, type: "education" })),
     ...activityVideoLibrary.map(v => ({ ...v, isFree: false, type: "neurohack" })),
   ];
-  const filtered = allVideos.filter(v => {
+  const visibleVideos = allVideos.filter(v => !locked || v.isFree);
+  const filtered = visibleVideos.filter(v => {
     if (videoFilter === "gratis") return v.isFree;
     if (videoFilter === "premium") return !v.isFree;
     return true;
   });
+  const premiumCount = allVideos.filter(v => !v.isFree).length;
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div>
         <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 14 }}><b style={{ color: "var(--ink)" }}>Video</b> — ejercicios guiados</p>
-        {/* Filter pills */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          {[["todos", "Todos"], ["gratis", "Gratis"], ["premium", "Premium"]].map(([id, label]) => (
-            <button key={id} type="button" onClick={() => setVideoFilter(id)} style={{
-              padding: "7px 14px", borderRadius: 18, fontSize: 12, fontWeight: 600, cursor: "pointer",
-              background: videoFilter === id ? "var(--moon)" : "var(--navy-800)",
-              color: videoFilter === id ? "var(--navy-950)" : "var(--ink-soft)",
-              border: `1px solid ${videoFilter === id ? "var(--moon)" : "var(--border)"}`,
-            }}>{label}</button>
-          ))}
-        </div>
+        {!locked ? (
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            {[["todos", "Todos"], ["gratis", "Gratis"], ["premium", "Premium"]].map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setVideoFilter(id)} style={{
+                padding: "7px 14px", borderRadius: 18, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: videoFilter === id ? "var(--moon)" : "var(--navy-800)",
+                color: videoFilter === id ? "var(--navy-950)" : "var(--ink-soft)",
+                border: `1px solid ${videoFilter === id ? "var(--moon)" : "var(--border)"}`,
+              }}>{label}</button>
+            ))}
+          </div>
+        ) : null}
       </div>
       {/* 2-column video grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
@@ -6715,18 +6718,21 @@ function VideoSection({ activeChild, strings, locked = false }) {
               </div>
               <strong style={{ fontSize: 12, lineHeight: 1.3 }}>{video.title}</strong>
             </div>
-            <VideoThumb video={video} isLocked={locked && !video.isFree} lockLabel="Premium" /></div>
+            <VideoThumb video={video} isLocked={false} />
+          </div>
         ))}
       </div>
       {locked ? (
         <article className="card" style={{ display: "flex", gap: 13, alignItems: "center", background: "linear-gradient(150deg, rgba(244,231,178,.12), rgba(244,231,178,.04))", border: "1px solid rgba(244,231,178,.22)" }}>
           <div style={{ flex: 1 }}>
-            <strong style={{ fontSize: 13, display: "block", marginBottom: 6 }}>Desbloquea todos los videos con premium</strong>
-            <a className="button button-primary button-link" href={SALES_FUNNEL_URL} style={{ fontSize: 12, minHeight: 36, padding: "0 14px" }}>{strings.unlockPremium}</a>
+            <strong style={{ fontSize: 13, display: "block", marginBottom: 6 }}>
+              {premiumCount} videos más disponibles con Premium
+            </strong>
+            <button className="button button-primary" style={{ fontSize: 12, minHeight: 36, padding: "0 14px" }}
+              onClick={onUpgrade}>{strings.unlockPremium}</button>
           </div>
         </article>
       ) : null}
-
     </div>
   );
 }
