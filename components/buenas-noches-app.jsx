@@ -1812,7 +1812,7 @@ export default function BuenasNochesApp() {
 
       // Initialize RevenueCat with the verified email as the user identifier
       import("../lib/revenuecat").then(({ configureRevenueCat }) => {
-        configureRevenueCat(normalizedEmail).catch(() => {});
+        configureRevenueCat(normalizedEmail);
       });
 
       return { hasAccess: true, payload };
@@ -8302,15 +8302,6 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initia
   const [emailInput, setEmailInput] = useState("");
   const [userEmail, setUserEmail] = useState(initialEmail || "");
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
-  const rcReadyRef = React.useRef(null);
-
-  useEffect(() => {
-    if (!isNative || !userEmail) return;
-    rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
-      configureRevenueCat(userEmail)
-    );
-  }, [isNative, userEmail]);
-
   async function handlePurchase(type) {
     if (!isNative) {
       window.location.href = "https://buenasnoches.quirokids.com/buenas-noches-app-424830";
@@ -8322,15 +8313,10 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initia
     }
     setLoading(true);
     setError("");
-    setDebugStep("esperando RC...");
+    setDebugStep("iniciando...");
     try {
-      if (rcReadyRef.current) {
-        const rcTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("configure timed out")), 10000)
-        );
-        await Promise.race([rcReadyRef.current, rcTimeout]);
-      }
-      const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      const { configureRevenueCat, getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      configureRevenueCat(userEmail);
       setDebugStep("obteniendo ofertas...");
       const offering = await getOfferings();
       if (!offering) throw new Error("No hay ofertas disponibles");
@@ -8363,9 +8349,6 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initia
     }
     setError("");
     setUserEmail(email);
-    rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
-      configureRevenueCat(email)
-    );
     if (pendingType) {
       setPendingType(null);
       await handlePurchase(pendingType);
