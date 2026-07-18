@@ -3704,6 +3704,19 @@ export default function BuenasNochesApp() {
 
               {state.activeSection === "routine" ? (
                 <>
+                  {state.children.filter(c => c.primaryProfile).length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--ink-soft)" }}>
+                      <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Primero completa el perfil de sueño</p>
+                      <p style={{ fontSize: 13, marginBottom: 20 }}>Para generar la rutina necesitamos conocer el perfil de sueño de tu hijo.</p>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => setState((current) => ({ ...current, activeSection: "child" }))}
+                      >
+                        Ir al perfil
+                      </button>
+                    </div>
+                  ) : null}
                   {state.children.filter(c => c.primaryProfile).length > 1 ? (
                     <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
                       {state.children.filter(c => c.primaryProfile).map((child) => {
