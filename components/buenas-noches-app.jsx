@@ -8299,15 +8299,16 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
   const [restoring, setRestoring] = useState(false);
   const [debugInfo, setDebugInfo] = useState("");
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
+  const rcReadyRef = React.useRef(null);
 
   useEffect(() => {
     setDebugInfo(`native=${isNative} key=${!!process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY}`);
     if (!isNative) return;
-    import("../lib/revenuecat").then(({ configureRevenueCat }) => {
+    rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
       configureRevenueCat(userEmail || null)
         .then(() => setDebugInfo(d => d + " rc=ok"))
-        .catch(e => setDebugInfo(d => d + ` rc=err:${e?.message}`));
-    });
+        .catch(e => setDebugInfo(d => d + ` rc=err:${e?.message}`))
+    );
   }, [isNative, userEmail]);
 
   async function handlePurchase(type) {
@@ -8318,6 +8319,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setLoading(true);
     setError("");
     try {
+      if (rcReadyRef.current) await rcReadyRef.current;
       const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
       const offering = await getOfferings();
       if (!offering) throw new Error("No hay ofertas disponibles");
