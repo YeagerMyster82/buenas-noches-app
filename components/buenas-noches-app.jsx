@@ -251,7 +251,6 @@ const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno, routineVi
 
 const educationVideoLibrary = [
   routineVideoResources.sistema_nervioso,
-  routineVideoResources.como_usar_app,
   routineVideoResources.berrinches_coregulacion,
   routineVideoResources.pesadilla,
 ];
