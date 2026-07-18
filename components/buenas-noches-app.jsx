@@ -1307,22 +1307,19 @@ function makeLogsFromSavedData(logs = []) {
 }
 
 export default function BuenasNochesApp() {
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useState(() => {
+    if (typeof window === "undefined") return initialState;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) return { ...initialState, ...JSON.parse(raw) };
+    } catch {}
+    return initialState;
+  });
   const [autoVerifyAttempted, setAutoVerifyAttempted] = useState(false);
   const lastPremiumRefreshAttemptRef = useRef(0);
   const [adminVisible, setAdminVisible] = useState(false);
   const [unreadReplies, setUnreadReplies] = useState(0);
   const lastSeenContactRef = useRef(0);
-
-  useEffect(() => {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return;
-    try {
-      setState({ ...initialState, ...JSON.parse(raw) });
-    } catch {
-      setState(initialState);
-    }
-  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
