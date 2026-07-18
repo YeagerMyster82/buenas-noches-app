@@ -8317,13 +8317,14 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     setError("");
     setDebugStep("iniciando...");
     try {
+      setDebugStep("esperando RC...");
       if (rcReadyRef.current) {
-        setDebugStep("cargando SDK...");
-        const { configureRevenueCat } = await import("../lib/revenuecat");
-        setDebugStep("llamando configure...");
-        await configureRevenueCat(userEmail || null);
-        setDebugStep("RC listo");
+        const rcTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("configure timed out")), 10000)
+        );
+        await Promise.race([rcReadyRef.current, rcTimeout]);
       }
+      setDebugStep("RC listo");
       const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
       setDebugStep("obteniendo ofertas...");
       const offering = await getOfferings();
