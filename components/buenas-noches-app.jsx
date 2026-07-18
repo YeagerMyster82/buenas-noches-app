@@ -2975,20 +2975,14 @@ export default function BuenasNochesApp() {
                     required
                   />
                 </label>
-                <label className="stack compact">
-                  <span>{strings.birthday}</span>
-                  <input
-                    type="date"
+                <div className="stack compact">
+                  <span style={{ fontSize: "inherit" }}>{strings.birthday}</span>
+                  <BirthdaySelects
                     value={state.childDraft.birthday}
-                    onChange={(event) =>
-                      setState((current) => ({
-                        ...current,
-                        childDraft: { ...current.childDraft, birthday: event.target.value },
-                      }))
-                    }
-                    required
+                    onChange={(val) => setState((cur) => ({ ...cur, childDraft: { ...cur.childDraft, birthday: val } }))}
+                    language={state.language}
                   />
-                </label>
+                </div>
                 <label className="stack compact">
                   <span>{strings.gender}</span>
                   <select
@@ -5041,8 +5035,40 @@ function ChildHomeGrid({
   );
 }
 
+function BirthdaySelects({ value, onChange, language }) {
+  const parts = value ? value.split("-") : ["", "", ""];
+  const [bYear, bMonth, bDay] = parts;
+  const set = (y, m, d) => onChange(y && m && d ? `${y}-${m}-${d}` : "");
+  const months = language === "en"
+    ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    : ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const currentYear = new Date().getFullYear();
+  const daysInMonth = bYear && bMonth ? new Date(Number(bYear), Number(bMonth), 0).getDate() : 31;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.5fr", gap: 6 }}>
+      <select value={bMonth} onChange={e => set(bYear, e.target.value, bDay)} required>
+        <option value="">{language === "en" ? "Month" : "Mes"}</option>
+        {months.map((m, i) => <option key={i+1} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+      </select>
+      <select value={bDay} onChange={e => set(bYear, bMonth, e.target.value)} required>
+        <option value="">{language === "en" ? "Day" : "Día"}</option>
+        {Array.from({length: daysInMonth}, (_, i) => i+1).map(d => (
+          <option key={d} value={String(d).padStart(2,"0")}>{d}</option>
+        ))}
+      </select>
+      <select value={bYear} onChange={e => set(e.target.value, bMonth, bDay)} required>
+        <option value="">{language === "en" ? "Year" : "Año"}</option>
+        {Array.from({length: 13}, (_, i) => currentYear - i).map(y => (
+          <option key={y} value={String(y)}>{y}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [birthday, setBirthday] = useState(activeChild?.birthday || "");
   if (!activeChild) return null;
 
   return (
@@ -5062,10 +5088,11 @@ function EditProfileModal({ activeChild, strings, onSave, onDelete, onClose }) {
             <span>{strings.childName}</span>
             <input name="childName" type="text" defaultValue={activeChild.name} required />
           </label>
-          <label className="stack compact">
-            <span>{strings.birthday}</span>
-            <input name="birthday" type="date" defaultValue={activeChild.birthday} required />
-          </label>
+          <div className="stack compact">
+            <span style={{ fontSize: "inherit" }}>{strings.birthday}</span>
+            <input type="hidden" name="birthday" value={birthday} readOnly />
+            <BirthdaySelects value={birthday} onChange={setBirthday} language={strings.language || "es"} />
+          </div>
           <label className="stack compact">
             <span>{strings.gender}</span>
             <select name="gender" defaultValue={activeChild.gender || "boy"}>
