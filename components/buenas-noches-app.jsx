@@ -8297,6 +8297,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [restoring, setRestoring] = useState(false);
+  const [debugStep, setDebugStep] = useState("");
   const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.();
   const rcReadyRef = React.useRef(null);
 
@@ -8314,23 +8315,28 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
     }
     setLoading(true);
     setError("");
+    setDebugStep("iniciando...");
     try {
-      if (rcReadyRef.current) await rcReadyRef.current;
+      if (rcReadyRef.current) { setDebugStep("configurando RC..."); await rcReadyRef.current; }
       const { getOfferings, purchasePackage, hasEntitlement } = await import("../lib/revenuecat");
+      setDebugStep("obteniendo ofertas...");
       const offering = await getOfferings();
       if (!offering) throw new Error("No hay ofertas disponibles");
       const pkg = offering.availablePackages?.find((p) =>
         type === "annual" ? p.packageType === "ANNUAL" : p.packageType === "MONTHLY"
       );
       if (!pkg) throw new Error("Producto no encontrado");
+      setDebugStep("procesando compra...");
       const info = await purchasePackage(pkg);
+      setDebugStep("");
       if (hasEntitlement(info)) {
         onPurchaseSuccess?.();
       }
     } catch (e) {
+      setDebugStep("");
       const msg = String(e?.message || e?.code || "");
       if (!msg.includes("userCancelled") && !msg.includes("cancel")) {
-        setError(isEs ? "No se pudo completar la compra. Intenta de nuevo." : "Purchase could not be completed. Please try again.");
+        setError((isEs ? "Error: " : "Error: ") + msg);
       }
     } finally {
       setLoading(false);
@@ -8449,7 +8455,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
         </div>
 
         {error ? <p style={{ color: "var(--coral)", fontSize: 13, textAlign: "center", margin: 0 }}>{error}</p> : null}
-        {loading ? <p style={{ color: "var(--ink-soft)", fontSize: 13, textAlign: "center", margin: 0 }}>{isEs ? "Procesando..." : "Processing..."}</p> : null}
+        {loading ? <p style={{ color: "var(--ink-soft)", fontSize: 13, textAlign: "center", margin: 0 }}>{debugStep || (isEs ? "Procesando..." : "Processing...")}</p> : null}
 
         {/* Restore */}
         {isNative && (
