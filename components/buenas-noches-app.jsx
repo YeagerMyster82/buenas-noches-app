@@ -1398,25 +1398,27 @@ export default function BuenasNochesApp() {
   }, [autoVerifyAttempted, state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus]);
 
   // Auto-start the quiz for first-time users (no children, no premium)
+  const autoStartedRef = React.useRef(false);
   useEffect(() => {
+    if (autoStartedRef.current) return;
     if (
-      !hasPremiumAccess &&
-      state.children.length === 0 &&
-      state.onboardingMode === "" &&
-      !state.accountLookupOpen &&
-      state.accessStatus !== "loading"
-    ) {
-      setState((current) => ({
-        ...current,
-        onboardingMode: "new-child",
-        childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", parentName: "", parentEmail: "" },
-        quizIndex: -1,
-        answers: [],
-        quizResult: null,
-        revealedResult: null,
-      }));
-    }
-  }, [hasPremiumAccess, state.children.length, state.onboardingMode, state.accountLookupOpen, state.accessStatus]);
+      state.accessStatus === "loading" ||
+      state.accessStatus === "granted" ||
+      state.children.length > 0 ||
+      state.onboardingMode !== "" ||
+      state.accountLookupOpen
+    ) return;
+    autoStartedRef.current = true;
+    setState((current) => ({
+      ...current,
+      onboardingMode: "new-child",
+      childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", parentName: "", parentEmail: "" },
+      quizIndex: -1,
+      answers: [],
+      quizResult: null,
+      revealedResult: null,
+    }));
+  });
 
   useEffect(() => {
     function maybeRefreshPremiumAccess() {
