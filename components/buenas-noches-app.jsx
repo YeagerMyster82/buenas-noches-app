@@ -1397,6 +1397,27 @@ export default function BuenasNochesApp() {
     checkPremiumAccessForEmail(knownEmail, { silent: true });
   }, [autoVerifyAttempted, state.verifiedEmail, state.parentEmail, state.purchaseEmail, state.accessStatus]);
 
+  // Auto-start the quiz for first-time users (no children, no premium)
+  useEffect(() => {
+    if (
+      !hasPremiumAccess &&
+      state.children.length === 0 &&
+      state.onboardingMode === "" &&
+      !state.accountLookupOpen &&
+      state.accessStatus !== "loading"
+    ) {
+      setState((current) => ({
+        ...current,
+        onboardingMode: "new-child",
+        childDraft: { name: "", birthday: "", gender: "boy", sleepGoal: "", takesNap: "no", parentName: "", parentEmail: "" },
+        quizIndex: -1,
+        answers: [],
+        quizResult: null,
+        revealedResult: null,
+      }));
+    }
+  }, [hasPremiumAccess, state.children.length, state.onboardingMode, state.accountLookupOpen, state.accessStatus]);
+
   useEffect(() => {
     function maybeRefreshPremiumAccess() {
       const knownEmail = state.verifiedEmail || state.parentEmail || state.purchaseEmail;
@@ -1702,6 +1723,8 @@ export default function BuenasNochesApp() {
   function beginQuiz(event) {
     event.preventDefault();
     if (!state.childDraft.name.trim() || !state.childDraft.birthday || !state.childDraft.gender) return;
+    const draftEmail = (state.childDraft.parentEmail || "").trim().toLowerCase();
+    const draftName = (state.childDraft.parentName || "").trim();
     setState((current) => ({
       ...current,
       quizIndex: 0,
@@ -1709,6 +1732,9 @@ export default function BuenasNochesApp() {
       tieCandidates: null,
       quizResult: null,
       revealedResult: null,
+      parentName: draftName || current.parentName,
+      parentEmail: draftEmail || current.parentEmail,
+      purchaseEmail: draftEmail || current.purchaseEmail,
     }));
   }
 
@@ -2911,6 +2937,28 @@ export default function BuenasNochesApp() {
                 <p className="lead-copy">
                   {strings.createProfileIntro}
                 </p>
+                {state.children.length === 0 ? (
+                  <>
+                    <label className="stack compact">
+                      <span>{strings.parentName || "Tu nombre (mamá o papá)"}</span>
+                      <input
+                        type="text"
+                        value={state.childDraft.parentName || ""}
+                        onChange={(e) => setState((cur) => ({ ...cur, childDraft: { ...cur.childDraft, parentName: e.target.value } }))}
+                        required
+                      />
+                    </label>
+                    <label className="stack compact">
+                      <span>{strings.parentEmail || "Tu correo electrónico"}</span>
+                      <input
+                        type="email"
+                        value={state.childDraft.parentEmail || ""}
+                        onChange={(e) => setState((cur) => ({ ...cur, childDraft: { ...cur.childDraft, parentEmail: e.target.value } }))}
+                        required
+                      />
+                    </label>
+                  </>
+                ) : null}
                 <label className="stack compact">
                   <span>{strings.childName}</span>
                   <input
@@ -3706,14 +3754,14 @@ export default function BuenasNochesApp() {
                 <>
                   {state.children.filter(c => c.primaryProfile).length === 0 ? (
                     <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--ink-soft)" }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Primero completa el perfil de sueño</p>
-                      <p style={{ fontSize: 13, marginBottom: 20 }}>Para generar la rutina necesitamos conocer el perfil de sueño de tu hijo.</p>
+                      <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Aún no tienes una rutina generada</p>
+                      <p style={{ fontSize: 13, marginBottom: 20 }}>Completa el cuestionario de sueño de tu hijo y luego usa el botón "Generar rutina" en el inicio.</p>
                       <button
                         type="button"
                         className="button button-primary"
-                        onClick={() => setState((current) => ({ ...current, activeSection: "child" }))}
+                        onClick={() => setState((current) => ({ ...current, activeSection: "home" }))}
                       >
-                        Ir al perfil
+                        Ir al inicio
                       </button>
                     </div>
                   ) : null}
