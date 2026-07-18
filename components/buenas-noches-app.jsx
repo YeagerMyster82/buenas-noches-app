@@ -8304,7 +8304,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail }) {
   useEffect(() => {
     if (!isNative) return;
     rcReadyRef.current = import("../lib/revenuecat").then(({ configureRevenueCat }) =>
-      configureRevenueCat(userEmail || null).catch(() => {})
+      configureRevenueCat(userEmail || null)
     );
   }, [isNative, userEmail]);
 
