@@ -244,15 +244,14 @@ const activityVideoLibrary = [
   routineVideoResources.movimientos_oculares,
   routineVideoResources.frase_final,
   routineVideoResources.audios_cortos,
-  routineVideoResources.pesadilla,
 ];
 
 const freeProfileVideoLibrary = [routineVideoResources.perfiles_sueno, routineVideoResources.homescreen];
 
 const educationVideoLibrary = [
   routineVideoResources.sistema_nervioso,
-  routineVideoResources.berrinches_coregulacion,
   routineVideoResources.pesadilla,
+  routineVideoResources.berrinches_coregulacion,
 ];
 
 const profileAvatarMap = {
