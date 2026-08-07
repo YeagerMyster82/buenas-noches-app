@@ -1,5 +1,18 @@
 "use client";
 
+const APP_VERSION = "20260723-2";
+
+if (typeof window !== "undefined") {
+  const cached = window.localStorage.getItem("bn-app-version");
+  if (cached !== APP_VERSION) {
+    window.localStorage.setItem("bn-app-version", APP_VERSION);
+    if (cached) {
+      // Force bypass cache to pick up latest JS
+      window.location.reload(true);
+    }
+  }
+}
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   getProfileMap,
@@ -2815,9 +2828,24 @@ export default function BuenasNochesApp() {
           language={state.language}
           userEmail={userEmail}
           onClose={() => setState((current) => ({ ...current, showPaywall: false }))}
-          onPurchaseSuccess={() => {
-            setState((current) => ({ ...current, showPaywall: false }));
-            checkPremiumAccessForEmail(userEmail, { silent: false });
+          onPurchaseSuccess={(purchaseEmail) => {
+            const resolvedEmail = purchaseEmail || userEmail;
+            setState((current) => ({
+              ...current,
+              showPaywall: false,
+              accessStatus: "granted",
+              verifiedEmail: resolvedEmail || current.verifiedEmail,
+              purchaseEmail: resolvedEmail || current.purchaseEmail,
+              premiumAccess: current.premiumAccess || { hasAccess: true, source: "native_iap" },
+            }));
+            // Sync to server in the background (RevenueCat webhook may be delayed)
+            if (resolvedEmail) {
+              fetch("/api/native-purchase-grant", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: resolvedEmail }),
+              }).catch(() => {});
+            }
           }}
         />
       ) : null}
@@ -3400,20 +3428,14 @@ export default function BuenasNochesApp() {
                         required
                       />
                     </label>
-                    <label className="stack compact">
-                      <span>{strings.birthday}</span>
-                      <input
-                        type="date"
+                    <div className="stack compact">
+                      <span style={{ fontSize: "inherit" }}>{strings.birthday}</span>
+                      <BirthdaySelects
                         value={state.childDraft.birthday}
-                        onChange={(event) =>
-                          setState((current) => ({
-                            ...current,
-                            childDraft: { ...current.childDraft, birthday: event.target.value },
-                          }))
-                        }
-                        required
+                        onChange={(val) => setState((cur) => ({ ...cur, childDraft: { ...cur.childDraft, birthday: val } }))}
+                        language={state.language}
                       />
-                    </label>
+                    </div>
                     <label className="stack compact">
                       <span>{strings.gender}</span>
                       <select
@@ -5031,33 +5053,17 @@ function ChildHomeGrid({
 }
 
 function BirthdaySelects({ value, onChange, language }) {
-  const parts = value ? value.split("-") : ["", "", ""];
-  const [bYear, bMonth, bDay] = parts;
-  const set = (y, m, d) => onChange(y && m && d ? `${y}-${m}-${d}` : "");
-  const months = language === "en"
-    ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    : ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const currentYear = new Date().getFullYear();
-  const daysInMonth = bYear && bMonth ? new Date(Number(bYear), Number(bMonth), 0).getDate() : 31;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.5fr", gap: 6 }}>
-      <select value={bMonth} onChange={e => set(bYear, e.target.value, bDay)} required>
-        <option value="">{language === "en" ? "Month" : "Mes"}</option>
-        {months.map((m, i) => <option key={i+1} value={String(i+1).padStart(2,"0")}>{m}</option>)}
-      </select>
-      <select value={bDay} onChange={e => set(bYear, bMonth, e.target.value)} required>
-        <option value="">{language === "en" ? "Day" : "Día"}</option>
-        {Array.from({length: daysInMonth}, (_, i) => i+1).map(d => (
-          <option key={d} value={String(d).padStart(2,"0")}>{d}</option>
-        ))}
-      </select>
-      <select value={bYear} onChange={e => set(e.target.value, bMonth, bDay)} required>
-        <option value="">{language === "en" ? "Year" : "Año"}</option>
-        {Array.from({length: 13}, (_, i) => currentYear - i).map(y => (
-          <option key={y} value={String(y)}>{y}</option>
-        ))}
-      </select>
-    </div>
+    <input
+      type="date"
+      value={value || ""}
+      min={`${currentYear - 12}-01-01`}
+      max={`${currentYear}-12-31`}
+      onChange={e => onChange(e.target.value)}
+      required
+      style={{ width: "100%", fontSize: 16 }}
+    />
   );
 }
 
@@ -8419,7 +8425,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initia
       const info = await purchasePackage(pkg);
       setDebugStep("");
       if (hasEntitlement(info)) {
-        onPurchaseSuccess?.();
+        onPurchaseSuccess?.(userEmail);
       }
     } catch (e) {
       setDebugStep("");
@@ -8454,7 +8460,7 @@ function PaywallScreen({ language, onClose, onPurchaseSuccess, userEmail: initia
       const { restorePurchases, hasEntitlement } = await import("../lib/revenuecat");
       const info = await restorePurchases();
       if (hasEntitlement(info)) {
-        onPurchaseSuccess?.();
+        onPurchaseSuccess?.(userEmail);
       } else {
         setError(isEs ? "No encontramos una compra activa para restaurar." : "No active purchase found to restore.");
       }
