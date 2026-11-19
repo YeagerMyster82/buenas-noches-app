@@ -17,11 +17,34 @@ const BuenasNochesApp = dynamic(
 export default function BuenasNochesPortal() {
   const router = useRouter();
   const [tab, setTab] = useState("curso");
+  const [hasAccess, setHasAccess] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const email = sessionStorage.getItem("qk_email");
-    if (!email) router.replace("/login");
+    if (!email) { router.replace("/login"); return; }
+    fetch("/api/premium-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+      .then(r => r.json())
+      .then(data => { setHasAccess(data.buenas_noches || false); setChecked(true); })
+      .catch(() => setChecked(true));
   }, [router]);
+
+  if (checked && !hasAccess) {
+    return (
+      <div className={styles.shell} data-theme="buenas-noches" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100dvh" }}>
+        <div style={{ textAlign: "center", padding: "40px 24px", maxWidth: 400 }}>
+          <p style={{ fontSize: 40 }}>🔒</p>
+          <p style={{ fontFamily: "var(--font-marca)", fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Acceso no disponible</p>
+          <p style={{ color: "var(--tinta-muted)", marginBottom: 24 }}>No tienes acceso al curso Buenas Noches. Puedes adquirirlo desde la tienda.</p>
+          <Link href="/checkout/buenas-noches" style={{ background: "var(--turquesa)", color: "#fff", padding: "12px 28px", borderRadius: "999px", textDecoration: "none", fontFamily: "var(--font-marca)", fontWeight: 700, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" }}>Ver el curso →</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.shell} data-theme="buenas-noches">

@@ -55,8 +55,8 @@ export default function DashboardPage() {
 
   function hasAccess(courseId) {
     if (!access) return false;
-    if (access.hasAccess || access.premium_unlocked) return true;
-    if (courseId === "buenas-noches" && (access.hasAccess || access.premium_unlocked)) return true;
+    if (courseId === "neuroesencia") return access.neuroesencia || false;
+    if (courseId === "buenas-noches") return access.buenas_noches || false;
     return false;
   }
 

@@ -87,7 +87,7 @@ export default function LessonViewer({ lesson, module: mod, prev, next }) {
       body: JSON.stringify({ email }),
     })
       .then(r => r.json())
-      .then(data => { setHasAccess(data.hasAccess || data.premium_unlocked || false); setChecked(true); })
+      .then(data => { setHasAccess(data.neuroesencia || false); setChecked(true); })
       .catch(() => setChecked(true));
   }, [lesson.youtubeId, router]);
 
