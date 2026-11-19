@@ -1,0 +1,67 @@
+.page {
+  padding: 24px 16px 40px;
+  max-width: 540px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.heading {
+  font-family: var(--font-marca, sans-serif);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--tinta, #1a1a2e);
+  margin: 0;
+}
+
+.accountCard {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+
+.cardLabel {
+  font-family: var(--font-marca, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--tinta-muted, #888);
+  margin: 0 0 4px;
+}
+
+.accountEmail {
+  font-size: 14px;
+  color: var(--tinta, #1a1a2e);
+  margin: 0;
+  word-break: break-all;
+}
+
+.sectionLabel {
+  font-family: var(--font-marca, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--tinta-muted, #888);
+  margin: 4px 0 0;
+  padding: 0 2px;
+}
+
+.signOutBtn {
+  margin-top: 16px;
+  padding: 12px;
+  width: 100%;
+  border: 1.5px solid #e63946;
+  border-radius: 10px;
+  background: transparent;
+  color: #e63946;
+  font-family: var(--font-marca, sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.signOutBtn:hover { background: #e6394611; }

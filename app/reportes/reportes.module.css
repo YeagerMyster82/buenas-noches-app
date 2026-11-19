@@ -1,0 +1,153 @@
+.page {
+  padding: 24px 16px 32px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.heading {
+  font-family: var(--font-marca, sans-serif);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--tinta, #1a1a2e);
+  margin: 0 0 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fafafa;
+  font-family: var(--font-marca, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tabActive {
+  border-color: var(--turquesa, #00b4d8);
+  background: var(--turquesa, #00b4d8);
+  color: #fff;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statRow {
+  display: flex;
+  gap: 12px;
+}
+
+.statCard {
+  flex: 1;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+.statNum {
+  font-family: var(--font-marca, sans-serif);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--turquesa, #00b4d8);
+  margin: 0 0 4px;
+  line-height: 1;
+}
+
+.statUnit {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--tinta-muted, #888);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sectionLabel {
+  font-family: var(--font-marca, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--tinta-muted, #888);
+  margin: 0;
+}
+
+.dotGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+
+.dot {
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+
+.childRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.childName {
+  font-family: var(--font-marca, sans-serif);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tinta, #1a1a2e);
+}
+
+.childAge {
+  font-size: 12px;
+  color: var(--tinta-muted, #888);
+}
+
+.logRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.logDate {
+  flex: 1;
+  color: var(--tinta-muted, #888);
+  font-size: 12px;
+}
+
+.logStat {
+  color: var(--tinta, #1a1a2e);
+  font-weight: 600;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--tinta-muted, #aaa);
+  text-align: center;
+  padding: 24px 0;
+}

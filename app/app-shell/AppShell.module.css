@@ -1,0 +1,89 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bruma, #f4f6f8);
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brand {
+  font-family: var(--font-marca, sans-serif);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta, #1a1a2e);
+  flex: 1;
+}
+
+.helpBtn {
+  font-size: 20px;
+  text-decoration: none;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.helpBtn:hover { background: rgba(0,0,0,0.06); }
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 72px;
+}
+
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.navItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: var(--tinta-muted, #888);
+  transition: color 0.15s;
+}
+
+.navActive {
+  color: var(--turquesa, #00b4d8);
+}
+
+.navIcon { font-size: 20px; line-height: 1; }
+
+.navLabel {
+  font-family: var(--font-marca, sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
