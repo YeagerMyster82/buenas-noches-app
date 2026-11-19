@@ -1,0 +1,290 @@
+.page {
+  min-height: 100vh;
+  background: var(--bruma);
+  color: var(--tinta);
+  font-family: var(--font-lectura), "Lato", system-ui, sans-serif;
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.navLogo {
+  object-fit: contain;
+}
+
+.navLogin {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--tinta);
+  text-decoration: none;
+  padding: 10px 24px;
+  border: 1.5px solid var(--tinta);
+  border-radius: var(--radius-pill);
+  transition: background 0.2s, color 0.2s;
+}
+
+.navLogin:hover {
+  background: var(--tinta);
+  color: var(--surface);
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 80px 24px 64px;
+  background: var(--surface);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.heroTag {
+  display: inline-block;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: var(--tinta);
+  background: var(--turquesa);
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 20px;
+}
+
+.heroTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.1;
+  color: var(--tinta);
+  margin: 0 0 20px;
+}
+
+.heroSub {
+  font-family: var(--font-lectura), "Lato", sans-serif;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--tinta-muted);
+  margin: 0 0 36px;
+}
+
+.heroCta {
+  display: inline-block;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--on-accent);
+  background: var(--turquesa);
+  padding: 14px 32px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.heroCta:hover {
+  opacity: 0.85;
+}
+
+/* Courses */
+.courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardHeader {
+  padding: 32px;
+}
+
+.cardTag {
+  display: inline-block;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: var(--tinta);
+  background: rgba(255,255,255,0.4);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 14px;
+}
+
+.cardTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--tinta);
+  margin: 0 0 10px;
+  line-height: 1.1;
+}
+
+.bnLogo {
+  display: block;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.cardTagline {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--tinta-muted);
+  margin: 0;
+}
+
+.cardBody {
+  padding: 28px 32px 32px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardList {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tinta-muted);
+  flex: 1;
+}
+
+.cardList li::first-letter {
+  color: var(--turquesa);
+}
+
+.cardPrice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.priceLabel {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--tinta-subtle);
+  text-transform: uppercase;
+  font-family: var(--font-marca);
+  font-weight: 400;
+}
+
+.cardCta {
+  display: block;
+  text-align: center;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--on-accent);
+  background: var(--turquesa);
+  padding: 14px 24px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.cardCta:hover {
+  opacity: 0.85;
+}
+
+/* Bundle */
+.bundleCard {
+  grid-column: 1 / -1;
+  background: var(--tinta);
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.bundleTag {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: var(--tinta);
+  background: var(--turquesa);
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+}
+
+.bundleTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 36px;
+  color: var(--crema);
+  margin: 0;
+}
+
+.bundleSub {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--arena);
+  margin: 0;
+  max-width: 480px;
+}
+
+.bundleCta {
+  display: inline-block;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--tinta);
+  background: var(--turquesa);
+  padding: 14px 36px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.bundleCta:hover {
+  opacity: 0.85;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--tinta-subtle);
+}
+
+.footer a {
+  color: var(--tinta);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

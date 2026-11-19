@@ -1,4 +1,4 @@
-const CACHE_NAME = "buenas-noches-v1";
+const CACHE_NAME = "buenas-noches-v3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/brand/logo-buenas-noches.png"];
 
 self.addEventListener("install", (event) => {

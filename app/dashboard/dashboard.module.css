@@ -1,0 +1,179 @@
+.loadingPage {
+  min-height: 100vh;
+  background: var(--bruma);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--line);
+  border-top-color: var(--turquesa);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--bruma);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navEmail {
+  font-size: 13px;
+  color: var(--tinta-muted);
+}
+
+.navLogout {
+  font-family: var(--font-marca);
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--tinta-subtle);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.navLogout:hover {
+  color: var(--tinta);
+  border-color: var(--tinta-muted);
+}
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 24px;
+}
+
+.heading {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--tinta);
+  margin: 0 0 36px;
+  letter-spacing: 1px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.locked {
+  opacity: 0.75;
+}
+
+.cardTop {
+  padding: 36px 28px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.cardTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.lockBadge {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.cardBottom {
+  padding: 24px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.cardTagline {
+  font-size: 14px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.cardBtn {
+  display: block;
+  text-align: center;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--on-accent);
+  background: var(--turquesa);
+  padding: 13px 24px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.cardBtn:hover {
+  opacity: 0.85;
+}
+
+.cardBtnLocked {
+  display: block;
+  text-align: center;
+  font-family: var(--font-marca);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--tinta-muted);
+  background: var(--bruma);
+  padding: 13px 24px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  border: 1.5px solid var(--line);
+  transition: opacity 0.2s;
+}
+
+.cardBtnLocked:hover {
+  opacity: 0.75;
+}

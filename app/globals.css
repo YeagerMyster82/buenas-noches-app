@@ -1,37 +1,97 @@
+/* ── QuiroKids design tokens ── */
+@font-face {
+  font-family: "Minimalust";
+  src: url("/fonts/Minimalust-Thin.ttf") format("truetype");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minimalust";
+  src: url("/fonts/Minimalust-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minimalust";
+  src: url("/fonts/Minimalust-SmallCap.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
-  /* Brand palette */
+  /* ── QuiroKids palette ── */
+  --turquesa: #9ecfd2;
+  --turquesa-claro: #e6f5f6;
+  --turquesa-palido: #f0fafa;
+  --arena: #e6dcba;
+  --crema: #fff4ce;
+  --bruma: #f5fafa;
+  --durazno: #ffd0b8;
+  --rubor: #f7dcd4;
+  --tinta: #2a3a40;
+  --tinta-muted: #4a5a60;
+  --tinta-subtle: #6a7a80;
+  --noche: #192636;
+  --noche-soft: #1e3048;
+  --nube: #676f7a;
+
+  /* ── QuiroKids (day) theme ── */
+  --surface: #ffffff;
+  --surface-soft: #f5fafa;
+  --ink: #2a3a40;
+  --ink-muted: #4a5a60;
+  --ink-subtle: #6a7a80;
+  --line: #e6e8ea;
+  --accent: #9ecfd2;
+  --on-accent: #2a3a40;
+
+  /* ── Typography ── */
+  --font-marca: "Minimalust", system-ui, sans-serif;
+  --font-editorial: "Playfair Display", Georgia, serif;
+  --font-lectura: "Lato", system-ui, sans-serif;
+
+  /* ── Radii ── */
+  --radius-pill: 50px;
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-xs: 4px;
+
+  /* ── Shadows ── */
+  --shadow-card: 0 0 40px rgba(0, 0, 0, 0.08);
+  --shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.18);
+
+  /* ── Legacy BN tokens (keep for existing BN app components) ── */
   --navy-950: #16222e;
   --navy-900: #1f3044;
   --navy-800: #28394e;
   --navy-700: #2d415a;
   --navy-600: #4a6373;
-
-  /* Aliases */
   --night-deep: #1f3044;
   --night-soft: #2d415a;
   --night-mist: #4a6373;
-
-  /* Dark theme surface tokens */
   --card: #28394e;
   --card-strong: #1f3044;
-  --ink: #fff8ef;
-  --ink-soft: rgba(255, 248, 239, 0.62);
-  --border: rgba(255, 248, 239, 0.1);
-
-  /* Accent tokens */
   --moon: #f4e7b2;
   --aqua: #9ecfd2;
   --green: #8fbe9e;
   --coral: #d9968c;
   --blush: #f2dfd7;
   --rose: #d5b29d;
-
-  --line: rgba(255, 248, 239, 0.1);
   --shadow: 0 28px 80px rgba(10, 16, 26, 0.4);
-  --radius-xl: 30px;
-  --radius-lg: 24px;
-  --radius-md: 18px;
-  --radius-sm: 12px;
+}
+
+/* ── Buenas Noches night theme ── */
+[data-theme="buenas-noches"] {
+  --surface: #192636;
+  --surface-soft: #1e3048;
+  --ink: #fff4ce;
+  --ink-muted: #e6dcba;
+  --ink-subtle: #e8e4f0;
+  --line: #1f2d50;
+  --accent: #9ecfd2;
+  --on-accent: #2a3a40;
 }
 
 * {
@@ -40,20 +100,20 @@
 
 html {
   min-height: 100%;
-  background: var(--navy-950);
+  background: var(--surface);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Nunito Sans", "Avenir Next", "Trebuchet MS", sans-serif;
+  font-family: var(--font-lectura), "Lato", system-ui, sans-serif;
   color: var(--ink);
-  background: var(--navy-950);
+  background: var(--surface);
 }
 
-h1, h2, h3 {
-  font-family: "Baloo 2", "Nunito Sans", sans-serif;
-  font-weight: 700;
+h1, h2, h3, h4 {
+  font-family: var(--font-marca), system-ui, sans-serif;
+  color: var(--ink);
 }
 
 .mono, .routine-countdown, .sleep-timer-clock strong {
