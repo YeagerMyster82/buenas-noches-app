@@ -1,0 +1,199 @@
+.shell {
+  min-height: 100vh;
+  background: var(--bruma);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top nav */
+.topNav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.topNavLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menuBtn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--tinta);
+  padding: 4px 8px;
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .menuBtn { display: block; }
+}
+
+.courseLabel {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--tinta);
+}
+
+.dashLink {
+  font-size: 13px;
+  color: var(--tinta-muted);
+  text-decoration: none;
+  font-family: var(--font-marca);
+  font-weight: 400;
+}
+
+.dashLink:hover {
+  color: var(--tinta);
+}
+
+/* Body = sidebar + main */
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    z-index: 90;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    height: auto;
+  }
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 80;
+}
+
+.sidebarNav {
+  padding: 16px 0 32px;
+}
+
+.module {
+  margin-bottom: 4px;
+}
+
+.moduleTitle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--tinta);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.moduleTitle:hover {
+  background: var(--bruma);
+}
+
+.chevron {
+  font-size: 12px;
+  color: var(--tinta-subtle);
+}
+
+.lessonList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+}
+
+.lessonLink {
+  display: block;
+  padding: 9px 20px 9px 28px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tinta-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, background 0.15s;
+}
+
+.lessonLink:hover {
+  color: var(--tinta);
+  background: var(--bruma);
+}
+
+.lessonActive {
+  color: var(--tinta);
+  background: var(--turquesa-claro);
+  border-left-color: var(--turquesa);
+  font-weight: 700;
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 48px;
+  max-width: 860px;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 24px 16px;
+  }
+}
+
+.rutaLink {
+  display: block;
+  padding: 10px 20px;
+  margin: 8px 12px 4px;
+  background: var(--turquesa);
+  color: #fff;
+  font-family: var(--font-marca);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  border-radius: var(--radius-sm, 8px);
+  text-align: center;
+}
+
+.rutaLink:hover {
+  opacity: 0.88;
+}
