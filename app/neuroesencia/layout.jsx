@@ -75,6 +75,15 @@ export default function NeuroEsenciaLayout({ children }) {
                 Progreso de mi hijo
               </Link>
             </div>
+            <div className={styles.module}>
+              <Link
+                href="/neuroesencia/ajustes"
+                className={styles.rutaLink}
+                onClick={() => setSidebarOpen(false)}
+              >
+                Ajustes
+              </Link>
+            </div>
             {NEUROESENCIA.modules.map(mod => (
               <div key={mod.id} className={styles.module}>
                 <button

@@ -1,0 +1,121 @@
+.card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.cardHeaderText {
+  flex: 1;
+  min-width: 0;
+}
+
+.icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.title {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tinta);
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Toggle pill */
+.toggle {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-family: var(--font-marca);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--tinta-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggleOn {
+  background: var(--turquesa);
+  border-color: var(--turquesa);
+  color: #fff;
+}
+
+/* Time row */
+.timeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.timeLabel {
+  font-family: var(--font-marca);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-muted);
+  flex: 1;
+}
+
+.timeInput {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: var(--font-lectura), "Lato", sans-serif;
+  color: var(--tinta);
+  background: var(--bruma);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.timeInput:focus {
+  border-color: var(--turquesa);
+}
+
+/* Row variant (for denied/unsupported) */
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+
+.error {
+  font-size: 12px;
+  color: #c0392b;
+  margin: 0;
+}

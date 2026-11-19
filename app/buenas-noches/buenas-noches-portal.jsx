@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import BnCurso from "./bn-curso";
+import NotificationSettings from "../components/NotificationSettings";
 import styles from "./bn-portal.module.css";
 
 // Load the existing app only on client to avoid SSR issues
@@ -19,18 +20,21 @@ export default function BuenasNochesPortal() {
   const [tab, setTab] = useState("curso");
   const [hasAccess, setHasAccess] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [email, setEmail] = useState(null);
 
   useEffect(() => {
-    const email = sessionStorage.getItem("qk_email");
-    if (!email) { router.replace("/login"); return; }
+    const e = sessionStorage.getItem("qk_email");
+    if (!e) { router.replace("/login"); return; }
+    setEmail(e);
     fetch("/api/premium-access", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: e }),
     })
       .then(r => r.json())
       .then(data => { setHasAccess(data.buenas_noches || false); setChecked(true); })
       .catch(() => setChecked(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   if (checked && !hasAccess) {
@@ -77,6 +81,12 @@ export default function BuenasNochesPortal() {
           >
             App
           </button>
+          <button
+            className={`${styles.tab} ${tab === "config" ? styles.tabActive : ""}`}
+            onClick={() => setTab("config")}
+          >
+            Ajustes
+          </button>
         </nav>
       </header>
 
@@ -86,6 +96,12 @@ export default function BuenasNochesPortal() {
         {tab === "app" && (
           <div className={styles.appWrapper}>
             <BuenasNochesApp />
+          </div>
+        )}
+        {tab === "config" && (
+          <div className={styles.configWrapper}>
+            <p className={styles.configTitle}>Notificaciones</p>
+            <NotificationSettings email={email} product="buenas_noches" />
           </div>
         )}
       </div>
