@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import HelpModal from "../components/HelpModal";
 import styles from "./AppShell.module.css";
 
 const NAV_ITEMS = [
@@ -15,22 +17,30 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [email, setEmail] = useState(null);
+
+  useEffect(() => {
+    setEmail(sessionStorage.getItem("qk_email"));
+  }, []);
 
   return (
     <div className={styles.shell}>
       <header className={styles.topBar}>
         <img src="/quirokids-simbolo.png" alt="QuiroKids" className={styles.logo} />
         <span className={styles.brand}>QuiroKids</span>
-        <a
-          href="https://wa.me/521XXXXXXXXXX"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
           className={styles.helpBtn}
+          onClick={() => setHelpOpen(true)}
           aria-label="Pedir ayuda"
         >
           💬
-        </a>
+        </button>
       </header>
+
+      {helpOpen && email && (
+        <HelpModal email={email} onClose={() => setHelpOpen(false)} />
+      )}
 
       <main className={styles.content}>{children}</main>
 
