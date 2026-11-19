@@ -1,0 +1,251 @@
+.page {
+  min-height: 100dvh;
+  background: var(--bruma);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px 60px;
+}
+
+.inner {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heading {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--tinta);
+  margin: 0;
+}
+
+/* Child tabs */
+.childTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.childTab {
+  padding: 8px 18px;
+  font-family: var(--font-marca);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--tinta-muted);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.childTabActive {
+  border-color: var(--turquesa);
+  color: var(--turquesa);
+  background: var(--turquesa-palido, #e8f5f6);
+}
+
+/* Banner */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff8e6;
+  border: 1.5px solid #f5c842;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.bannerIcon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.bannerTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tinta);
+  margin: 0 0 2px;
+}
+
+.bannerSub {
+  font-size: 12px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.bannerBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-family: var(--font-marca);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: #e6a800;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.bannerBtn:hover { opacity: 0.85; }
+
+/* Card */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.cardSub {
+  font-size: 14px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Session timeline */
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sessionDate {
+  font-family: var(--font-marca);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--tinta-muted);
+  margin: 0;
+  padding: 0 4px;
+}
+
+.sessionCard {
+  background: var(--surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ratingRow:last-child { border-bottom: none; }
+
+.ratingLeft { flex: 1; min-width: 0; }
+
+.ratingSection {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tinta);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pills {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pill {
+  font-family: var(--font-marca);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Buttons */
+.btnPrimary {
+  display: inline-block;
+  padding: 14px 24px;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--turquesa);
+  border: none;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  align-self: flex-start;
+}
+
+.btnPrimary:hover { opacity: 0.88; }
+
+.btnOutline {
+  display: inline-block;
+  padding: 14px 24px;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--turquesa);
+  background: transparent;
+  border: 1.5px solid var(--turquesa);
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btnOutline:hover {
+  background: var(--turquesa);
+  color: #fff;
+}
+
+.newEvalRow {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+/* Spinner */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--line);
+  border-top-color: var(--turquesa);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 80px auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

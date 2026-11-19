@@ -66,6 +66,15 @@ export default function NeuroEsenciaLayout({ children }) {
                 ¿Por dónde empiezo?
               </Link>
             </div>
+            <div className={styles.module}>
+              <Link
+                href="/neuroesencia/progreso"
+                className={styles.rutaLink}
+                onClick={() => setSidebarOpen(false)}
+              >
+                Progreso de mi hijo
+              </Link>
+            </div>
             {NEUROESENCIA.modules.map(mod => (
               <div key={mod.id} className={styles.module}>
                 <button

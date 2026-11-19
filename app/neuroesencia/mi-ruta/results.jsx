@@ -171,6 +171,10 @@ export default function ResultsPage() {
           </div>
         )}
 
+        <Link href="/neuroesencia/evaluar" className={styles.saveProgressBtn}>
+          Guardar progreso para tu hijo →
+        </Link>
+
         <button className={styles.editLink} onClick={handleEdit}>Editar mis respuestas</button>
 
         <p className={styles.footer}>
