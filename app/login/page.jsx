@@ -10,7 +10,9 @@ import styles from "./login.module.css";
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState("login"); // login | signup | forgot
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -52,6 +54,12 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: {
+        data: {
+          full_name: name.trim(),
+          whatsapp: whatsapp.trim() || null,
+        },
+      },
     });
     if (error) {
       setError(error.message);
@@ -90,6 +98,7 @@ export default function LoginPage() {
           />
         </Link>
 
+        {/* ── LOGIN ── */}
         {mode === "login" && (
           <form onSubmit={handleLogin} className={styles.form}>
             <h1 className={styles.title}>Bienvenida</h1>
@@ -133,18 +142,33 @@ export default function LoginPage() {
               ¿Olvidaste tu contraseña?
             </button>
 
-            <div className={styles.divider}><span>¿Primera vez aquí?</span></div>
+            <div className={styles.divider} />
 
-            <button type="button" className={styles.btnSecondary} onClick={() => switchMode("signup")}>
-              Crear cuenta
-            </button>
+            <p className={styles.registerHint}>
+              ¿Primera vez aquí?{" "}
+              <button type="button" className={styles.inlineLink} onClick={() => switchMode("signup")}>
+                Regístrate aquí
+              </button>
+            </p>
           </form>
         )}
 
+        {/* ── SIGNUP ── */}
         {mode === "signup" && (
           <form onSubmit={handleSignup} className={styles.form}>
             <h1 className={styles.title}>Crear cuenta</h1>
-            <p className={styles.sub}>Usa el email con el que compraste tu curso</p>
+            <p className={styles.sub}>Comienza con los videos gratuitos o accede a tu curso</p>
+
+            <label className={styles.label}>Nombre</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Tu nombre"
+              required
+              className={styles.input}
+              autoComplete="name"
+            />
 
             <label className={styles.label}>Email</label>
             <input
@@ -154,6 +178,7 @@ export default function LoginPage() {
               placeholder="tu@email.com"
               required
               className={styles.input}
+              autoComplete="email"
             />
 
             <label className={styles.label}>Contraseña</label>
@@ -171,15 +196,28 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <label className={styles.label}>Confirmar contraseña</label>
             <input
               type={showPw ? "text" : "password"}
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Repite la contraseña"
+              placeholder="Confirmar contraseña"
               required
               className={styles.input}
             />
+
+            <label className={styles.label}>
+              WhatsApp{" "}
+              <span className={styles.optional}>opcional</span>
+            </label>
+            <input
+              type="tel"
+              value={whatsapp}
+              onChange={e => setWhatsapp(e.target.value)}
+              placeholder="+52 55 1234 5678"
+              className={styles.input}
+              autoComplete="tel"
+            />
+            <p className={styles.hint}>Para recibir códigos de acceso por WhatsApp en lugar de email.</p>
 
             {error && <p className={styles.error}>{error}</p>}
             {message && <p className={styles.success}>{message}</p>}
@@ -188,12 +226,18 @@ export default function LoginPage() {
               {loading ? "Creando cuenta..." : "Crear cuenta →"}
             </button>
 
-            <button type="button" className={styles.textLink} onClick={() => switchMode("login")}>
-              ← Ya tengo cuenta
-            </button>
+            <div className={styles.divider} />
+
+            <p className={styles.registerHint}>
+              ¿Ya tienes cuenta?{" "}
+              <button type="button" className={styles.inlineLink} onClick={() => switchMode("login")}>
+                Inicia sesión aquí
+              </button>
+            </p>
           </form>
         )}
 
+        {/* ── FORGOT PASSWORD ── */}
         {mode === "forgot" && (
           <form onSubmit={handleForgot} className={styles.form}>
             <h1 className={styles.title}>Recuperar acceso</h1>
