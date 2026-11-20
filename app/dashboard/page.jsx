@@ -21,7 +21,7 @@ const COURSES = [
     id: "buenas-noches",
     label: "CURSO + APP",
     title: "Buenas Noches",
-    tagline: "18 actividades para calmar el sistema nervioso antes de dormir",
+    tagline: "23 actividades para calmar el sistema nervioso antes de dormir",
     href: "/buenas-noches",
     accent: "#2d3f5c",
     icon: "🌙",
@@ -33,11 +33,11 @@ export default function DashboardPage() {
   const [email, setEmail] = useState(null);
   const [access, setAccess] = useState(null);
   const [loading, setLoading] = useState(true);
-  const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
     // Try Supabase session first, fall back to sessionStorage
     async function init() {
+      const supabase = getSupabaseBrowserClient();
       let userEmail = sessionStorage.getItem("qk_email");
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -59,7 +59,7 @@ export default function DashboardPage() {
         .catch(() => setLoading(false));
     }
     init();
-  }, [router, supabase]);
+  }, [router]);
 
   function hasAccess(courseId) {
     if (!access) return false;
@@ -69,6 +69,7 @@ export default function DashboardPage() {
   }
 
   async function handleLogout() {
+    const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     sessionStorage.removeItem("qk_email");
     router.push("/login");
@@ -129,16 +130,6 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className={styles.freeSection}>
-          <p className={styles.freeSectionLabel}>CONTENIDO GRATUITO</p>
-          <Link href="/neuroesencia/el-secreto-de-los-ejercicios" className={styles.freeCard}>
-            <span className={styles.freeCardIcon}>▶</span>
-            <div>
-              <p className={styles.freeCardTitle}>El secreto de los ejercicios para reflejos primitivos</p>
-              <p className={styles.freeCardSub}>Video gratuito · NeuroEsencia</p>
-            </div>
-          </Link>
-        </div>
       </main>
     </div>
   );
