@@ -1,5 +1,6 @@
-const CACHE_NAME = "buenas-noches-v3";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/brand/logo-buenas-noches.png"];
+const CACHE_NAME = "buenas-noches-v5";
+// Do NOT cache "/" — it's a server redirect to /login and the cached HTML breaks it
+const APP_SHELL = ["/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
