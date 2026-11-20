@@ -40,9 +40,12 @@ const NAV_TABS = [
   {
     id: "nino", label: "Niño", href: "/neuroesencia/nino",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="10" cy="5.5" r="2.5"/>
-        <path d="M5 17c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5"/>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="5" r="2.2"/>
+        <line x1="12" y1="7.2" x2="12" y2="15"/>
+        <line x1="8" y1="10.5" x2="16" y2="10.5"/>
+        <line x1="12" y1="15" x2="9" y2="21"/>
+        <line x1="12" y1="15" x2="15" y2="21"/>
       </svg>
     ),
   },
