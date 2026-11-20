@@ -92,3 +92,110 @@
   text-align: center;
   margin: 0;
 }
+
+/* Tarea del día */
+.rewardBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bruma, #f4f4f8);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.rewardText {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tinta, #1a1a2e);
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.rewardTextMuted {
+  font-size: 13px;
+  color: var(--tinta-muted, #888);
+  margin: 0;
+  flex: 1;
+}
+
+.editBtn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  opacity: 0.6;
+}
+.editBtn:hover { opacity: 1; }
+
+.rewardForm {
+  display: flex;
+  gap: 8px;
+}
+
+.rewardInput {
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: var(--font-lectura, sans-serif);
+  background: #fafafa;
+  color: var(--tinta, #1a1a2e);
+  outline: none;
+}
+.rewardInput:focus { border-color: var(--turquesa, #2d9e6b); }
+
+.saveBtn {
+  padding: 10px 16px;
+  background: var(--turquesa, #2d9e6b);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-marca, sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.saveBtn:disabled { opacity: 0.6; }
+
+.starsRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.starBtn {
+  font-size: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: transform 0.2s;
+  filter: grayscale(1) opacity(0.3);
+}
+.starBtn:disabled { cursor: default; }
+.starBtnEarned {
+  filter: none;
+  transform: scale(1.15);
+}
+
+.starsAll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.starsComplete {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--turquesa, #2d9e6b);
+  text-align: center;
+  margin: 0;
+}
