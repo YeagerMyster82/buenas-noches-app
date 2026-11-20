@@ -3,9 +3,10 @@
   background: var(--bruma);
   display: flex;
   flex-direction: column;
+  padding-bottom: 60px;
 }
 
-/* Top nav */
+/* Slim top nav */
 .topNav {
   position: sticky;
   top: 0;
@@ -13,30 +14,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  height: 56px;
+  padding: 0 20px;
+  height: 48px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-}
-
-.topNavLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.menuBtn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: var(--tinta);
-  padding: 4px 8px;
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .menuBtn { display: block; }
 }
 
 .courseLabel {
@@ -48,11 +29,12 @@
 }
 
 .dashLink {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--tinta-muted);
   text-decoration: none;
   font-family: var(--font-marca);
   font-weight: 400;
+  width: 80px;
 }
 
 .dashLink:hover {
@@ -66,6 +48,10 @@
   min-height: 0;
 }
 
+.bodyFull {
+  display: block;
+}
+
 /* Sidebar */
 .sidebar {
   width: 280px;
@@ -73,21 +59,22 @@
   background: var(--surface);
   border-right: 1px solid var(--line);
   overflow-y: auto;
-  height: calc(100vh - 56px);
+  height: calc(100vh - 48px - 60px);
   position: sticky;
-  top: 56px;
+  top: 48px;
 }
 
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    top: 56px;
+    top: 48px;
     left: 0;
-    bottom: 0;
+    bottom: 60px;
     z-index: 90;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     height: auto;
+    width: 280px;
   }
   .sidebarOpen {
     transform: translateX(0);
@@ -165,6 +152,15 @@
   font-weight: 700;
 }
 
+.lessonLocked {
+  opacity: 0.6;
+}
+
+.lockIcon {
+  margin-right: 6px;
+  font-size: 11px;
+}
+
 /* Main content area */
 .main {
   flex: 1;
@@ -173,9 +169,17 @@
   max-width: 860px;
 }
 
+.mainFull {
+  max-width: 100%;
+  padding: 0;
+}
+
 @media (max-width: 768px) {
   .main {
-    padding: 24px 16px;
+    padding: 24px 16px 80px;
+  }
+  .mainFull {
+    padding: 0 0 20px;
   }
 }
 
@@ -196,4 +200,77 @@
 
 .rutaLink:hover {
   opacity: 0.88;
+}
+
+/* Mobile lecciones floating button */
+.leccionesBtn {
+  display: none;
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: var(--turquesa);
+  color: var(--tinta);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+  .leccionesBtn { display: block; }
+}
+
+/* Bottom nav */
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: stretch;
+}
+
+.bottomTab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--tinta-muted);
+  transition: color 0.15s;
+  font-size: 10px;
+  padding: 6px 4px;
+}
+
+.bottomTab:hover {
+  color: var(--tinta);
+}
+
+.bottomTabActive {
+  color: var(--turquesa);
+}
+
+.bottomTabLabel {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.bottomTabActive .bottomTabLabel {
+  color: var(--turquesa);
 }

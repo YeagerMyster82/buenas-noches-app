@@ -1,7 +1,7 @@
 .shell {
   display: flex;
   flex: 1;
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - 52px - 60px);
   position: relative;
 }
 
@@ -44,15 +44,15 @@
   background: var(--noche-soft);
   border-right: 1px solid var(--line);
   overflow-y: auto;
-  height: calc(100vh - 56px);
+  height: calc(100vh - 52px - 60px);
   position: sticky;
-  top: 56px;
+  top: 52px;
 }
 
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    top: 108px;
+    top: 52px;
     left: 0;
     bottom: 0;
     z-index: 75;

@@ -1,0 +1,87 @@
+.page {
+  min-height: calc(100vh - 48px - 60px);
+  background: var(--bruma);
+  padding: 32px 16px 48px;
+}
+
+.inner {
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.hero {
+  margin-bottom: 32px;
+}
+
+.heading {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--tinta);
+  margin: 0 0 8px;
+}
+
+.sub {
+  font-family: var(--font-lectura);
+  font-size: 15px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-decoration: none;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.cardIcon {
+  font-size: 28px;
+  flex-shrink: 0;
+  width: 40px;
+  text-align: center;
+}
+
+.cardText {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-family: var(--font-marca);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--tinta);
+  margin: 0 0 4px;
+}
+
+.cardSub {
+  font-family: var(--font-lectura);
+  font-size: 13px;
+  color: var(--tinta-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cardArrow {
+  font-size: 20px;
+  color: var(--tinta-muted);
+  flex-shrink: 0;
+}
