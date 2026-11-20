@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SECTIONS, STORAGE_KEY, saveStorage } from "../../../lib/ruta-neuroesencia";
+import { getChildren, createChild } from "../../../lib/tracker-api";
 import styles from "./ruta.module.css";
 
 function loadSaved() {
@@ -17,25 +18,71 @@ function loadSaved() {
 
 export default function ChecklistPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1); // 1-8
+  // step 0 = child profile, steps 1-8 = reflex sections
+  const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState(new Set());
   const [skipped, setSkipped] = useState(new Set());
   const [mounted, setMounted] = useState(false);
 
+  // Child profile state
+  const [email, setEmail] = useState(null);
+  const [children, setChildren] = useState([]);
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [childName, setChildName] = useState("");
+  const [childAge, setChildAge] = useState("");
+  const [childMode, setChildMode] = useState("select"); // "select" | "new"
+  const [childLoading, setChildLoading] = useState(false);
+  const [childError, setChildError] = useState("");
+
   useEffect(() => {
+    const e = sessionStorage.getItem("qk_email");
+    if (!e) { router.replace("/login"); return; }
+    setEmail(e);
+
+    getChildren(e).then(list => {
+      setChildren(list);
+      if (list.length === 0) setChildMode("new");
+    }).catch(() => {});
+
     const saved = loadSaved();
-    if (saved) {
+    if (saved && saved.childId) {
+      setSelectedChildId(saved.childId);
       setSelections(new Set(saved.selections || []));
       setSkipped(new Set(saved.skipped || []));
       const step = saved.step;
       if (step >= 1 && step <= 8) setCurrentStep(step);
+      else if (step >= 1) setCurrentStep(1);
     }
     setMounted(true);
-  }, []);
+  }, [router]);
+
+  async function handleChildContinue() {
+    setChildError("");
+    if (childMode === "new") {
+      if (!childName.trim()) { setChildError("Por favor escribe el nombre de tu hijo."); return; }
+      setChildLoading(true);
+      try {
+        const child = await createChild(email, childName.trim(), childAge ? parseInt(childAge) : null);
+        setChildren(prev => [...prev, child]);
+        setSelectedChildId(child.id);
+        saveStorage({ step: 1, childId: child.id, selections: [], skipped: [], priority: null, tieResolution: null });
+        setCurrentStep(1);
+      } catch {
+        setChildError("No se pudo guardar el perfil. Intenta de nuevo.");
+      } finally {
+        setChildLoading(false);
+      }
+    } else {
+      if (!selectedChildId) { setChildError("Selecciona un perfil o crea uno nuevo."); return; }
+      saveStorage({ step: 1, childId: selectedChildId, selections: [], skipped: [], priority: null, tieResolution: null });
+      setCurrentStep(1);
+    }
+  }
 
   function persist(newSelections, newSkipped, step) {
     saveStorage({
       step,
+      childId: selectedChildId,
       selections: [...newSelections],
       skipped: [...newSkipped],
       priority: null,
@@ -74,7 +121,7 @@ export default function ChecklistPage() {
 
   function goBack() {
     if (currentStep === 1) {
-      router.push("/neuroesencia/mi-ruta");
+      setCurrentStep(0);
     } else {
       const prev = currentStep - 1;
       setCurrentStep(prev);
@@ -100,6 +147,96 @@ export default function ChecklistPage() {
   }
 
   if (!mounted) return null;
+
+  // ── Step 0: child profile ──────────────────────────────────────────────────
+  if (currentStep === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.inner}>
+          <div className={styles.entryCard}>
+            <p className={styles.sectionHeading}>Perfil del niño</p>
+
+            {children.length > 0 && (
+              <div className={styles.childToggle}>
+                <button
+                  className={`${styles.childToggleBtn} ${childMode === "select" ? styles.childToggleBtnActive : ""}`}
+                  onClick={() => setChildMode("select")}
+                >Mis perfiles</button>
+                <button
+                  className={`${styles.childToggleBtn} ${childMode === "new" ? styles.childToggleBtnActive : ""}`}
+                  onClick={() => setChildMode("new")}
+                >Nuevo perfil</button>
+              </div>
+            )}
+
+            {childMode === "select" && children.length > 0 && (
+              <div className={styles.childList}>
+                {children.map(c => (
+                  <div
+                    key={c.id}
+                    className={`${styles.childRow} ${selectedChildId === c.id ? styles.childRowSelected : ""}`}
+                    onClick={() => setSelectedChildId(c.id)}
+                    role="radio"
+                    aria-checked={selectedChildId === c.id}
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === " " || e.key === "Enter") setSelectedChildId(c.id); }}
+                  >
+                    <span className={`${styles.radio} ${selectedChildId === c.id ? styles.radioSelected : ""}`}>
+                      {selectedChildId === c.id && <span className={styles.radioDot} />}
+                    </span>
+                    <span className={styles.childRowText}>
+                      <strong>{c.child_name}</strong>
+                      {c.age_years ? <span className={styles.childAge}> · {c.age_years} años</span> : null}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {childMode === "new" && (
+              <div className={styles.childForm}>
+                <label className={styles.fieldLabel}>Nombre del niño</label>
+                <input
+                  className={styles.fieldInput}
+                  type="text"
+                  placeholder="Ej. Sofía"
+                  value={childName}
+                  onChange={e => setChildName(e.target.value)}
+                  maxLength={60}
+                />
+                <label className={styles.fieldLabel} style={{ marginTop: 16 }}>Edad (años)</label>
+                <input
+                  className={styles.fieldInput}
+                  type="number"
+                  placeholder="Ej. 5"
+                  value={childAge}
+                  onChange={e => setChildAge(e.target.value)}
+                  min={1}
+                  max={18}
+                />
+              </div>
+            )}
+
+            {childError && <p className={styles.fieldError}>{childError}</p>}
+          </div>
+
+          <div className={styles.navRow}>
+            <button className={styles.btnBack} onClick={() => router.push("/neuroesencia/mi-ruta")}>
+              ← Atrás
+            </button>
+            <button
+              className={styles.btnPrimary}
+              onClick={handleChildContinue}
+              disabled={childLoading}
+              style={{ flex: "0 0 auto", padding: "14px 32px" }}
+            >
+              {childLoading ? "Guardando…" : "Continuar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const section = SECTIONS[currentStep - 1];
   const isSkipped = skipped.has(section.id);

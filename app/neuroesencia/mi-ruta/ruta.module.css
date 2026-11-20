@@ -458,3 +458,105 @@
 .startFresh:hover {
   color: var(--tinta-muted);
 }
+
+/* Child profile step */
+.childToggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.childToggleBtn {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  font-family: var(--font-marca);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--tinta-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.childToggleBtnActive {
+  background: var(--turquesa);
+  border-color: var(--turquesa);
+  color: var(--tinta);
+}
+
+.childList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.childRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+
+.childRow:last-child { border-bottom: none; }
+
+.childRow:hover { background: var(--turquesa-palido); }
+
+.childRowSelected { background: var(--turquesa-palido); }
+
+.childRowText {
+  font-family: var(--font-lectura);
+  font-size: 15px;
+  color: var(--tinta);
+}
+
+.childAge {
+  font-size: 13px;
+  color: var(--tinta-muted);
+}
+
+.childForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldLabel {
+  font-family: var(--font-marca);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-lectura);
+  font-size: 15px;
+  color: var(--tinta);
+  background: var(--bruma);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.fieldInput:focus {
+  border-color: var(--turquesa);
+}
+
+.fieldError {
+  font-family: var(--font-lectura);
+  font-size: 13px;
+  color: #e63946;
+  margin: 12px 0 0;
+}
