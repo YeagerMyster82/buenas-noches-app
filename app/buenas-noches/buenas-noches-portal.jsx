@@ -15,9 +15,33 @@ const BuenasNochesApp = dynamic(
 );
 
 const NAV_TABS = [
-  { id: "inicio", label: "Inicio" },
-  { id: "videos", label: "Videos" },
-  { id: "ajustes", label: "Ajustes" },
+  {
+    id: "inicio", label: "Inicio",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5L10 3l7 6.5"/>
+        <path d="M5 8.5V17h4v-4h2v4h4V8.5"/>
+      </svg>
+    ),
+  },
+  {
+    id: "videos", label: "Videos",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="10" r="7"/>
+        <polygon points="8.5,7.5 8.5,12.5 13,10" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+  },
+  {
+    id: "ajustes", label: "Ajustes",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="10" r="2.5"/>
+        <path d="M10 2.5v1.8M10 15.7v1.8M2.5 10h1.8M15.7 10h1.8M4.8 4.8l1.3 1.3M13.9 13.9l1.3 1.3M4.8 15.2l1.3-1.3M13.9 6.1l1.3-1.3"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function BuenasNochesPortal() {
@@ -93,6 +117,7 @@ export default function BuenasNochesPortal() {
             className={`${styles.bottomTab} ${tab === t.id ? styles.bottomTabActive : ""}`}
             onClick={() => setTab(t.id)}
           >
+            {t.icon}
             <span className={styles.bottomTabLabel}>{t.label}</span>
           </button>
         ))}

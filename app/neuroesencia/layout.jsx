@@ -18,11 +18,52 @@ function getActiveTab(pathname) {
 }
 
 const NAV_TABS = [
-  { id: "inicio",   label: "Inicio",   href: "/neuroesencia" },
-  { id: "reporte",  label: "Reporte",  href: "/neuroesencia/progreso" },
-  { id: "nino",     label: "Niño",     href: "/neuroesencia/nino" },
-  { id: "curso",    label: "Curso",    href: "/neuroesencia/biblioteca" },
-  { id: "ajustes",  label: "Ajustes",  href: "/neuroesencia/ajustes" },
+  {
+    id: "inicio", label: "Inicio", href: "/neuroesencia",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5L10 3l7 6.5"/>
+        <path d="M5 8.5V17h4v-4h2v4h4V8.5"/>
+      </svg>
+    ),
+  },
+  {
+    id: "reporte", label: "Reporte", href: "/neuroesencia/progreso",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="12" width="3" height="5" rx="1"/>
+        <rect x="8.5" y="8" width="3" height="9" rx="1"/>
+        <rect x="14" y="4" width="3" height="13" rx="1"/>
+      </svg>
+    ),
+  },
+  {
+    id: "nino", label: "Niño", href: "/neuroesencia/nino",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="5.5" r="2.5"/>
+        <path d="M5 17c0-3.3 2.2-5.5 5-5.5s5 2.2 5 5.5"/>
+      </svg>
+    ),
+  },
+  {
+    id: "curso", label: "Curso", href: "/neuroesencia/biblioteca",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="10" r="7"/>
+        <polygon points="8.5,7.5 8.5,12.5 13,10" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
+  },
+  {
+    id: "ajustes", label: "Ajustes", href: "/neuroesencia/ajustes",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="10" cy="10" r="2.5"/>
+        <path d="M10 2.5v1.8M10 15.7v1.8M2.5 10h1.8M15.7 10h1.8M4.8 4.8l1.3 1.3M13.9 13.9l1.3 1.3M4.8 15.2l1.3-1.3M13.9 6.1l1.3-1.3"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function NeuroEsenciaLayout({ children }) {
@@ -140,6 +181,7 @@ export default function NeuroEsenciaLayout({ children }) {
             href={tab.href}
             className={`${styles.bottomTab} ${activeTab === tab.id ? styles.bottomTabActive : ""}`}
           >
+            {tab.icon}
             <span className={styles.bottomTabLabel}>{tab.label}</span>
           </Link>
         ))}
