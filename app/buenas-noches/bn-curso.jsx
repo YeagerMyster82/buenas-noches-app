@@ -6,11 +6,10 @@ import styles from "./bn-curso.module.css";
 
 function VideoPlaceholder({ bunnyId, title }) {
   if (bunnyId) {
-    const [libraryId, videoId] = bunnyId.split("/");
     return (
       <div className={styles.videoWrapper}>
         <iframe
-          src={`https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?autoplay=false&responsive=true`}
+          src={`https://iframe.mediadelivery.net/embed/815157/${bunnyId}?autoplay=false&responsive=true`}
           loading="lazy"
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
