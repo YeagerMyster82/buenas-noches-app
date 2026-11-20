@@ -118,7 +118,7 @@ export default function ChecklistPage() {
 
           {currentStep === 1 && (
             <p className={styles.instructions}>
-              Marca lo que observas con frecuencia en el día a día de tu hijo. Si una actividad todavía no forma parte de su rutina, puedes dejar esa opción en blanco.
+              Marca lo que pasa seguido en el día a día de tu hijo. Puedes incluir lo que te cuenta su profe. Si no estás seguro o la situación todavía no forma parte de su rutina, déjala en blanco.
             </p>
           )}
 
